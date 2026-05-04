@@ -143,9 +143,10 @@ function handleContextMenu(b, e) {
   connectSource.value = null
 }
 
-const DAMPING = 0.85
-const REPULSE = 3.0
-const ATTRACT = 0.0005
+const DAMPING = 0.92
+const REPULSE = 3.4
+const ATTRACT = 0.0012
+const DRIFT = 0.08
 let animId = null
 
 function updatePhysics() {
@@ -178,6 +179,9 @@ function updatePhysics() {
     fx += (cx - b1.x - b1.size / 2) * ATTRACT
     fy += (cy - b1.y - b1.size / 2) * ATTRACT
 
+    fx += (Math.random() - 0.5) * DRIFT
+    fy += (Math.random() - 0.5) * DRIFT
+
     b1.vx = (b1.vx + fx) * DAMPING
     b1.vy = (b1.vy + fy) * DAMPING
     b1.x = Math.max(60, Math.min(b1.x + b1.vx, window.innerWidth - b1.size - 60))
@@ -198,8 +202,8 @@ function addBubble() {
     id: _id++,
     x: window.innerWidth / 2 - 50,
     y: window.innerHeight / 2 - 50,
-    vx: 0,
-    vy: 0,
+    vx: (Math.random() - 0.5) * 2,
+    vy: (Math.random() - 0.5) * 2,
     label: lbl,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
     size: 85,
@@ -258,8 +262,6 @@ onUnmounted(() => {
         <button
           style="background:#009ac7;color:white;border:none;border-radius:99px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px #009ac740;"
           @click.stop="showAdd = !showAdd"
-          onmouseover="this.style.background='#4ebcff'"
-          onmouseout="this.style.background='#009ac7'"
         >
           + Bolha
         </button>
@@ -379,7 +381,7 @@ onUnmounted(() => {
       :key="b.id"
       :style="{
         position: 'absolute',
-        zIndex: b.selected ? 10 : 3,
+        zIndex: b.selected ? 30 : 20,
         left: `${b.x}px`,
         top: `${b.y}px`,
         width: `${b.size}px`,
