@@ -1,8 +1,8 @@
 <?php
 
 use App\Http\Controllers\BubbleController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ConnectionController;
+use Illuminate\Support\Facades\Route;
 
 Route::apiResource('bubbles', BubbleController::class)->only([
     'index',
@@ -11,13 +11,8 @@ Route::apiResource('bubbles', BubbleController::class)->only([
     'destroy',
 ]);
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\BubbleController;
-use App\Http\Controllers\ConnectionController;
-
-Route::get('/bubbles', [BubbleController::class, 'index']);
-Route::post('/bubbles', [BubbleController::class, 'store']);
-
-Route::get('/connections', [ConnectionController::class, 'index']);
-Route::post('/connections', [ConnectionController::class, 'store']);
-
+Route::apiResource('connections', ConnectionController::class)->only([
+    'index',
+    'store',
+    'destroy',
+]);
