@@ -230,7 +230,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', onMouseMove)
+  window.removeEventListener('mousemove', onPointerMove)
   window.removeEventListener('mouseup', stopDrag)
   cancelAnimationFrame(animId)
   if (physicsTimer) window.clearInterval(physicsTimer)
@@ -450,6 +450,15 @@ onUnmounted(() => {
         Arrasta · Shift+RMB para conectar · Clica para selecionar
       </span>
     </div>
+
+    <Transition name="pop"><div v-if="showAdd" class="absolute z-50 rounded-2xl p-5 flex flex-col gap-3" style="top:68px;left:50%;transform:translateX(-50%);background:white;box-shadow:0 16px 56px #009ac72a;border:1px solid #4ebcff33;min-width:240px;"><p style="font-weight:700;color:#009ac7;font-size:14px;">Nova bolha</p><input v-model="newLabel" placeholder="#hashtag" style="background:#f0f8ff;border:1px solid #4ebcff44;border-radius:10px;padding:9px 12px;font-size:13px;color:#009ac7;outline:none;font-family:inherit;" @keydown.enter="addBubble"><div class="flex gap-2"><button style="flex:1;padding:9px;border-radius:10px;background:#f0f8ff;border:1px solid #e0eef8;color:#8b8b8b;font-size:12px;cursor:pointer;" @click="showAdd = false">Cancelar</button><button style="flex:1;padding:9px;border-radius:10px;background:#009ac7;border:none;color:white;font-size:12px;font-weight:700;cursor:pointer;" @click="addBubble">Criar</button></div></div></Transition>
+
+    <svg class="absolute inset-0 w-full h-full" style="z-index:2;pointer-events:none;"><g><line v-for="(c,i) in connections" :key="`c${i}`" :x1="center(c.from).x" :y1="center(c.from).y" :x2="center(c.to).x" :y2="center(c.to).y" :stroke="bubbles.find((b) => b.id === c.from)?.color || '#009ac7'" stroke-width="2" stroke-dasharray="6 5" opacity="0.28" /></g><g v-for="bubble in bubbles" :key="`svg${bubble.id}`"><g v-for="av in bubble.avatars" :key="av.id"><circle :cx="avatarPos(bubble, av.angle).x" :cy="avatarPos(bubble, av.angle).y + 2" r="19" fill="rgba(0,0,0,0.12)"/><circle :cx="avatarPos(bubble, av.angle).x" :cy="avatarPos(bubble, av.angle).y" r="19" :fill="bubble.color"/><circle :cx="avatarPos(bubble, av.angle).x" :cy="avatarPos(bubble, av.angle).y" r="16" fill="white" opacity="0.9"/><text :x="avatarPos(bubble, av.angle).x" :y="avatarPos(bubble, av.angle).y + 5" text-anchor="middle" font-size="13" font-weight="700" font-family="Segoe UI, system-ui, sans-serif" :fill="bubble.color">{{ av.name[0] }}</text><g :transform="`translate(${balloonPos(bubble, av.angle).x}, ${balloonPos(bubble, av.angle).y})`"><rect :x="av.angle > 90 && av.angle < 270 ? -(av.msg.length * 5.5 + 16) : 0" y="-14" :width="av.msg.length * 5.5 + 16" height="24" rx="8" fill="white" :stroke="bubble.color" stroke-width="1.2" opacity="0.95"/><text :x="(av.msg.length * 5.5 + 16) / 2" y="2" text-anchor="middle" font-size="10" font-family="Segoe UI, system-ui, sans-serif" fill="#2a4a5a">{{ av.msg }}</text></g></g></g></svg>
+
+    <div v-for="b in bubbles" :key="b.id" @mousedown="startDrag(b, $event)" @contextmenu="handleContextMenu(b, $event)" :style="{ position:'absolute', zIndex: b.selected ? 30 : 20, left:`${b.x}px`, top:`${b.y}px`, width:`${b.size}px`, height:`${b.size}px`, borderRadius:'50%', background:b.color, cursor: dragging?.id===b.id ? 'grabbing' : 'grab', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', boxShadow: b.selected ? `0 0 0 4px white, 0 0 0 7px ${b.color}, 0 12px 40px ${b.color}55` : connectSource?.id===b.id ? '0 0 0 4px white, 0 0 0 7px #009ac7' : `0 8px 32px ${b.color}44, 0 2px 8px ${b.color}22`, transform: b.selected ? 'scale(1.07)' : 'scale(1)', transition: dragging?.id===b.id ? 'none' : 'box-shadow .25s, transform .25s' }"><span :style="{ fontSize:'11px',fontWeight:'800',color:'white',letterSpacing:'.02em',textShadow:'0 1px 4px rgba(0,0,0,.25)',textAlign:'center',padding:'0 10px',lineHeight:1.2 }">{{ b.label }}</span><span style="font-size:9px;color:rgba(255,255,255,.7);font-weight:500;">{{ b.members }} membros</span><div v-if="connectSource?.id===b.id" style="position:absolute;top:-8px;right:-8px;background:#009ac7;color:white;border-radius:99px;font-size:8px;padding:2px 7px;border:2px solid white;font-weight:700;z-index:11;">origem</div></div>
+
+    <div style="position:absolute;bottom:0;left:0;right:0;height:100px;background:linear-gradient(to top,#9dcee8 0%,transparent 100%);pointer-events:none;z-index:1;" />
+    <div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:10;pointer-events:none;"><span style="font-size:10px;color:#009ac7aa;background:rgba(255,255,255,.6);padding:5px 16px;border-radius:99px;backdrop-filter:blur(8px);">Arrasta · Shift+RMB para conectar · Clica para selecionar</span></div>
   </div>
 </template>
 
