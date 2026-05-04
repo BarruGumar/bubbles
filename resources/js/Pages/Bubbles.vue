@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import axios from 'axios'
 
 let _id = 5
 
@@ -47,7 +48,7 @@ const connections = ref([
 const connectSource = ref(null)
 const dragging = ref(null)
 const dragMoved = ref(false)
-const DRAG_THR = 2
+const DRAG_THR = 5
 
 function avatarPos(bubble, angle) {
   const rad = (angle * Math.PI) / 180
@@ -83,7 +84,6 @@ function center(id) {
 function startDrag(b, e) {
   if (e.button !== 0) return
   e.preventDefault()
-  e.stopPropagation()
   dragging.value = { id: b.id, ox: e.clientX - b.x, oy: e.clientY - b.y, sx: e.clientX, sy: e.clientY }
   dragMoved.value = false
 }
@@ -222,9 +222,9 @@ function addBubble() {
 }
 
 onMounted(() => {
-  window.addEventListener('mousemove', onMouseMove, { passive: true })
+  loadBubbles()
+  window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', stopDrag)
-  window.addEventListener('mouseleave', stopDrag)
   animId = requestAnimationFrame(updatePhysics)
   physicsTimer = window.setInterval(stepPhysics, 32)
 })
@@ -232,7 +232,6 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', stopDrag)
-  window.removeEventListener('mouseleave', stopDrag)
   cancelAnimationFrame(animId)
   if (physicsTimer) window.clearInterval(physicsTimer)
 })
@@ -243,7 +242,6 @@ onUnmounted(() => {
     class="w-screen h-screen overflow-hidden relative select-none"
     style="background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%); font-family: 'Segoe UI', system-ui, sans-serif;"
     @click.self="bubbles.forEach((b) => b.selected = false)"
-    @dblclick.self="addBubble"
   >
     <svg class="absolute inset-0 w-full h-full pointer-events-none" style="opacity:.04;">
       <defs>
@@ -276,7 +274,7 @@ onUnmounted(() => {
         </Transition>
         <button
           style="background:#009ac7;color:white;border:none;border-radius:99px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px #009ac740;"
-          @click.stop="showAdd = true"
+          @click.stop="showAdd = !showAdd"
         >
           + Bolha
         </button>
