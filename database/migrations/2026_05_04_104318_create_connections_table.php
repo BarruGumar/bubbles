@@ -8,18 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('connections', function (Blueprint $table) {
+        Schema::create('connections', function (Blueprint $table): void {
             $table->id();
-
-            $table->foreignId('from_bubble_id')
-                ->constrained('bubbles')
-                ->onDelete('cascade');
-
-            $table->foreignId('to_bubble_id')
-                ->constrained('bubbles')
-                ->onDelete('cascade');
-
+            $table->foreignId('from_bubble_id')->constrained('bubbles')->cascadeOnDelete();
+            $table->foreignId('to_bubble_id')->constrained('bubbles')->cascadeOnDelete();
             $table->timestamps();
+
+            $table->unique(['from_bubble_id', 'to_bubble_id']);
         });
     }
 

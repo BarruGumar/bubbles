@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <?php
 
 namespace App\Models;
@@ -11,10 +10,6 @@ class Bubble extends Model
 {
     use HasFactory;
 
-=======
-class Bubble extends Model
-{
->>>>>>> da5b16d (merda)
     protected $fillable = [
         'user_id',
         'label',
@@ -25,7 +20,6 @@ class Bubble extends Model
         'members',
     ];
 
-<<<<<<< HEAD
     protected $casts = [
         'x' => 'float',
         'y' => 'float',
@@ -43,10 +37,3 @@ class Bubble extends Model
         return $this->hasMany(Connection::class, 'to_bubble_id');
     }
 }
-=======
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-}
->>>>>>> da5b16d (merda)
