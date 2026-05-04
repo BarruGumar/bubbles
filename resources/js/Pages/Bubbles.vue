@@ -148,8 +148,9 @@ const REPULSE = 3.4
 const ATTRACT = 0.0012
 const DRIFT = 0.08
 let animId = null
+let physicsTimer = null
 
-function updatePhysics() {
+function stepPhysics() {
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2 - 40
 
@@ -188,6 +189,10 @@ function updatePhysics() {
     b1.y = Math.max(60, Math.min(b1.y + b1.vy, window.innerHeight - b1.size - 60))
   }
 
+}
+
+function updatePhysics() {
+  stepPhysics()
   animId = requestAnimationFrame(updatePhysics)
 }
 
@@ -221,12 +226,14 @@ onMounted(() => {
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', stopDrag)
   animId = requestAnimationFrame(updatePhysics)
+  physicsTimer = window.setInterval(stepPhysics, 32)
 })
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', stopDrag)
   cancelAnimationFrame(animId)
+  if (physicsTimer) window.clearInterval(physicsTimer)
 })
 </script>
 
@@ -251,6 +258,12 @@ onUnmounted(() => {
     >
       <span style="font-weight:900;font-size:22px;color:#009ac7;letter-spacing:-1px;">bubbles</span>
       <div class="flex items-center gap-3">
+        <button
+          style="background:#2ea87e;color:white;border:none;border-radius:99px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;"
+          @click.stop="addBubble"
+        >
+          + Rápida
+        </button>
         <Transition name="fade">
           <span
             v-if="connectSource"
