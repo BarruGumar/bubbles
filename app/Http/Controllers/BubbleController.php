@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+<<<<<<< HEAD
 use App\Events\BubbleCreated;
 use App\Events\BubbleMoved;
 use App\Models\Bubble;
@@ -63,3 +64,30 @@ class BubbleController extends Controller
         return response()->json(status: 204);
     }
 }
+=======
+use Illuminate\Http\Request;
+use App\Models\Bubble;
+
+class BubbleController extends Controller
+{
+    public function index()
+    {
+        return Bubble::all();
+    }
+
+    public function store(Request $request)
+    {
+        $bubble = Bubble::create([
+            'user_id' => 1,
+            'label' => $request->label,
+            'color' => $request->color,
+            'x' => $request->x,
+            'y' => $request->y,
+            'size' => $request->size ?? 80,
+            'members' => 0,
+        ]);
+
+        return response()->json($bubble);
+    }
+}
+>>>>>>> da5b16d (merda)
