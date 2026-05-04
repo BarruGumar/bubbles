@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import axios from 'axios'
 
 let _id = 5
 
@@ -216,6 +217,7 @@ function addBubble() {
 }
 
 onMounted(() => {
+  loadBubbles()
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', stopDrag)
   animId = requestAnimationFrame(updatePhysics)
