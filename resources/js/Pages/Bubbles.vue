@@ -9,7 +9,7 @@ let _id = 100
 const bubbles = ref([
   {
     id: 1, x: 320, y: 180, vx: 0, vy: 0,
-    label: '#futebol', color: '#009ac7', size: 100, members: 312, selected: false,
+    label: '#futebol', color: '#009ac7', size: 100, members: 312, selected: false, activity: 0.42, hover: false, phase: Math.random() * Math.PI * 2, spawnScale: 1,
     avatars: [
       { id: 'av1', angle: 30,  name: 'João',  msg: 'Que golo incrível!' },
       { id: 'av2', angle: 140, name: 'Rita',  msg: 'Vamos Portugal!'    },
@@ -18,7 +18,7 @@ const bubbles = ref([
   },
   {
     id: 2, x: 600, y: 130, vx: 0, vy: 0,
-    label: '#ps5', color: '#4ebcff', size: 80, members: 88, selected: false,
+    label: '#ps5', color: '#4ebcff', size: 80, members: 88, selected: false, activity: 0.42, hover: false, phase: Math.random() * Math.PI * 2, spawnScale: 1,
     avatars: [
       { id: 'av4', angle: 60,  name: 'Tomas', msg: 'Alguém online?'  },
       { id: 'av5', angle: 200, name: 'Ana',   msg: 'Novo jogo saiu!' },
@@ -26,14 +26,14 @@ const bubbles = ref([
   },
   {
     id: 3, x: 750, y: 300, vx: 0, vy: 0,
-    label: '#xbox', color: '#2ea87e', size: 80, members: 54, selected: false,
+    label: '#xbox', color: '#2ea87e', size: 80, members: 54, selected: false, activity: 0.42, hover: false, phase: Math.random() * Math.PI * 2, spawnScale: 1,
     avatars: [
       { id: 'av6', angle: 100, name: 'Luís', msg: 'Game pass novo?' },
     ],
   },
   {
     id: 4, x: 160, y: 360, vx: 0, vy: 0,
-    label: '#música', color: '#e07b4a', size: 90, members: 141, selected: false,
+    label: '#música', color: '#e07b4a', size: 90, members: 141, selected: false, activity: 0.42, hover: false, phase: Math.random() * Math.PI * 2, spawnScale: 1,
     avatars: [
       { id: 'av7', angle: 320, name: 'Mia', msg: 'Nova playlist!'  },
       { id: 'av8', angle: 80,  name: 'Rui', msg: 'Concerto amanhã' },
@@ -45,6 +45,7 @@ const connections  = ref([{ from: 1, to: 2 }, { from: 1, to: 4 }])
 const connectSource = ref(null)
 const dragging      = ref(null)
 const dragMoved     = ref(false)
+const hoveredBubbleId = ref(null)
 const DRAG_THR      = 5
 
 // ─── GEOMETRIA ────────────────────────────────────────────────
@@ -124,12 +125,14 @@ function handleContextMenu(b, e) {
 // FIX: removido window.setInterval que chamava stepPhysics em paralelo
 // com o requestAnimationFrame — causava double-step e drag instável.
 // Agora existe UMA fonte de verdade: o loop rAF.
-const DAMPING = 0.88   // mais amortecimento → movimento mais suave
-const REPULSE = 3.2
-const ATTRACT = 0.0010
-const DRIFT   = 0.12   // drift ligeiramente maior para movimento visível
+const DAMPING = 0.91
+const REPULSE = 2.8
+const ATTRACT = 0.00085
+const DRIFT   = 0.035
+const MAX_SPEED = 1.35
 let animId = null
 
+// Pulso/calor suave por atividade para manter o estilo calmo (Wii U-like)
 function stepPhysics() {
   const cx = window.innerWidth  / 2
   const cy = window.innerHeight / 2 - 40
@@ -160,14 +163,22 @@ function stepPhysics() {
     fx += (cx - b1.x - b1.size / 2) * ATTRACT
     fy += (cy - b1.y - b1.size / 2) * ATTRACT
 
-    // Drift aleatório leve para manter vida
-    fx += (Math.random() - 0.5) * DRIFT
-    fy += (Math.random() - 0.5) * DRIFT
+    // Drift com fase contínua evita jitter e mantém flutuação orgânica
+    b1.phase = (b1.phase || 0) + 0.008 + b1.activity * 0.006
+    const driftScale = DRIFT * (0.7 + b1.activity * 0.8)
+    fx += Math.sin(b1.phase + b1.id) * driftScale
+    fy += Math.cos(b1.phase * 0.9 + b1.id * 0.6) * driftScale
 
     b1.vx = (b1.vx + fx) * DAMPING
     b1.vy = (b1.vy + fy) * DAMPING
+    b1.vx = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, b1.vx))
+    b1.vy = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, b1.vy))
     b1.x  = Math.max(60, Math.min(b1.x + b1.vx, window.innerWidth  - b1.size - 60))
     b1.y  = Math.max(60, Math.min(b1.y + b1.vy, window.innerHeight - b1.size - 60))
+
+    // Flutuação natural de atividade para respiração visual muito subtil
+    b1.activity = Math.max(0.08, Math.min(1, b1.activity + (Math.random() - 0.5) * 0.006))
+    b1.spawnScale += (1 - b1.spawnScale) * 0.14
   }
 }
 
@@ -196,7 +207,7 @@ async function loadBubbles() {
         color:    b.color   ?? '#009ac7',
         size:     b.size    ?? 85,
         members:  b.members ?? 0,
-        selected: false,
+        selected: false, activity: 0.35 + Math.random() * 0.4, hover: false, phase: Math.random() * Math.PI * 2, spawnScale: 1,
         avatars:  b.avatars ?? [],
       }))
       // Só substitui se o backend devolver dados válidos
@@ -228,7 +239,7 @@ async function addBubble() {
     vx: (Math.random() - 0.5) * 2,
     vy: (Math.random() - 0.5) * 2,
     label: lbl, color, size: 85,
-    members: 0, selected: false, avatars: [],
+    members: 0, selected: false, activity: 0.65, hover: false, phase: Math.random() * Math.PI * 2, spawnScale: 0.25, avatars: [],
   }
   bubbles.value.push(newBubble)
   newLabel.value = ''
@@ -244,6 +255,15 @@ async function addBubble() {
     console.warn('[Bubbles] Não foi possível persistir a bolha:', err.message)
     // Bolha mantém-se localmente mesmo sem persistência
   }
+}
+
+
+function onBubbleEnter(id) {
+  hoveredBubbleId.value = id
+}
+
+function onBubbleLeave(id) {
+  if (hoveredBubbleId.value === id) hoveredBubbleId.value = null
 }
 
 // ─── LIFECYCLE ────────────────────────────────────────────────
@@ -422,7 +442,7 @@ onUnmounted(() => {
       :key="b.id"
       :style="{
         position:       'absolute',
-        zIndex:         b.selected ? 30 : 20,
+        zIndex:         b.selected ? 34 : hoveredBubbleId === b.id ? 32 : 20,
         left:           `${b.x}px`,
         top:            `${b.y}px`,
         width:          `${b.size}px`,
@@ -435,17 +455,20 @@ onUnmounted(() => {
         alignItems:     'center',
         justifyContent: 'center',
         gap:            '3px',
+        opacity:         hoveredBubbleId && hoveredBubbleId !== b.id ? 0.58 : 1,
         boxShadow:      b.selected
-          ? `0 0 0 4px white, 0 0 0 7px ${b.color}, 0 12px 40px ${b.color}55`
+          ? `0 0 0 4px white, 0 0 0 8px ${b.color}88, 0 14px 34px ${b.color}44, 0 0 ${20 + b.activity * 10}px ${b.color}33`
           : connectSource && connectSource.id === b.id
             ? '0 0 0 4px white, 0 0 0 7px #009ac7'
-            : `0 8px 32px ${b.color}44, 0 2px 8px ${b.color}22`,
-        transform:      b.selected ? 'scale(1.07)' : 'scale(1)',
+            : `0 8px 26px ${b.color}${hoveredBubbleId === b.id ? '66' : '44'}, 0 2px 8px ${b.color}22, 0 0 ${10 + b.activity * 8}px ${b.color}22`,
+        transform:      `scale(${(b.spawnScale * (b.selected ? 1.05 : hoveredBubbleId === b.id ? 1.03 : 1) * (1 + (Math.sin(b.phase || 0) * 0.008 * (0.4 + b.activity)))).toFixed(4)})`,
         transition:     dragging && dragging.id === b.id
           ? 'none'
-          : 'box-shadow .25s, transform .25s',
+          : 'box-shadow .35s ease, transform .45s cubic-bezier(.22,.78,.26,1), opacity .35s ease',
       }"
       @mousedown="startDrag(b, $event)"
+      @mouseenter="onBubbleEnter(b.id)"
+      @mouseleave="onBubbleLeave(b.id)"
       @contextmenu="handleContextMenu(b, $event)"
     >
       <span :style="{
@@ -487,7 +510,7 @@ onUnmounted(() => {
 <style scoped>
 .fade-enter-active, .fade-leave-active { transition: opacity .2s }
 .fade-enter-from,  .fade-leave-to      { opacity: 0 }
-.pop-enter-active, .pop-leave-active   { transition: opacity .2s, transform .2s }
+.pop-enter-active, .pop-leave-active   { transition: opacity .35s ease, transform .45s cubic-bezier(.2,.82,.2,1) }
 .pop-enter-from,   .pop-leave-to       { opacity: 0; transform: translateX(-50%) scale(.93) }
 input::placeholder { color: #4ebcff77 }
 input:focus        { border-color: #4ebcff !important }
