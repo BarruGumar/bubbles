@@ -39,7 +39,66 @@ function formatInitial(name) {
     <AuthenticatedLayout>
         <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px 80px;">
 
-            <BaseCommunityPage :community="community" :posts-count="posts.length" />
+            <!-- Community hero -->
+            <div
+                style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 22px; border: 1px solid #4ebcff22; box-shadow: 0 8px 32px #009ac70e; padding: 36px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 28px;"
+            >
+                <!-- Avatar circle -->
+                <div :style="{
+                    width: '80px', height: '80px', borderRadius: '50%', flexShrink: 0,
+                    background: community.color,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '28px', fontWeight: '900', color: 'white',
+                    boxShadow: `0 4px 24px ${community.color}55`,
+                    letterSpacing: '-.02em',
+                }">{{ community.label.replace('#', '').charAt(0).toUpperCase() }}</div>
+
+                <!-- Info -->
+                <div style="flex: 1; min-width: 0;">
+                     <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 4px; letter-spacing: -.02em;">{{ community.title }}</h1>
+                    <p style="font-size: 12px; color: #5a7a8a; margin: 0 0 8px;">{{ community.tagline }}</p>
+                    <p style="font-size: 13px; font-weight: 600; margin: 0 0 12px;" :style="{ color: community.color }">{{ community.members }} membros</p>
+                    <p style="font-size: 12px; color: #6a8798; margin: 0 0 16px; line-height: 1.5;">{{ community.description }}</p>
+
+                    <!-- Activity bar -->
+                    <div style="margin-bottom: 18px;">
+                        <p style="font-size: 10px; color: #8ba0b0; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 6px;">Atividade</p>
+                        <div style="height: 5px; background: #e8f4fb; border-radius: 99px; overflow: hidden; width: 180px;">
+                            <div
+                                :style="{
+                                    height: '100%',
+                                    width: `${activityPct}%`,
+                                    background: community.color,
+                                    borderRadius: '99px',
+                                    transition: 'width .5s ease',
+                                    minWidth: posts.length ? '6px' : '0',
+                                }"
+                            />
+                        </div>
+                        <p style="font-size: 9px; color: #b0c0cc; margin: 3px 0 0;">{{ posts.length }} posts</p>
+                    </div>
+
+                    <!-- Join button (visual placeholder) -->
+                    <button
+                        :style="{
+                            padding: '9px 24px', borderRadius: '99px', border: 'none',
+                            background: community.color, color: 'white',
+                            fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+                            boxShadow: `0 4px 14px ${community.color}44`,
+                            transition: 'opacity .2s',
+                        }"
+                        @mouseenter="$event.target.style.opacity = '.82'"
+                        @mouseleave="$event.target.style.opacity = '1'"
+                    >Entrar na comunidade</button>
+                </div>
+            </div>
+
+                        <div style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 18px; border: 1px solid #4ebcff22; box-shadow: 0 4px 16px #009ac70a; padding: 18px; margin-bottom: 16px;">
+                <p style="font-size: 11px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px;">Modelo base da comunidade</p>
+                <ul style="margin: 0; padding-left: 18px; color: #2a4a5a; font-size: 13px; line-height: 1.6;">
+                    <li v-for="(rule, index) in community.guidelines" :key="index">{{ rule }}</li>
+                </ul>
+            </div>
 
             <!-- Post creation box -->
             <div

@@ -91,7 +91,7 @@ export function useBubbles() {
     }
   }
 
-  async function add(label, color = null, template = {}) {
+    async function add(label, color = null, template = {}) { 
     const lbl = (label.trim() || 'novo').replace(/^#*/, '#')
     color     = color ?? COLORS[Math.floor(Math.random() * COLORS.length)]
     const x     = window.innerWidth  / 2 - 42

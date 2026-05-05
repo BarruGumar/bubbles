@@ -75,7 +75,7 @@ onUnmounted(() => {
 
 async function createBubble() {
   if (!newLabel.value.trim()) return
-  await add(newLabel.value, newColor.value, {
+    await add(newLabel.value, newColor.value, {
     title: newTitle.value.trim(),
     description: newDescription.value.trim(),
     tagline: newTagline.value.trim(),
@@ -211,6 +211,12 @@ const trends = computed(() =>
         <!-- Divisor -->
         <div style="width: 1px; height: 20px; background: #009ac71a; margin: 0 6px;" />
 
+                <Link
+          v-if="authUser && authUser.username"
+          :href="route('profile.show', authUser.username)"
+          style="font-size: 12px; font-weight: 700; color: #2a4a5a; text-decoration: none; padding: 7px 12px; border-radius: 99px; background: #ffffffaa; border: 1px solid #4ebcff33;"
+        >Perfil</Link>
+
         <!-- Avatar do utilizador → perfil -->
         <Link
           v-if="authUser && authUser.username"
@@ -267,7 +273,7 @@ const trends = computed(() =>
           />
         </div>
 
-        <input
+                <input
           v-model="newTitle"
           placeholder="Título da comunidade"
           style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit;"
