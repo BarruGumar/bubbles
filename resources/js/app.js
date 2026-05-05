@@ -8,6 +8,11 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+function updateBodyBackground(component) {
+    const isProfilePage = component?.startsWith('Profile/');
+    document.body.classList.toggle('no-profile-background', isProfilePage);
+}
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) =>
@@ -16,10 +21,22 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
-        return createApp({ render: () => h(App, props) })
+        const app = createApp({ render: () => h(App, props) })
             .use(plugin)
-            .use(ZiggyVue)
-            .mount(el);
+            .use(ZiggyVue);
+
+        app.mixin({
+            mounted() {
+                updateBodyBackground(this.$page?.component);
+            },
+            updated() {
+                updateBodyBackground(this.$page?.component);
+            },
+        });
+
+        updateBodyBackground(props.initialPage?.component ?? props.page?.component);
+
+        return app.mount(el);
     },
     progress: {
         color: '#4B5563',

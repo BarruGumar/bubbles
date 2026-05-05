@@ -3,7 +3,6 @@
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -13,10 +12,8 @@ Route::get('/bubbles', function () {
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
-        'canLogin'       => Route::has('login'),
-        'canRegister'    => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion'     => PHP_VERSION,
+        'canLogin'    => Route::has('login'),
+        'canRegister' => Route::has('register'),
     ]);
 });
 
