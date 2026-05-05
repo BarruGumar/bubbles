@@ -16,6 +16,10 @@ const authUser = computed(() => usePage().props.auth?.user)
 
 const PALETTE  = ['#009ac7','#4ebcff','#2ea87e','#e07b4a','#9b6bdf','#c74a6b','#e0a040','#6b9bdf']
 const newLabel = ref('')
+const newTitle = ref('')
+const newDescription = ref('')
+const newTagline = ref('')
+const newGuidelines = ref('')
 const newColor = ref('#009ac7')
 const showAdd  = ref(false)
 
@@ -71,8 +75,18 @@ onUnmounted(() => {
 
 async function createBubble() {
   if (!newLabel.value.trim()) return
-  await add(newLabel.value, newColor.value)
+    await add(newLabel.value, newColor.value, {
+    title: newTitle.value.trim(),
+    description: newDescription.value.trim(),
+    tagline: newTagline.value.trim(),
+    coverColor: newColor.value,
+    guidelines: newGuidelines.value.split('\n').map(g => g.trim()).filter(Boolean).slice(0, 5),
+  })
   newLabel.value = ''
+  newTitle.value = ''
+  newDescription.value = ''
+  newTagline.value = ''
+  newGuidelines.value = ''
   newColor.value = '#009ac7'
   showAdd.value  = false
 }
@@ -176,6 +190,12 @@ const trends = computed(() =>
         <!-- Divisor -->
         <div style="width: 1px; height: 20px; background: #009ac71a; margin: 0 6px;" />
 
+                <Link
+          v-if="authUser && authUser.username"
+          :href="route('profile.show', authUser.username)"
+          style="font-size: 12px; font-weight: 700; color: #2a4a5a; text-decoration: none; padding: 7px 12px; border-radius: 99px; background: #ffffffaa; border: 1px solid #4ebcff33;"
+        >Perfil</Link>
+
         <!-- Avatar do utilizador → perfil -->
         <Link
           v-if="authUser && authUser.username"
@@ -231,6 +251,29 @@ const trends = computed(() =>
             @keydown.enter="createBubble"
           />
         </div>
+
+                <input
+          v-model="newTitle"
+          placeholder="Título da comunidade"
+          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit;"
+        />
+        <input
+          v-model="newTagline"
+          placeholder="Tagline curta"
+          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit;"
+        />
+        <textarea
+          v-model="newDescription"
+          placeholder="Descrição da comunidade"
+          rows="2"
+          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit; resize: vertical;"
+        />
+        <textarea
+          v-model="newGuidelines"
+          placeholder="Regras (uma por linha, máx 5)"
+          rows="3"
+          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 12px; color: #1a3a4a; outline: none; font-family: inherit; resize: vertical;"
+        />
 
         <!-- Seletor de cor -->
         <div>

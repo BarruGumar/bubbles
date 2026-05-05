@@ -35,7 +35,13 @@ class BubbleController extends Controller
             'x' => ['required', 'numeric'],
             'y' => ['required', 'numeric'],
             'size' => ['nullable', 'integer', 'min:40', 'max:220'],
-            'members' => ['nullable', 'array'],
+            'members' => ['nullable', 'integer', 'min:0'],
+            'community_title' => ['nullable', 'string', 'max:120'],
+            'community_description' => ['nullable', 'string', 'max:1000'],
+            'community_cover_color' => ['nullable', 'string', 'max:40'],
+            'community_tagline' => ['nullable', 'string', 'max:160'],
+            'community_guidelines' => ['nullable', 'array', 'max:5'],
+            'community_guidelines.*' => ['string', 'max:180'],
         ]);
 
         $bubble = Bubble::create($data);
@@ -53,7 +59,13 @@ class BubbleController extends Controller
             'x' => ['sometimes', 'required', 'numeric'],
             'y' => ['sometimes', 'required', 'numeric'],
             'size' => ['sometimes', 'nullable', 'integer', 'min:40', 'max:220'],
-            'members' => ['sometimes', 'nullable', 'array'],
+            'members' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'community_title' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'community_description' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'community_cover_color' => ['sometimes', 'nullable', 'string', 'max:40'],
+            'community_tagline' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'community_guidelines' => ['sometimes', 'nullable', 'array', 'max:5'],
+            'community_guidelines.*' => ['string', 'max:180'],
         ]);
 
         $bubble->update($data);
