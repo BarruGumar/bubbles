@@ -191,34 +191,18 @@ const trends = computed(() =>
         </button>
 
 
-        <!-- Perfil (ao lado das notificações) -->
+        <!-- Botão: Ir pro perfil (ao lado das notificações) -->
         <Link
           v-if="authUser"
           :href="authUser.username ? route('profile.show', authUser.username) : route('profile.edit')"
-          :style="{
-            width: '36px', height: '36px', borderRadius: '10px', border: 'none',
-            background: 'transparent', color: '#5a7a8a', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background .15s', textDecoration: 'none',
-          }"
-          @mouseenter="$event.currentTarget.style.background='#009ac714'"
-          @mouseleave="$event.currentTarget.style.background='transparent'"
-          title="Perfil"
-        >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <circle cx="9" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
-            <path d="M3.5 14.5c1.2-2.1 3.1-3.2 5.5-3.2s4.3 1.1 5.5 3.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-        </Link>
+          style="font-size: 12px; font-weight: 700; color: #2a4a5a; text-decoration: none; padding: 7px 12px; border-radius: 99px; background: #ffffffaa; border: 1px solid #4ebcff33; transition: background .15s;"
+          @mouseenter="$event.currentTarget.style.background='#f0f8ff'"
+          @mouseleave="$event.currentTarget.style.background='#ffffffaa'"
+          title="Ir pro perfil"
+        >Ir pro perfil</Link>
 
         <!-- Divisor -->
         <div style="width: 1px; height: 20px; background: #009ac71a; margin: 0 6px;" />
-
-                <Link
-          v-if="authUser && authUser.username"
-          :href="route('profile.show', authUser.username)"
-          style="font-size: 12px; font-weight: 700; color: #2a4a5a; text-decoration: none; padding: 7px 12px; border-radius: 99px; background: #ffffffaa; border: 1px solid #4ebcff33;"
-        >Perfil</Link>
 
         <!-- Avatar do utilizador → perfil -->
         <Link
