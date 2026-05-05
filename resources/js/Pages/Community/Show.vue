@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { Head, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import BaseCommunityPage from '@/Components/BaseCommunityPage.vue'
 
 const props = defineProps({
     community: Object,
@@ -30,9 +31,6 @@ function formatInitial(name) {
     return (name ?? '?')[0].toUpperCase()
 }
 
-// Activity: derive from post count (clamp 0–1)
-const activityLevel = computed(() => Math.min(1, props.posts.length / 20))
-const activityPct   = computed(() => Math.round(activityLevel.value * 100))
 </script>
 
 <template>
