@@ -7,14 +7,15 @@ let _localId  = -1
 function makeLocal(raw) {
   return {
     ...raw,
-    vx:         raw.vx         ?? 0,
-    vy:         raw.vy         ?? 0,
-    selected:   false,
-    hover:      false,
-    phase:      Math.random() * Math.PI * 2,
-    spawnScale: raw.spawnScale ?? 1,
-    activity:   raw.activity   ?? 0.35 + Math.random() * 0.4,
-    avatars:    raw.avatars    ?? [],
+    vx:        raw.vx        ?? 0,
+    vy:        raw.vy        ?? 0,
+    selected:  false,
+    hover:     false,
+    phase:     Math.random() * Math.PI * 2,
+    spawnScale:raw.spawnScale ?? 1,
+    activity:  raw.activity  ?? 0.35 + Math.random() * 0.4,
+    avatars:   raw.avatars   ?? [],
+    persisted: raw.persisted ?? false,
   }
 }
 
@@ -39,7 +40,7 @@ const DEMO = [
       { id: 'av5', angle: 200, name: 'Ana',   msg: 'Novo jogo saiu!' },
     ],
     posts: [
-      { id: 'p4', author: 'Tomas', text: 'Alguém para jogar esta noite? 🎮', time: '1m' },
+      { id: 'p4', author: 'Tomas', text: 'Alguém para jogar esta noite? 🎮', time: '1m'  },
       { id: 'p5', author: 'Ana',   text: 'Novo jogo saiu! Já comprei 😍',    time: '14m' },
     ],
   },
@@ -76,14 +77,15 @@ export function useBubbles() {
       const { data } = await axios.get('/api/bubbles')
       if (Array.isArray(data) && data.length > 0) {
         bubbles.value = data.map(b => makeLocal({
-          id:      b.id,
-          x:       b.x       ?? Math.random() * (window.innerWidth  - 200) + 100,
-          y:       b.y       ?? Math.random() * (window.innerHeight - 200) + 100,
-          label:   b.label,
-          color:   b.color   ?? '#009ac7',
-          size:    b.size    ?? 85,
-          members: b.members ?? 0,
-          avatars: b.avatars ?? [],
+          id:        b.id,
+          x:         b.x       ?? Math.random() * (window.innerWidth  - 200) + 100,
+          y:         b.y       ?? Math.random() * (window.innerHeight - 200) + 100,
+          label:     b.label,
+          color:     b.color   ?? '#009ac7',
+          size:      b.size    ?? 85,
+          members:   b.members ?? 0,
+          avatars:   b.avatars ?? [],
+          persisted: true,
         }))
       }
     } catch {
@@ -91,12 +93,12 @@ export function useBubbles() {
     }
   }
 
-    async function add(label, color = null, template = {}) { 
+  async function add(label, color = null, template = {}) {
     const lbl = (label.trim() || 'novo').replace(/^#*/, '#')
     color     = color ?? COLORS[Math.floor(Math.random() * COLORS.length)]
-    const x     = window.innerWidth  / 2 - 42
-    const y     = window.innerHeight / 2 - 42
-    const lid   = _localId--
+    const x   = window.innerWidth  / 2 - 42
+    const y   = window.innerHeight / 2 - 42
+    const lid = _localId--
 
     bubbles.value.push(makeLocal({
       id: lid, x, y, label: lbl, color, size: 85, members: 0, activity: 0.65,
@@ -107,22 +109,27 @@ export function useBubbles() {
 
     try {
       const payload = {
-        label: lbl,
+        label:                  lbl,
         color,
         x,
         y,
-        size: 85,
-        community_title: template.title || lbl,
-        community_description: template.description || null,
-        community_tagline: template.tagline || null,
-        community_cover_color: template.coverColor || color,
-        community_guidelines: (template.guidelines || []).filter(Boolean),
+        size:                   85,
+        community_title:        template.title       || lbl,
+        community_description:  template.description || null,
+        community_tagline:      template.tagline     || null,
+        community_cover_color:  template.coverColor  || color,
+        community_guidelines:   (template.guidelines || []).filter(Boolean),
       }
       const { data } = await axios.post('/api/bubbles', payload)
       const idx = bubbles.value.findIndex(b => b.id === lid)
-      if (idx !== -1) bubbles.value[idx].id = data.id
+      if (idx !== -1) {
+        bubbles.value[idx].id        = data.id
+        bubbles.value[idx].persisted = true
+      }
+      return bubbles.value.find(b => b.id === data.id) ?? null
     } catch {
       console.warn('[Bubbles] Não foi possível persistir a bolha.')
+      return null
     }
   }
 

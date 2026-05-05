@@ -75,20 +75,23 @@ onUnmounted(() => {
 
 async function createBubble() {
   if (!newLabel.value.trim()) return
-    await add(newLabel.value, newColor.value, {
-    title: newTitle.value.trim(),
+  const newBubble = await add(newLabel.value, newColor.value, {
+    title:       newTitle.value.trim(),
     description: newDescription.value.trim(),
-    tagline: newTagline.value.trim(),
-    coverColor: newColor.value,
-    guidelines: newGuidelines.value.split('\n').map(g => g.trim()).filter(Boolean).slice(0, 5),
+    tagline:     newTagline.value.trim(),
+    coverColor:  newColor.value,
+    guidelines:  newGuidelines.value.split('\n').map(g => g.trim()).filter(Boolean).slice(0, 5),
   })
-  newLabel.value = ''
-  newTitle.value = ''
+  newLabel.value       = ''
+  newTitle.value       = ''
   newDescription.value = ''
-  newTagline.value = ''
-  newGuidelines.value = ''
-  newColor.value = '#009ac7'
-  showAdd.value  = false
+  newTagline.value     = ''
+  newGuidelines.value  = ''
+  newColor.value       = '#009ac7'
+  showAdd.value        = false
+  if (newBubble?.persisted) {
+    router.visit(route('community.show', newBubble.id))
+  }
 }
 
 const selectedBubble = computed(() => bubbles.value.find(b => b.selected) ?? null)
@@ -455,8 +458,9 @@ const trends = computed(() =>
           </div>
         </div>
 
-        <!-- Enter button → community page -->
+        <!-- Enter button → community page (só para bolhas persistidas) -->
         <Link
+          v-if="selectedBubble.persisted"
           :href="route('community.show', selectedBubble.id)"
           :style="{
             marginTop: '14px', padding: '8px 22px', borderRadius: '99px',
@@ -470,6 +474,14 @@ const trends = computed(() =>
           @mouseleave="$event.currentTarget.style.background='rgba(255,255,255,0.20)'"
           @click.stop
         >Entrar na comunidade →</Link>
+        <span
+          v-else
+          :style="{
+            marginTop: '12px', fontSize: '9px', color: 'rgba(255,255,255,.45)',
+            position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 24px',
+            lineHeight: 1.4,
+          }"
+        >Demo · Cria uma comunidade com ≡</span>
 
       </div>
     </Transition>
