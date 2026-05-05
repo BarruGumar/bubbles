@@ -21,11 +21,16 @@ class Bubble extends Model
     ];
 
     protected $casts = [
-        'x' => 'float',
-        'y' => 'float',
-        'size' => 'integer',
-        'members' => 'array',
+        'x'       => 'float',
+        'y'       => 'float',
+        'size'    => 'integer',
+        'members' => 'integer',
     ];
+
+    public function communityPosts(): HasMany
+    {
+        return $this->hasMany(CommunityPost::class);
+    }
 
     public function outgoingConnections(): HasMany
     {

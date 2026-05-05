@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref, computed } from 'vue'
-import Bubble         from '@/Components/Bubble.vue'
+import { Link, usePage, router } from '@inertiajs/vue3'
+import Bubble          from '@/Components/Bubble.vue'
 import ConnectionLines from '@/Components/ConnectionLines.vue'
 import { useBubbles }     from '@/Composables/useBubbles'
 import { useConnections } from '@/Composables/useConnections'
@@ -11,7 +12,11 @@ const { bubbles, hoveredId, connectSource, load, add, toggleSelect } = useBubble
 const { connections, connect } = useConnections()
 const { step } = usePhysics()
 
+const authUser = computed(() => usePage().props.auth?.user)
+
+const PALETTE  = ['#009ac7','#4ebcff','#2ea87e','#e07b4a','#9b6bdf','#c74a6b','#e0a040','#6b9bdf']
 const newLabel = ref('')
+const newColor = ref('#009ac7')
 const showAdd  = ref(false)
 
 const { dragging, startDrag, onMouseMove: moveDrag, stopDrag } = useDrag(
@@ -39,6 +44,10 @@ function clearSelection() {
   connectSource.value = null
 }
 
+function onKeyDown(e) {
+  if (e.key === 'Escape') clearSelection()
+}
+
 let animId = null
 function loop() {
   step(bubbles.value, dragging.value?.id)
@@ -49,32 +58,30 @@ onMounted(() => {
   load()
   window.addEventListener('mousemove', onWindowMouseMove)
   window.addEventListener('mouseup',   onWindowMouseUp)
+  window.addEventListener('keydown',   onKeyDown)
   animId = requestAnimationFrame(loop)
 })
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', onWindowMouseMove)
   window.removeEventListener('mouseup',   onWindowMouseUp)
+  window.removeEventListener('keydown',   onKeyDown)
   cancelAnimationFrame(animId)
 })
 
 async function createBubble() {
   if (!newLabel.value.trim()) return
-  await add(newLabel.value)
+  await add(newLabel.value, newColor.value)
   newLabel.value = ''
+  newColor.value = '#009ac7'
   showAdd.value  = false
 }
 
 const selectedBubble = computed(() => bubbles.value.find(b => b.selected) ?? null)
 
-const connectedTo = computed(() => {
-  if (!selectedBubble.value) return []
-  const sid = selectedBubble.value.id
-  return connections.value
-    .filter(c => c.from === sid || c.to === sid)
-    .map(c => bubbles.value.find(b => b.id === (c.from === sid ? c.to : c.from)))
-    .filter(Boolean)
-})
+const trends = computed(() =>
+  [...bubbles.value].sort((a, b) => b.members - a.members).slice(0, 6)
+)
 </script>
 
 <template>
@@ -103,50 +110,172 @@ const connectedTo = computed(() => {
 
     <!-- TOP BAR -->
     <div
-      class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-3"
-      style="background: rgba(255,255,255,0.72); backdrop-filter: blur(16px); border-bottom: 1px solid #009ac71a;"
+      class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6"
+      style="background: rgba(255,255,255,0.72); backdrop-filter: blur(16px); border-bottom: 1px solid #009ac71a; height: 58px;"
     >
-      <span style="font-weight: 900; font-size: 22px; color: #009ac7; letter-spacing: -1px;">bubbles</span>
+      <span style="font-weight: 900; font-size: 22px; color: #009ac7; letter-spacing: -1px; user-select: none;">bubbles</span>
 
-      <div class="flex items-center gap-3">
-        <Transition name="fade">
-          <span
-            v-if="connectSource"
-            style="font-size:11px;color:#009ac7;background:#4ebcff18;padding:5px 14px;border-radius:99px;border:1px solid #4ebcff44;"
-          >
-            {{ connectSource.label }} → Shift+RMB em outra
-          </span>
-        </Transition>
+      <div style="display: flex; align-items: center; gap: 4px;">
 
+        <!-- Hamburger → Nova bolha -->
         <button
-          style="background:#009ac7;color:white;border:none;border-radius:99px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px #009ac740;"
           @click.stop="showAdd = !showAdd"
-        >+ Bolha</button>
+          :style="{
+            width: '36px', height: '36px', borderRadius: '10px', border: 'none',
+            background: showAdd ? '#009ac714' : 'transparent',
+            color: '#5a7a8a', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .15s',
+          }"
+          @mouseenter="$event.currentTarget.style.background='#009ac714'"
+          @mouseleave="$event.currentTarget.style.background = showAdd ? '#009ac714' : 'transparent'"
+          title="Nova bolha"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="2" y="4"   width="14" height="1.6" rx=".8" fill="currentColor"/>
+            <rect x="2" y="8.2" width="14" height="1.6" rx=".8" fill="currentColor"/>
+            <rect x="2" y="12.4" width="14" height="1.6" rx=".8" fill="currentColor"/>
+          </svg>
+        </button>
+
+        <!-- Mensagens -->
+        <button
+          :style="{
+            width: '36px', height: '36px', borderRadius: '10px', border: 'none',
+            background: 'transparent', color: '#5a7a8a', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .15s',
+          }"
+          @mouseenter="$event.currentTarget.style.background='#009ac714'"
+          @mouseleave="$event.currentTarget.style.background='transparent'"
+          title="Mensagens"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M15 2.5H3a1 1 0 00-1 1v7.5a1 1 0 001 1h3.5l2.5 3 2.5-3H15a1 1 0 001-1V3.5a1 1 0 00-1-1z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <!-- Notificações -->
+        <button
+          :style="{
+            width: '36px', height: '36px', borderRadius: '10px', border: 'none',
+            background: 'transparent', color: '#5a7a8a', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .15s',
+          }"
+          @mouseenter="$event.currentTarget.style.background='#009ac714'"
+          @mouseleave="$event.currentTarget.style.background='transparent'"
+          title="Notificações"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 1.5A4.5 4.5 0 004.5 6v3.5L3 11.5h12l-1.5-2V6A4.5 4.5 0 009 1.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7.5 12a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <!-- Divisor -->
+        <div style="width: 1px; height: 20px; background: #009ac71a; margin: 0 6px;" />
+
+        <!-- Avatar do utilizador → perfil -->
+        <Link
+          v-if="authUser && authUser.username"
+          :href="route('profile.show', authUser.username)"
+          :style="{
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: authUser.avatar_color ?? '#009ac7',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '13px', fontWeight: '800', color: 'white',
+            boxShadow: `0 2px 8px ${authUser.avatar_color ?? '#009ac7'}44`,
+            cursor: 'pointer', flexShrink: 0, textDecoration: 'none',
+            transition: 'box-shadow .2s',
+          }"
+          @mouseenter="$event.currentTarget.style.boxShadow = `0 2px 12px ${authUser.avatar_color ?? '#009ac7'}88`"
+          @mouseleave="$event.currentTarget.style.boxShadow = `0 2px 8px ${authUser.avatar_color ?? '#009ac7'}44`"
+        >{{ authUser.name?.[0]?.toUpperCase() ?? '?' }}</Link>
+        <div
+          v-else-if="authUser"
+          :style="{
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: authUser.avatar_color ?? '#009ac7',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '13px', fontWeight: '800', color: 'white',
+            boxShadow: `0 2px 8px ${authUser.avatar_color ?? '#009ac7'}44`,
+            flexShrink: 0,
+          }"
+        >{{ authUser.name?.[0]?.toUpperCase() ?? '?' }}</div>
+
       </div>
     </div>
 
-    <!-- ADD BUBBLE MODAL -->
+    <!-- MODAL: Nova bolha -->
     <Transition name="pop">
       <div
         v-if="showAdd"
         class="absolute z-50 rounded-2xl p-5 flex flex-col gap-3"
-        style="top:68px;left:50%;transform:translateX(-50%);background:white;box-shadow:0 16px 56px #009ac72a;border:1px solid #4ebcff33;min-width:240px;"
+        style="top: 68px; left: 50%; transform: translateX(-50%); background: white; box-shadow: 0 16px 56px #009ac72a; border: 1px solid #4ebcff33; min-width: 268px;"
         @click.stop
       >
-        <p style="font-weight:700;color:#009ac7;font-size:14px;">Nova bolha</p>
-        <input
-          v-model="newLabel"
-          placeholder="#hashtag"
-          style="background:#f0f8ff;border:1px solid #4ebcff44;border-radius:10px;padding:9px 12px;font-size:13px;color:#009ac7;outline:none;font-family:inherit;"
-          @keydown.enter="createBubble"
-        />
-        <div class="flex gap-2">
+        <p style="font-weight: 700; color: #1a3a4a; font-size: 14px; margin: 0;">Nova bolha</p>
+
+        <!-- Preview + label -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div :style="{
+            width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+            background: newColor, transition: 'background .2s, box-shadow .2s',
+            boxShadow: `0 3px 10px ${newColor}55`,
+          }" />
+          <input
+            v-model="newLabel"
+            placeholder="#hashtag"
+            style="flex: 1; background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit;"
+            @keydown.enter="createBubble"
+          />
+        </div>
+
+        <!-- Seletor de cor -->
+        <div>
+          <p style="font-size: 10px; font-weight: 700; color: #8ba0b0; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px;">Cor</p>
+          <div style="display: flex; align-items: center; gap: 7px; flex-wrap: wrap;">
+            <button
+              v-for="c in PALETTE"
+              :key="c"
+              type="button"
+              @click="newColor = c"
+              :style="{
+                width: '22px', height: '22px', borderRadius: '50%', background: c,
+                border: 'none', cursor: 'pointer', flexShrink: 0,
+                boxShadow: newColor === c ? `0 0 0 2px white, 0 0 0 4px ${c}` : 'none',
+                transition: 'box-shadow .15s',
+              }"
+            />
+            <!-- Picker de cor livre -->
+            <label
+              :style="{
+                width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer',
+                border: '2px dashed #b0c8d8', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', flexShrink: 0, position: 'relative', overflow: 'hidden',
+                boxShadow: !PALETTE.includes(newColor) ? `0 0 0 2px white, 0 0 0 4px ${newColor}` : 'none',
+                background: !PALETTE.includes(newColor) ? newColor : 'transparent',
+              }"
+              title="Cor personalizada"
+            >
+              <input type="color" v-model="newColor" style="position: absolute; width: 200%; height: 200%; opacity: 0; cursor: pointer; border: none; padding: 0;" />
+              <span v-if="PALETTE.includes(newColor)" style="font-size: 12px; color: #8ba0b0; position: relative; pointer-events: none;">+</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 2px;">
           <button
-            style="flex:1;padding:9px;border-radius:10px;background:#f0f8ff;border:1px solid #e0eef8;color:#8b8b8b;font-size:12px;cursor:pointer;"
+            style="flex: 1; padding: 9px; border-radius: 10px; background: #f0f8ff; border: 1px solid #e0eef8; color: #8b8b8b; font-size: 12px; cursor: pointer;"
             @click="showAdd = false"
           >Cancelar</button>
           <button
-            style="flex:1;padding:9px;border-radius:10px;background:#009ac7;border:none;color:white;font-size:12px;font-weight:700;cursor:pointer;"
+            :style="{
+              flex: 1, padding: '9px', borderRadius: '10px', border: 'none',
+              background: newColor, color: 'white', fontSize: '12px', fontWeight: '700',
+              cursor: 'pointer', transition: 'background .2s',
+            }"
             @click="createBubble"
           >Criar</button>
         </div>
@@ -171,74 +300,161 @@ const connectedTo = computed(() => {
       @contextmenu="handleContextMenu(b, $event)"
     />
 
-    <!-- INFO PANEL -->
-    <Transition name="slide-right">
+    <!-- EXPANDED BUBBLE PANEL -->
+    <Transition name="bubble-expand">
       <div
         v-if="selectedBubble"
-        class="absolute right-4 z-40 rounded-2xl p-5 flex flex-col gap-4"
-        style="top:72px;width:220px;background:rgba(255,255,255,0.88);backdrop-filter:blur(20px);box-shadow:0 8px 32px #009ac71a;border:1px solid #4ebcff22;"
+        :style="{
+          position:       'absolute',
+          zIndex:         36,
+          left:           `${selectedBubble.x + selectedBubble.size / 2 - 150}px`,
+          top:            `${selectedBubble.y + selectedBubble.size / 2 - 150}px`,
+          width:          '300px',
+          height:         '300px',
+          borderRadius:   '50%',
+          background:     `radial-gradient(circle at 38% 32%, ${selectedBubble.color}ee 0%, ${selectedBubble.color} 60%)`,
+          boxShadow:      `0 0 0 5px white, 0 0 0 9px ${selectedBubble.color}88, 0 24px 64px ${selectedBubble.color}55`,
+          overflow:       'hidden',
+          display:        'flex',
+          flexDirection:  'column',
+          alignItems:     'center',
+          justifyContent: 'center',
+          cursor:         'default',
+        }"
         @click.stop
+        @mousedown.stop
       >
-        <div class="flex items-center gap-3">
-          <div :style="{
-            width:'14px',height:'14px',borderRadius:'50%',
-            background: selectedBubble.color,
-            boxShadow: `0 0 8px ${selectedBubble.color}66`,
-            flexShrink: 0,
-          }" />
-          <span style="font-weight:800;font-size:15px;color:#1a3a4a;word-break:break-all;">{{ selectedBubble.label }}</span>
-        </div>
+        <!-- Glass highlight -->
+        <div style="position: absolute; top: 18px; left: 16%; width: 68%; height: 28%; border-radius: 50%; background: rgba(255,255,255,0.16); pointer-events: none; transform: rotate(-10deg);" />
 
-        <div class="flex flex-col gap-3">
-          <div>
-            <p style="font-size:10px;color:#8ba0b0;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Membros</p>
-            <p :style="{ fontSize:'22px', fontWeight:'800', color: selectedBubble.color }">{{ selectedBubble.members }}</p>
-          </div>
-          <div>
-            <p style="font-size:10px;color:#8ba0b0;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Atividade</p>
-            <div style="height:5px;background:#e8f4fb;border-radius:99px;overflow:hidden;">
-              <div :style="{
-                height:'100%',
-                width: `${(selectedBubble.activity * 100).toFixed(0)}%`,
-                background: selectedBubble.color,
-                borderRadius:'99px',
-                transition:'width .5s ease',
-              }" />
-            </div>
-            <p style="font-size:9px;color:#b0c0cc;margin-top:3px;">{{ (selectedBubble.activity * 100).toFixed(0) }}%</p>
-          </div>
-        </div>
-
-        <div v-if="connectedTo.length">
-          <p style="font-size:10px;color:#8ba0b0;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Conectado a</p>
-          <div class="flex flex-wrap gap-2">
-            <span
-              v-for="cb in connectedTo"
-              :key="cb.id"
-              :style="{
-                fontSize:'10px',fontWeight:'700',padding:'3px 9px',borderRadius:'99px',
-                background:`${cb.color}18`,color:cb.color,border:`1px solid ${cb.color}44`,
-              }"
-            >{{ cb.label }}</span>
-          </div>
-        </div>
-
+        <!-- Close button -->
         <button
-          style="padding:8px;border-radius:10px;background:#f0f8ff;border:1px solid #e0eef8;color:#8b8b8b;font-size:11px;cursor:pointer;margin-top:auto;"
-          @click="clearSelection"
-        >Fechar</button>
+          @click.stop="clearSelection"
+          :style="{
+            position: 'absolute', top: '54px', right: '54px',
+            background: 'rgba(255,255,255,0.22)', border: 'none', borderRadius: '50%',
+            width: '26px', height: '26px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '16px', lineHeight: 1, color: 'white', fontWeight: '400', zIndex: 2,
+            transition: 'background .15s',
+          }"
+          @mouseenter="$event.currentTarget.style.background='rgba(255,255,255,0.38)'"
+          @mouseleave="$event.currentTarget.style.background='rgba(255,255,255,0.22)'"
+        >×</button>
+
+        <!-- Label -->
+        <span :style="{
+          fontSize: '18px', fontWeight: '900', color: 'white',
+          letterSpacing: '-.02em', textShadow: '0 2px 10px rgba(0,0,0,.28)',
+          textAlign: 'center', position: 'relative', zIndex: 1,
+        }">{{ selectedBubble.label }}</span>
+
+        <!-- Members -->
+        <span :style="{
+          fontSize: '10px', color: 'rgba(255,255,255,.72)', fontWeight: '600',
+          position: 'relative', zIndex: 1, marginBottom: '10px',
+        }">{{ selectedBubble.members }} membros</span>
+
+        <!-- Avatar row -->
+        <div :style="{
+          display: 'flex', gap: '5px', marginBottom: '10px',
+          position: 'relative', zIndex: 1,
+        }">
+          <div
+            v-for="av in (selectedBubble.avatars || []).slice(0, 4)"
+            :key="av.id"
+            :title="av.name"
+            :style="{
+              width: '30px', height: '30px', borderRadius: '50%',
+              background: 'rgba(255,255,255,0.28)', border: '2px solid rgba(255,255,255,0.55)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '12px', fontWeight: '800', color: 'white',
+            }"
+          >{{ av.name[0] }}</div>
+        </div>
+
+        <!-- Mini posts -->
+        <div :style="{
+          display: 'flex', flexDirection: 'column', gap: '5px',
+          width: '72%', position: 'relative', zIndex: 1,
+        }">
+          <div
+            v-for="p in (selectedBubble.posts || []).slice(0, 3)"
+            :key="p.id"
+            :style="{
+              background: 'rgba(255,255,255,0.18)', borderRadius: '8px',
+              padding: '5px 9px',
+            }"
+          >
+            <span :style="{ fontSize: '9px', fontWeight: '800', color: 'rgba(255,255,255,.95)' }">{{ p.author }}</span>
+            <span :style="{ fontSize: '9px', color: 'rgba(255,255,255,.72)', marginLeft: '5px' }">{{ p.text }}</span>
+          </div>
+        </div>
+
+        <!-- Enter button → community page -->
+        <Link
+          :href="route('community.show', selectedBubble.id)"
+          :style="{
+            marginTop: '14px', padding: '8px 22px', borderRadius: '99px',
+            background: 'rgba(255,255,255,0.20)', border: '1.5px solid rgba(255,255,255,0.52)',
+            color: 'white', fontSize: '11px', fontWeight: '800', cursor: 'pointer',
+            position: 'relative', zIndex: 1, letterSpacing: '.04em',
+            transition: 'background .2s', textDecoration: 'none',
+            display: 'inline-block',
+          }"
+          @mouseenter="$event.currentTarget.style.background='rgba(255,255,255,0.34)'"
+          @mouseleave="$event.currentTarget.style.background='rgba(255,255,255,0.20)'"
+          @click.stop
+        >Entrar na comunidade →</Link>
+
       </div>
     </Transition>
 
+    <!-- GLOBAL TRENDS SIDEBAR -->
+    <div
+      style="position: absolute; right: 16px; top: 70px; z-index: 38; width: 192px; background: rgba(255,255,255,0.82); backdrop-filter: blur(16px); border-radius: 18px; border: 1px solid #4ebcff22; box-shadow: 0 4px 20px #009ac70c; padding: 14px 12px; display: flex; flex-direction: column; gap: 2px;"
+      @click.stop
+    >
+      <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .1em; margin: 0 0 8px; padding: 0 6px;">Global Trends</p>
+
+      <div
+        v-for="(b, i) in trends"
+        :key="b.id"
+        @click.stop="toggleSelect(b.id)"
+        style="display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 10px; cursor: pointer; transition: background .15s;"
+        @mouseenter="$event.currentTarget.style.background='#f0f8ff'"
+        @mouseleave="$event.currentTarget.style.background='transparent'"
+      >
+        <span style="font-size: 10px; font-weight: 700; color: #c0ccd4; width: 12px; flex-shrink: 0; text-align: right;">{{ i + 1 }}</span>
+        <div :style="{ width: '8px', height: '8px', borderRadius: '50%', background: b.color, flexShrink: 0, boxShadow: `0 0 5px ${b.color}88` }" />
+        <div style="flex: 1; min-width: 0;">
+          <p style="font-size: 12px; font-weight: 700; color: #1a3a4a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ b.label }}</p>
+          <p style="font-size: 9px; color: #8ba0b0; margin: 0;">{{ b.members }} membros</p>
+        </div>
+      </div>
+    </div>
+
     <!-- FLOOR GRADIENT -->
-    <div style="position:absolute;bottom:0;left:0;right:0;height:100px;background:linear-gradient(to top,#9dcee8 0%,transparent 100%);pointer-events:none;z-index:1;" />
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 100px; background: linear-gradient(to top, #9dcee8 0%, transparent 100%); pointer-events: none; z-index: 1;" />
 
     <!-- HINT -->
-    <div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:10;pointer-events:none;">
-      <span style="font-size:10px;color:#009ac7aa;background:rgba(255,255,255,.6);padding:5px 16px;border-radius:99px;backdrop-filter:blur(8px);">
-        Arrasta · Shift+RMB para conectar · Clica para selecionar
+    <div style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none;">
+      <span style="font-size: 10px; color: #009ac7aa; background: rgba(255,255,255,.6); padding: 5px 16px; border-radius: 99px; backdrop-filter: blur(8px);">
+        Arrasta · Clica para expandir · Esc para fechar
       </span>
     </div>
+
+    <!-- Connect source hint -->
+    <Transition name="fade">
+      <div
+        v-if="connectSource"
+        style="position: absolute; top: 68px; left: 50%; transform: translateX(-50%); z-index: 40; pointer-events: none;"
+      >
+        <span style="font-size: 11px; color: #009ac7; background: #4ebcff18; padding: 5px 14px; border-radius: 99px; border: 1px solid #4ebcff44; backdrop-filter: blur(8px);">
+          {{ connectSource.label }} → Shift+RMB em outra
+        </span>
+      </div>
+    </Transition>
 
   </div>
 </template>
@@ -250,8 +466,10 @@ const connectedTo = computed(() => {
 .pop-enter-active, .pop-leave-active   { transition: opacity .35s ease, transform .45s cubic-bezier(.2,.82,.2,1) }
 .pop-enter-from,   .pop-leave-to       { opacity: 0; transform: translateX(-50%) scale(.93) }
 
-.slide-right-enter-active, .slide-right-leave-active { transition: opacity .3s ease, transform .4s cubic-bezier(.2,.82,.2,1) }
-.slide-right-enter-from,   .slide-right-leave-to     { opacity: 0; transform: translateX(20px) }
+.bubble-expand-enter-active { transition: opacity .3s ease, transform .45s cubic-bezier(.22,.78,.26,1); }
+.bubble-expand-leave-active { transition: opacity .22s ease, transform .32s cubic-bezier(.6,0,.4,1); }
+.bubble-expand-enter-from,
+.bubble-expand-leave-to     { opacity: 0; transform: scale(0.32); }
 
 input::placeholder { color: #4ebcff77 }
 input:focus        { border-color: #4ebcff !important }

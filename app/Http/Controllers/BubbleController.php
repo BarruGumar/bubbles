@@ -7,9 +7,18 @@ use App\Events\BubbleMoved;
 use App\Models\Bubble;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class BubbleController extends Controller
 {
+        public function showPage(Bubble $bubble): Response
+    {
+        return Inertia::render('Community/Show', [
+            'bubble' => $bubble,
+        ]);
+    }
+
     public function index(): JsonResponse
     {
         $bubbles = Bubble::query()->latest('id')->get();
