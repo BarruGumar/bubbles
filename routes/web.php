@@ -9,7 +9,7 @@ use Inertia\Inertia;
 
 Route::get('/bubbles', function () {
     return Inertia::render('Bubbles');
-});
+})->middleware(['auth']);
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [

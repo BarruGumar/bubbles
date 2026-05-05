@@ -191,15 +191,25 @@ const trends = computed(() =>
         </button>
 
 
-        <!-- Botão: Ir pro perfil (ao lado das notificações) -->
+        <!-- Perfil -->
         <Link
           v-if="authUser"
           :href="authUser.username ? route('profile.show', authUser.username) : route('profile.edit')"
-          style="font-size: 12px; font-weight: 700; color: #2a4a5a; text-decoration: none; padding: 7px 12px; border-radius: 99px; background: #ffffffaa; border: 1px solid #4ebcff33; transition: background .15s;"
-          @mouseenter="$event.currentTarget.style.background='#f0f8ff'"
-          @mouseleave="$event.currentTarget.style.background='#ffffffaa'"
-          title="Ir pro perfil"
-        >Ir pro perfil</Link>
+          :style="{
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'transparent', color: '#5a7a8a',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .15s', textDecoration: 'none',
+          }"
+          @mouseenter="$event.currentTarget.style.background='#009ac714'"
+          @mouseleave="$event.currentTarget.style.background='transparent'"
+          title="O meu perfil"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="5.5" r="2.8" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M2.5 15c1-3 3.5-4.5 6.5-4.5s5.5 1.5 6.5 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </Link>
 
         <!-- Divisor -->
         <div style="width: 1px; height: 20px; background: #009ac71a; margin: 0 6px;" />
