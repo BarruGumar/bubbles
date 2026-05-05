@@ -16,6 +16,10 @@ const authUser = computed(() => usePage().props.auth?.user)
 
 const PALETTE  = ['#009ac7','#4ebcff','#2ea87e','#e07b4a','#9b6bdf','#c74a6b','#e0a040','#6b9bdf']
 const newLabel = ref('')
+const newTitle = ref('')
+const newDescription = ref('')
+const newTagline = ref('')
+const newGuidelines = ref('')
 const newColor = ref('#009ac7')
 const showAdd  = ref(false)
 
@@ -71,8 +75,18 @@ onUnmounted(() => {
 
 async function createBubble() {
   if (!newLabel.value.trim()) return
-  await add(newLabel.value, newColor.value)
+  await add(newLabel.value, newColor.value, {
+    title: newTitle.value.trim(),
+    description: newDescription.value.trim(),
+    tagline: newTagline.value.trim(),
+    coverColor: newColor.value,
+    guidelines: newGuidelines.value.split('\n').map(g => g.trim()).filter(Boolean).slice(0, 5),
+  })
   newLabel.value = ''
+  newTitle.value = ''
+  newDescription.value = ''
+  newTagline.value = ''
+  newGuidelines.value = ''
   newColor.value = '#009ac7'
   showAdd.value  = false
 }
@@ -173,6 +187,27 @@ const trends = computed(() =>
           </svg>
         </button>
 
+
+        <!-- Perfil (ao lado das notificações) -->
+        <Link
+          v-if="authUser"
+          :href="authUser.username ? route('profile.show', authUser.username) : route('profile.edit')"
+          :style="{
+            width: '36px', height: '36px', borderRadius: '10px', border: 'none',
+            background: 'transparent', color: '#5a7a8a', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .15s', textDecoration: 'none',
+          }"
+          @mouseenter="$event.currentTarget.style.background='#009ac714'"
+          @mouseleave="$event.currentTarget.style.background='transparent'"
+          title="Perfil"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M3.5 14.5c1.2-2.1 3.1-3.2 5.5-3.2s4.3 1.1 5.5 3.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </Link>
+
         <!-- Divisor -->
         <div style="width: 1px; height: 20px; background: #009ac71a; margin: 0 6px;" />
 
@@ -231,6 +266,29 @@ const trends = computed(() =>
             @keydown.enter="createBubble"
           />
         </div>
+
+        <input
+          v-model="newTitle"
+          placeholder="Título da comunidade"
+          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit;"
+        />
+        <input
+          v-model="newTagline"
+          placeholder="Tagline curta"
+          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit;"
+        />
+        <textarea
+          v-model="newDescription"
+          placeholder="Descrição da comunidade"
+          rows="2"
+          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit; resize: vertical;"
+        />
+        <textarea
+          v-model="newGuidelines"
+          placeholder="Regras (uma por linha, máx 5)"
+          rows="3"
+          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 12px; color: #1a3a4a; outline: none; font-family: inherit; resize: vertical;"
+        />
 
         <!-- Seletor de cor -->
         <div>

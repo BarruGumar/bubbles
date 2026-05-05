@@ -91,7 +91,7 @@ export function useBubbles() {
     }
   }
 
-  async function add(label, color = null) {
+  async function add(label, color = null, template = {}) {
     const lbl = (label.trim() || 'novo').replace(/^#*/, '#')
     color     = color ?? COLORS[Math.floor(Math.random() * COLORS.length)]
     const x     = window.innerWidth  / 2 - 42
@@ -106,7 +106,19 @@ export function useBubbles() {
     }))
 
     try {
-      const { data } = await axios.post('/api/bubbles', { label: lbl, color, x, y, size: 85 })
+      const payload = {
+        label: lbl,
+        color,
+        x,
+        y,
+        size: 85,
+        community_title: template.title || lbl,
+        community_description: template.description || null,
+        community_tagline: template.tagline || null,
+        community_cover_color: template.coverColor || color,
+        community_guidelines: (template.guidelines || []).filter(Boolean),
+      }
+      const { data } = await axios.post('/api/bubbles', payload)
       const idx = bubbles.value.findIndex(b => b.id === lid)
       if (idx !== -1) bubbles.value[idx].id = data.id
     } catch {

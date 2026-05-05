@@ -18,6 +18,11 @@ class Bubble extends Model
         'y',
         'size',
         'members',
+        'community_title',
+        'community_description',
+        'community_cover_color',
+        'community_tagline',
+        'community_guidelines',
     ];
 
     protected $casts = [
@@ -25,6 +30,7 @@ class Bubble extends Model
         'y'       => 'float',
         'size'    => 'integer',
         'members' => 'integer',
+        'community_guidelines' => 'array',
     ];
 
     public function communityPosts(): HasMany
