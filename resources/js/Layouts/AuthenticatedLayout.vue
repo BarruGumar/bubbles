@@ -1,198 +1,128 @@
 <script setup>
-import { ref } from 'vue';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import Dropdown from '@/Components/Dropdown.vue';
-import DropdownLink from '@/Components/DropdownLink.vue';
-import NavLink from '@/Components/NavLink.vue';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import { ref, computed } from 'vue'
+import { Link, usePage } from '@inertiajs/vue3'
 
-const showingNavigationDropdown = ref(false);
+const page  = usePage()
+const user  = computed(() => page.props.auth?.user)
+const open  = ref(false)
+
+function avatarInitial(name) {
+    return (name ?? '?')[0].toUpperCase()
+}
 </script>
 
 <template>
-    <div>
-        <div class="min-h-screen bg-gray-100">
-            <nav
-                class="border-b border-gray-100 bg-white"
-            >
-                <!-- Primary Navigation Menu -->
-                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div class="flex h-16 justify-between">
-                        <div class="flex">
-                            <!-- Logo -->
-                            <div class="flex shrink-0 items-center">
-                                <Link :href="route('dashboard')">
-                                    <ApplicationLogo
-                                        class="block h-9 w-auto fill-current text-gray-800"
-                                    />
-                                </Link>
-                            </div>
+    <div
+        class="min-h-screen"
+        style="background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%); font-family: 'Segoe UI', system-ui, sans-serif;"
+    >
+        <!-- Topbar -->
+        <nav style="position: sticky; top: 0; z-index: 40; background: rgba(255,255,255,0.75); backdrop-filter: blur(16px); border-bottom: 1px solid #009ac71a;">
+            <div style="max-width: 1100px; margin: 0 auto; padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between;">
 
-                            <!-- Navigation Links -->
-                            <div
-                                class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
-                            >
-                                <NavLink
-                                    :href="route('dashboard')"
-                                    :active="route().current('dashboard')"
-                                >
-                                    Dashboard
-                                </NavLink>
-                            </div>
-                        </div>
-
-                        <div class="hidden sm:ms-6 sm:flex sm:items-center">
-                            <!-- Settings Dropdown -->
-                            <div class="relative ms-3">
-                                <Dropdown align="right" width="48">
-                                    <template #trigger>
-                                        <span class="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {{ $page.props.auth.user.name }}
-
-                                                <svg
-                                                    class="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fill-rule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clip-rule="evenodd"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </template>
-
-                                    <template #content>
-                                        <DropdownLink
-                                            :href="route('profile.edit')"
-                                        >
-                                            Profile
-                                        </DropdownLink>
-                                        <DropdownLink
-                                            :href="route('logout')"
-                                            method="post"
-                                            as="button"
-                                        >
-                                            Log Out
-                                        </DropdownLink>
-                                    </template>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        <!-- Hamburger -->
-                        <div class="-me-2 flex items-center sm:hidden">
-                            <button
-                                @click="
-                                    showingNavigationDropdown =
-                                        !showingNavigationDropdown
-                                "
-                                class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
-                            >
-                                <svg
-                                    class="h-6 w-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        :class="{
-                                            hidden: showingNavigationDropdown,
-                                            'inline-flex':
-                                                !showingNavigationDropdown,
-                                        }"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        :class="{
-                                            hidden: !showingNavigationDropdown,
-                                            'inline-flex':
-                                                showingNavigationDropdown,
-                                        }"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+                <!-- Left: logo + nav links -->
+                <div style="display: flex; align-items: center; gap: 28px;">
+                    <Link href="/bubbles" style="text-decoration: none;">
+                        <span style="font-weight: 900; font-size: 20px; color: #009ac7; letter-spacing: -1px;">bubbles</span>
+                    </Link>
+                    <Link
+                        href="/bubbles"
+                        style="font-size: 13px; font-weight: 600; color: #5a7a8a; text-decoration: none; transition: color .2s;"
+                        @mouseenter="$event.target.style.color='#009ac7'"
+                        @mouseleave="$event.target.style.color='#5a7a8a'"
+                    >Explorar</Link>
                 </div>
 
-                <!-- Responsive Navigation Menu -->
-                <div
-                    :class="{
-                        block: showingNavigationDropdown,
-                        hidden: !showingNavigationDropdown,
-                    }"
-                    class="sm:hidden"
-                >
-                    <div class="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            :href="route('dashboard')"
-                            :active="route().current('dashboard')"
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
-                    </div>
-
-                    <!-- Responsive Settings Options -->
-                    <div
-                        class="border-t border-gray-200 pb-1 pt-4"
+                <!-- Right: user avatar dropdown -->
+                <div v-if="user" style="position: relative;">
+                    <button
+                        @click="open = !open"
+                        style="display: flex; align-items: center; gap: 10px; background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 99px; transition: background .2s;"
+                        @mouseenter="$event.currentTarget.style.background='#009ac70c'"
+                        @mouseleave="$event.currentTarget.style.background='transparent'"
                     >
-                        <div class="px-4">
-                            <div
-                                class="text-base font-medium text-gray-800"
-                            >
-                                {{ $page.props.auth.user.name }}
+                        <!-- Avatar circle -->
+                        <div :style="{
+                            width: '32px', height: '32px', borderRadius: '50%',
+                            background: user.avatar_color ?? '#009ac7',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '13px', fontWeight: '800', color: 'white',
+                            boxShadow: `0 2px 8px ${user.avatar_color ?? '#009ac7'}44`,
+                        }">{{ avatarInitial(user.name) }}</div>
+                        <span style="font-size: 13px; font-weight: 700; color: #1a3a4a;">{{ user.name }}</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="color: #8ba0b0;">
+                            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown -->
+                    <Transition name="dropdown">
+                        <div
+                            v-if="open"
+                            style="position: absolute; right: 0; top: calc(100% + 8px); min-width: 180px; background: rgba(255,255,255,0.95); backdrop-filter: blur(16px); border-radius: 14px; border: 1px solid #4ebcff22; box-shadow: 0 8px 32px #009ac71a; overflow: hidden; z-index: 50;"
+                            @click="open = false"
+                        >
+                            <!-- Profile header -->
+                            <div style="padding: 12px 16px 10px; border-bottom: 1px solid #f0f4f8;">
+                                <p style="font-size: 12px; font-weight: 700; color: #1a3a4a; margin: 0;">{{ user.name }}</p>
+                                <p v-if="user.username" style="font-size: 11px; color: #8ba0b0; margin: 2px 0 0;">@{{ user.username }}</p>
                             </div>
-                            <div class="text-sm font-medium text-gray-500">
-                                {{ $page.props.auth.user.email }}
+                            <div style="padding: 6px;">
+                                <Link
+                                    v-if="user.username"
+                                    :href="route('profile.show', user.username)"
+                                    style="display: block; padding: 9px 12px; border-radius: 9px; font-size: 13px; color: #2a4a5a; text-decoration: none; transition: background .15s;"
+                                    @mouseenter="$event.target.style.background='#f0f8ff'"
+                                    @mouseleave="$event.target.style.background='transparent'"
+                                >O meu perfil</Link>
+                                <Link
+                                    :href="route('profile.edit')"
+                                    style="display: block; padding: 9px 12px; border-radius: 9px; font-size: 13px; color: #2a4a5a; text-decoration: none; transition: background .15s;"
+                                    @mouseenter="$event.target.style.background='#f0f8ff'"
+                                    @mouseleave="$event.target.style.background='transparent'"
+                                >Definições</Link>
+                                <div style="height: 1px; background: #f0f4f8; margin: 4px 0;" />
+                                <Link
+                                    :href="route('logout')"
+                                    method="post"
+                                    as="button"
+                                    style="display: block; width: 100%; text-align: left; padding: 9px 12px; border-radius: 9px; font-size: 13px; color: #c74a6b; background: none; border: none; cursor: pointer; transition: background .15s;"
+                                    @mouseenter="$event.target.style.background='#fef0f4'"
+                                    @mouseleave="$event.target.style.background='transparent'"
+                                >Sair</Link>
                             </div>
                         </div>
-
-                        <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="route('profile.edit')">
-                                Profile
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                :href="route('logout')"
-                                method="post"
-                                as="button"
-                            >
-                                Log Out
-                            </ResponsiveNavLink>
-                        </div>
-                    </div>
+                    </Transition>
                 </div>
-            </nav>
 
-            <!-- Page Heading -->
-            <header
-                class="bg-white shadow"
-                v-if="$slots.header"
-            >
-                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                    <slot name="header" />
+                <!-- Not logged in -->
+                <div v-else style="display: flex; gap: 10px;">
+                    <Link
+                        :href="route('login')"
+                        style="font-size: 13px; font-weight: 600; color: #009ac7; text-decoration: none; padding: 7px 16px; border-radius: 99px; border: 1.5px solid #009ac7; transition: all .2s;"
+                    >Entrar</Link>
+                    <Link
+                        :href="route('register')"
+                        style="font-size: 13px; font-weight: 700; color: white; text-decoration: none; padding: 7px 16px; border-radius: 99px; background: #009ac7; box-shadow: 0 3px 12px #009ac740;"
+                    >Registo</Link>
                 </div>
-            </header>
+            </div>
+        </nav>
 
-            <!-- Page Content -->
-            <main>
-                <slot />
-            </main>
+        <!-- Ambient orbs -->
+        <div class="absolute inset-0 pointer-events-none overflow-hidden" style="z-index: 0;">
+            <div style="position:absolute;top:-60px;left:-60px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,#009ac714 0%,transparent 70%);" />
+            <div style="position:absolute;bottom:-40px;right:-40px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,#4ebcff0e 0%,transparent 70%);" />
         </div>
+
+        <!-- Page content -->
+        <main style="position: relative; z-index: 1;">
+            <slot />
+        </main>
     </div>
 </template>
+
+<style scoped>
+.dropdown-enter-active, .dropdown-leave-active { transition: opacity .18s ease, transform .22s cubic-bezier(.2,.8,.2,1) }
+.dropdown-enter-from, .dropdown-leave-to       { opacity: 0; transform: translateY(-6px) scale(.97) }
+</style>

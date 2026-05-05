@@ -1,113 +1,102 @@
 <script setup>
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import GuestLayout from '@/Layouts/GuestLayout.vue'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 
 const form = useForm({
-    name: '',
-    email: '',
-    password: '',
+    name:                  '',
+    email:                 '',
+    password:              '',
     password_confirmation: '',
-});
+})
 
 const submit = () => {
     form.post(route('register'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
-    });
-};
+    })
+}
 </script>
 
 <template>
     <GuestLayout>
-        <Head title="Register" />
+        <Head title="Criar conta" />
 
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="name" value="Name" />
+        <h2 style="font-weight: 800; font-size: 18px; color: #1a3a4a; margin-bottom: 4px;">Cria a tua conta</h2>
+        <p style="font-size: 12px; color: #8ba0b0; margin-bottom: 28px;">Entra no mundo Bubbles</p>
 
-                <TextInput
-                    id="name"
-                    type="text"
-                    class="mt-1 block w-full"
+        <form @submit.prevent="submit" style="display: flex; flex-direction: column; gap: 16px;">
+
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 11px; font-weight: 700; color: #5a7a8a; text-transform: uppercase; letter-spacing: .06em;">Nome</label>
+                <input
                     v-model="form.name"
+                    type="text"
                     required
                     autofocus
                     autocomplete="name"
+                    placeholder="O teu nome"
+                    style="background: #f0f8ff; border: 1.5px solid #4ebcff44; border-radius: 11px; padding: 11px 14px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit; transition: border-color .2s;"
+                    @focus="$event.target.style.borderColor='#009ac7'"
+                    @blur="$event.target.style.borderColor='#4ebcff44'"
                 />
-
-                <InputError class="mt-2" :message="form.errors.name" />
+                <p v-if="form.errors.name" style="font-size: 11px; color: #e05555; margin: 0;">{{ form.errors.name }}</p>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 11px; font-weight: 700; color: #5a7a8a; text-transform: uppercase; letter-spacing: .06em;">Email</label>
+                <input
                     v-model="form.email"
+                    type="email"
                     required
                     autocomplete="username"
+                    placeholder="email@exemplo.com"
+                    style="background: #f0f8ff; border: 1.5px solid #4ebcff44; border-radius: 11px; padding: 11px 14px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit; transition: border-color .2s;"
+                    @focus="$event.target.style.borderColor='#009ac7'"
+                    @blur="$event.target.style.borderColor='#4ebcff44'"
                 />
-
-                <InputError class="mt-2" :message="form.errors.email" />
+                <p v-if="form.errors.email" style="font-size: 11px; color: #e05555; margin: 0;">{{ form.errors.email }}</p>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 11px; font-weight: 700; color: #5a7a8a; text-transform: uppercase; letter-spacing: .06em;">Password</label>
+                <input
                     v-model="form.password"
-                    required
-                    autocomplete="new-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
-
-            <div class="mt-4">
-                <InputLabel
-                    for="password_confirmation"
-                    value="Confirm Password"
-                />
-
-                <TextInput
-                    id="password_confirmation"
                     type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password_confirmation"
                     required
                     autocomplete="new-password"
+                    style="background: #f0f8ff; border: 1.5px solid #4ebcff44; border-radius: 11px; padding: 11px 14px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit; transition: border-color .2s;"
+                    @focus="$event.target.style.borderColor='#009ac7'"
+                    @blur="$event.target.style.borderColor='#4ebcff44'"
                 />
-
-                <InputError
-                    class="mt-2"
-                    :message="form.errors.password_confirmation"
-                />
+                <p v-if="form.errors.password" style="font-size: 11px; color: #e05555; margin: 0;">{{ form.errors.password }}</p>
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <Link
-                    :href="route('login')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                    Already registered?
-                </Link>
-
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Register
-                </PrimaryButton>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 11px; font-weight: 700; color: #5a7a8a; text-transform: uppercase; letter-spacing: .06em;">Confirmar password</label>
+                <input
+                    v-model="form.password_confirmation"
+                    type="password"
+                    required
+                    autocomplete="new-password"
+                    style="background: #f0f8ff; border: 1.5px solid #4ebcff44; border-radius: 11px; padding: 11px 14px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit; transition: border-color .2s;"
+                    @focus="$event.target.style.borderColor='#009ac7'"
+                    @blur="$event.target.style.borderColor='#4ebcff44'"
+                />
+                <p v-if="form.errors.password_confirmation" style="font-size: 11px; color: #e05555; margin: 0;">{{ form.errors.password_confirmation }}</p>
             </div>
+
+            <button
+                type="submit"
+                :disabled="form.processing"
+                style="padding: 13px; border-radius: 12px; background: #009ac7; border: none; color: white; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 18px #009ac740; transition: opacity .2s; margin-top: 4px;"
+                :style="{ opacity: form.processing ? 0.7 : 1 }"
+            >
+                {{ form.processing ? 'A criar...' : 'Criar conta' }}
+            </button>
         </form>
+
+        <p style="text-align: center; margin-top: 24px; font-size: 12px; color: #8ba0b0;">
+            Já tens conta?
+            <Link :href="route('login')" style="color: #009ac7; font-weight: 700; text-decoration: none;">Entrar</Link>
+        </p>
     </GuestLayout>
 </template>

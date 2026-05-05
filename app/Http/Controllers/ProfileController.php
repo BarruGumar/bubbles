@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,20 +14,38 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
+    public function show(string $username): Response
+    {
+        $profileUser = User::where('username', $username)->firstOrFail();
+        $posts = $profileUser->posts()->latest()->get()->map(fn ($p) => [
+            'id'         => $p->id,
+            'content'    => $p->content,
+            'created_at' => $p->created_at->diffForHumans(),
+        ]);
+
+        return Inertia::render('Profile/Show', [
+            'profileUser' => [
+                'id'           => $profileUser->id,
+                'name'         => $profileUser->name,
+                'username'     => $profileUser->username,
+                'bio'          => $profileUser->bio,
+                'avatar_color' => $profileUser->avatar_color ?? '#009ac7',
+                'created_at'   => $profileUser->created_at->format('M Y'),
+                'posts_count'  => $posts->count(),
+            ],
+            'posts' => $posts,
+            'isOwn' => auth()->check() && auth()->id() === $profileUser->id,
+        ]);
+    }
+
     public function edit(Request $request): Response
     {
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => session('status'),
+            'status'          => session('status'),
         ]);
     }
 
-    /**
-     * Update the user's profile information.
-     */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $request->user()->fill($request->validated());
@@ -37,12 +56,9 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit');
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
-    /**
-     * Delete the user's account.
-     */
     public function destroy(Request $request): RedirectResponse
     {
         $request->validate([
