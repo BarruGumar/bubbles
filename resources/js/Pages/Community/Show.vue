@@ -39,27 +39,27 @@ function formatInitial(name) {
         <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px 80px;">
 
             <!-- Hero da comunidade -->
-            <div style="border-radius: 22px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 8px 32px #009ac70e;">
+            <div style="border-radius: 22px; overflow: visible; margin-bottom: 20px; box-shadow: 0 8px 32px #009ac70e; position: relative;">
 
                 <!-- Faixa de cor no topo -->
                 <div :style="{
                     background: `linear-gradient(135deg, ${community.color}dd 0%, ${community.cover_color ?? community.color} 100%)`,
-                    height: '72px', position: 'relative',
+                    height: '118px', position: 'relative', borderRadius: '22px 22px 0 0',
                 }">
                     <!-- Círculo avatar sobressaído -->
                     <div :style="{
-                        position: 'absolute', bottom: '-32px', left: '32px',
-                        width: '72px', height: '72px', borderRadius: '50%',
+                        position: 'absolute', bottom: '-42px', left: '32px', zIndex: 5,
+                        width: '86px', height: '86px', borderRadius: '50%',
                         background: community.color,
-                        border: '4px solid white',
+                        border: '5px solid white',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '26px', fontWeight: '900', color: 'white',
+                        fontSize: '30px', fontWeight: '900', color: 'white',
                         boxShadow: `0 4px 20px ${community.color}66`,
                     }">{{ community.label.replace('#', '').charAt(0).toUpperCase() }}</div>
                 </div>
 
                 <!-- Corpo do card -->
-                <div style="background: rgba(255,255,255,0.92); backdrop-filter: blur(20px); border: 1px solid #4ebcff22; border-top: none; padding: 44px 32px 28px;">
+                <div style="background: rgba(255,255,255,0.92); backdrop-filter: blur(20px); border: 1px solid #4ebcff22; border-top: none; border-radius: 0 0 22px 22px; padding: 58px 32px 28px; position: relative; z-index: 1;">
                     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
                         <div style="flex: 1; min-width: 200px;">
                             <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 3px; letter-spacing: -.02em;">{{ community.title }}</h1>
