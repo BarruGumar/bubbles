@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Head, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
@@ -8,16 +8,36 @@ const props = defineProps({
     posts:     Array,
 })
 
-const authUser  = computed(() => usePage().props.auth?.user)
-const postForm  = useForm({ content: '' })
-const charCount = computed(() => postForm.content.length)
+const authUser    = computed(() => usePage().props.auth?.user)
+const postForm    = useForm({ content: '', image: null })
+const charCount   = computed(() => postForm.content.length)
 const activityPct = computed(() => Math.min(100, Math.round(props.posts.length / 20 * 100)))
+
+const imageInput   = ref(null)
+const imagePreview = ref(null)
+
+function onImageChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    postForm.image   = file
+    imagePreview.value = URL.createObjectURL(file)
+}
+
+function removeImage() {
+    postForm.image     = null
+    imagePreview.value = null
+    if (imageInput.value) imageInput.value.value = ''
+}
 
 function submitPost() {
     if (!postForm.content.trim()) return
     postForm.post(route('community.posts.store', props.community.id), {
+        forceFormData:  true,
         preserveScroll: true,
-        onSuccess: () => postForm.reset('content'),
+        onSuccess: () => {
+            postForm.reset('content', 'image')
+            imagePreview.value = null
+        },
     })
 }
 
@@ -41,21 +61,34 @@ function formatInitial(name) {
             <!-- Hero da comunidade -->
             <div style="border-radius: 22px; overflow: visible; margin-bottom: 20px; box-shadow: 0 8px 32px #009ac70e; position: relative;">
 
-                <!-- Faixa de cor no topo -->
+                <!-- Banner -->
                 <div :style="{
-                    background: `linear-gradient(135deg, ${community.color}dd 0%, ${community.cover_color ?? community.color} 100%)`,
                     height: '118px', position: 'relative', borderRadius: '22px 22px 0 0',
+                    background: community.banner
+                        ? `url('${community.banner}') center/cover no-repeat`
+                        : `linear-gradient(135deg, ${community.color}dd 0%, ${community.cover_color ?? community.color} 100%)`,
                 }">
-                    <!-- Círculo avatar sobressaído -->
-                    <div :style="{
-                        position: 'absolute', bottom: '-42px', left: '32px', zIndex: 5,
-                        width: '86px', height: '86px', borderRadius: '50%',
-                        background: community.color,
-                        border: '5px solid white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '30px', fontWeight: '900', color: 'white',
-                        boxShadow: `0 4px 20px ${community.color}66`,
-                    }">{{ community.label.replace('#', '').charAt(0).toUpperCase() }}</div>
+                    <!-- Círculo / imagem da comunidade sobressaído -->
+                    <div style="position: absolute; bottom: -42px; left: 32px; z-index: 5;">
+                        <img
+                            v-if="community.image"
+                            :src="community.image"
+                            :style="{
+                                width: '86px', height: '86px', borderRadius: '50%',
+                                objectFit: 'cover', border: '5px solid white',
+                                boxShadow: `0 4px 20px ${community.color}66`,
+                                display: 'block',
+                            }"
+                        />
+                        <div v-else :style="{
+                            width: '86px', height: '86px', borderRadius: '50%',
+                            background: community.color,
+                            border: '5px solid white',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '30px', fontWeight: '900', color: 'white',
+                            boxShadow: `0 4px 20px ${community.color}66`,
+                        }">{{ community.label.replace('#', '').charAt(0).toUpperCase() }}</div>
+                    </div>
                 </div>
 
                 <!-- Corpo do card -->
@@ -116,7 +149,15 @@ function formatInitial(name) {
                 style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 18px; border: 1px solid #4ebcff22; box-shadow: 0 4px 16px #009ac70a; padding: 20px; margin-bottom: 16px;"
             >
                 <div style="display: flex; gap: 14px; align-items: flex-start;">
-                    <div :style="{
+                    <img
+                        v-if="authUser.avatar"
+                        :src="authUser.avatar"
+                        :style="{
+                            width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                            objectFit: 'cover', border: `2px solid ${authUser.avatar_color ?? '#009ac7'}`,
+                        }"
+                    />
+                    <div v-else :style="{
                         width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
                         background: authUser.avatar_color ?? '#009ac7',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -134,8 +175,38 @@ function formatInitial(name) {
                             @blur="$event.target.style.borderColor = '#4ebcff33'"
                             @keydown.ctrl.enter="submitPost"
                         />
+                        <!-- Image preview before submit -->
+                        <div v-if="imagePreview" style="margin-top: 10px; position: relative; display: inline-block;">
+                            <img :src="imagePreview" style="max-height: 160px; max-width: 100%; border-radius: 10px; object-fit: cover; border: 1px solid #4ebcff22;" />
+                            <button
+                                @click="removeImage"
+                                style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.45); border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; color: white; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center;"
+                            >×</button>
+                        </div>
+
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-                            <span style="font-size: 11px; color: #b0c0cc;">{{ charCount }}/1000 · Ctrl+Enter</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 11px; color: #b0c0cc;">{{ charCount }}/1000 · Ctrl+Enter</span>
+                                <!-- Image attach button -->
+                                <button
+                                    type="button"
+                                    @click="imageInput.click()"
+                                    :style="{
+                                        background: 'none', border: 'none', cursor: 'pointer',
+                                        color: postForm.image ? community.color : '#b0c0cc',
+                                        padding: '3px', borderRadius: '6px', transition: 'color .2s',
+                                        display: 'flex', alignItems: 'center',
+                                    }"
+                                    title="Adicionar imagem"
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
+                                        <circle cx="5.5" cy="6" r="1.2" fill="currentColor"/>
+                                        <path d="M1.5 11l3.5-3 3 3 2-2 3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <input ref="imageInput" type="file" accept="image/*" style="display:none;" @change="onImageChange" />
+                            </div>
                             <button
                                 @click="submitPost"
                                 :disabled="postForm.processing || !postForm.content.trim()"
@@ -147,7 +218,7 @@ function formatInitial(name) {
                                     opacity: (postForm.processing || !postForm.content.trim()) ? 0.5 : 1,
                                     transition: 'opacity .2s',
                                 }"
-                            >Publicar</button>
+                            >{{ postForm.processing ? 'A publicar...' : 'Publicar' }}</button>
                         </div>
                         <p v-if="postForm.errors.content" style="font-size: 11px; color: #e05555; margin: 6px 0 0;">{{ postForm.errors.content }}</p>
                     </div>
@@ -168,7 +239,15 @@ function formatInitial(name) {
                     style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid #4ebcff1a; box-shadow: 0 2px 12px #009ac708; padding: 20px;"
                 >
                     <div style="display: flex; gap: 14px; align-items: flex-start;">
-                        <div :style="{
+                        <img
+                            v-if="post.author.avatar"
+                            :src="post.author.avatar"
+                            :style="{
+                                width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
+                                objectFit: 'cover', border: `2px solid ${post.author.avatar_color}`,
+                            }"
+                        />
+                        <div v-else :style="{
                             width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
                             background: post.author.avatar_color,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -191,6 +270,12 @@ function formatInitial(name) {
                                 >×</button>
                             </div>
                             <p style="font-size: 14px; color: #2a4a5a; line-height: 1.65; margin: 0; white-space: pre-wrap;">{{ post.content }}</p>
+                            <!-- Post image -->
+                            <img
+                                v-if="post.image"
+                                :src="post.image"
+                                style="margin-top: 12px; max-width: 100%; border-radius: 12px; object-fit: cover; max-height: 400px; display: block; border: 1px solid #4ebcff1a;"
+                            />
                         </div>
                     </div>
                 </div>

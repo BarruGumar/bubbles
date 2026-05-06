@@ -219,18 +219,26 @@ const trends = computed(() =>
         <Link
           v-if="authUser && authUser.username"
           :href="route('profile.show', authUser.username)"
-          :style="{
+          style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; text-decoration: none; transition: box-shadow .2s; border-radius: 50%;"
+        >
+          <img
+            v-if="authUser.avatar"
+            :src="authUser.avatar"
+            :style="{
+              width: '32px', height: '32px', borderRadius: '50%',
+              objectFit: 'cover',
+              border: `2px solid ${authUser.avatar_color ?? '#009ac7'}`,
+              boxShadow: `0 2px 8px ${authUser.avatar_color ?? '#009ac7'}44`,
+            }"
+          />
+          <div v-else :style="{
             width: '32px', height: '32px', borderRadius: '50%',
             background: authUser.avatar_color ?? '#009ac7',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '13px', fontWeight: '800', color: 'white',
             boxShadow: `0 2px 8px ${authUser.avatar_color ?? '#009ac7'}44`,
-            cursor: 'pointer', flexShrink: 0, textDecoration: 'none',
-            transition: 'box-shadow .2s',
-          }"
-          @mouseenter="$event.currentTarget.style.boxShadow = `0 2px 12px ${authUser.avatar_color ?? '#009ac7'}88`"
-          @mouseleave="$event.currentTarget.style.boxShadow = `0 2px 8px ${authUser.avatar_color ?? '#009ac7'}44`"
-        >{{ authUser.name?.[0]?.toUpperCase() ?? '?' }}</Link>
+          }">{{ authUser.name?.[0]?.toUpperCase() ?? '?' }}</div>
+        </Link>
         <div
           v-else-if="authUser"
           :style="{

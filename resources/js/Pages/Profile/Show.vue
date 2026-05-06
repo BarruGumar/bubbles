@@ -38,20 +38,40 @@ function formatInitial(name) {
         <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px 80px;">
 
             <!-- Profile hero -->
-            <div
-                style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 22px; border: 1px solid #4ebcff22; box-shadow: 0 8px 32px #009ac70e; padding: 36px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 28px;"
-            >
-                <!-- Avatar -->
-                <div :style="{
-                    width: '80px', height: '80px', borderRadius: '50%', flexShrink: 0,
-                    background: profileUser.avatar_color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '32px', fontWeight: '900', color: 'white',
-                    boxShadow: `0 4px 24px ${profileUser.avatar_color}44`,
-                }">{{ formatInitial(profileUser.name) }}</div>
+            <div style="border-radius: 22px; overflow: visible; margin-bottom: 20px; box-shadow: 0 8px 32px #009ac70e; position: relative;">
 
-                <!-- Info -->
-                <div style="flex: 1; min-width: 0;">
+                <!-- Banner -->
+                <div :style="{
+                    height: '118px', borderRadius: '22px 22px 0 0', position: 'relative',
+                    background: profileUser.banner
+                        ? `url('${profileUser.banner}') center/cover no-repeat`
+                        : `linear-gradient(135deg, ${profileUser.avatar_color}cc 0%, ${profileUser.avatar_color} 100%)`,
+                }">
+                    <!-- Avatar overlapping -->
+                    <div style="position: absolute; bottom: -42px; left: 32px; z-index: 5;">
+                        <img
+                            v-if="profileUser.avatar"
+                            :src="profileUser.avatar"
+                            :style="{
+                                width: '86px', height: '86px', borderRadius: '50%',
+                                objectFit: 'cover', border: '5px solid white',
+                                boxShadow: `0 4px 20px ${profileUser.avatar_color}66`,
+                                display: 'block',
+                            }"
+                        />
+                        <div v-else :style="{
+                            width: '86px', height: '86px', borderRadius: '50%',
+                            background: profileUser.avatar_color,
+                            border: '5px solid white',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '30px', fontWeight: '900', color: 'white',
+                            boxShadow: `0 4px 20px ${profileUser.avatar_color}66`,
+                        }">{{ formatInitial(profileUser.name) }}</div>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div style="background: rgba(255,255,255,0.92); backdrop-filter: blur(20px); border: 1px solid #4ebcff22; border-top: none; border-radius: 0 0 22px 22px; padding: 58px 32px 28px; position: relative; z-index: 1;">
                     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
                         <div>
                             <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 2px;">{{ profileUser.name }}</h1>
@@ -67,7 +87,6 @@ function formatInitial(name) {
                     <p v-if="profileUser.bio" style="font-size: 14px; color: #3a5a6a; margin: 14px 0 0; line-height: 1.6;">{{ profileUser.bio }}</p>
                     <p v-else-if="isOwn" style="font-size: 13px; color: #b0c0cc; margin: 14px 0 0; font-style: italic;">Adiciona uma bio no teu perfil...</p>
 
-                    <!-- Stats row -->
                     <div style="display: flex; gap: 24px; margin-top: 18px;">
                         <div>
                             <span style="font-size: 18px; font-weight: 800; color: #1a3a4a;">{{ profileUser.posts_count }}</span>
@@ -87,7 +106,15 @@ function formatInitial(name) {
             >
                 <div style="display: flex; gap: 14px; align-items: flex-start;">
                     <!-- Mini avatar -->
-                    <div :style="{
+                    <img
+                        v-if="authUser?.avatar"
+                        :src="authUser.avatar"
+                        :style="{
+                            width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                            objectFit: 'cover', border: `2px solid ${authUser.avatar_color ?? '#009ac7'}`,
+                        }"
+                    />
+                    <div v-else :style="{
                         width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
                         background: authUser?.avatar_color ?? '#009ac7',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -133,7 +160,15 @@ function formatInitial(name) {
                 >
                     <div style="display: flex; gap: 14px; align-items: flex-start;">
                         <!-- Avatar -->
-                        <div :style="{
+                        <img
+                            v-if="profileUser.avatar"
+                            :src="profileUser.avatar"
+                            :style="{
+                                width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
+                                objectFit: 'cover', border: `2px solid ${profileUser.avatar_color}`,
+                            }"
+                        />
+                        <div v-else :style="{
                             width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
                             background: profileUser.avatar_color,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',

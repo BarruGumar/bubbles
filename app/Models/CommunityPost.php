@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CommunityPost extends Model
 {
-    protected $fillable = ['bubble_id', 'user_id', 'content'];
+    protected $fillable = ['bubble_id', 'user_id', 'content', 'image'];
 
     public function bubble(): BelongsTo
     {

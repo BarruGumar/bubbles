@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Bubble;
 use App\Models\CommunityPost;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,11 +24,13 @@ class CommunityController extends Controller
             ->map(fn ($p) => [
                 'id'         => $p->id,
                 'content'    => $p->content,
+                'image'      => $p->image,
                 'created_at' => $p->created_at->diffForHumans(),
                 'author'     => [
                     'name'         => $p->user->name,
                     'username'     => $p->user->username,
                     'avatar_color' => $p->user->avatar_color ?? '#009ac7',
+                    'avatar'       => $p->user->avatar,
                 ],
                 'isOwn' => auth()->check() && auth()->id() === $p->user_id,
             ]);
@@ -40,6 +44,8 @@ class CommunityController extends Controller
                 'tagline'     => $bubble->community_tagline ?: 'Conecta, partilha e participa.',
                 'color'       => $bubble->color ?? '#009ac7',
                 'cover_color' => $bubble->community_cover_color ?: ($bubble->color ?? '#009ac7'),
+                'image'       => $bubble->community_image,
+                'banner'      => $bubble->community_banner,
                 'guidelines'  => $bubble->community_guidelines ?: [
                     'Respeita os outros membros.',
                     'Evita spam e conteúdos repetidos.',
@@ -53,12 +59,23 @@ class CommunityController extends Controller
 
     public function store(Request $request, int $id): RedirectResponse
     {
-        $request->validate(['content' => 'required|string|max:1000']);
+        $request->validate([
+            'content' => 'required|string|max:1000',
+            'image'   => 'nullable|image|max:4096',
+        ]);
+
+        $imageUrl = null;
+        if ($request->hasFile('image')) {
+            $imageUrl = $this->storeImage($request->file('image'), 'bubbles/posts', [
+                'transformation' => ['width'=>1200,'height'=>800,'crop'=>'limit','fetch_format'=>'auto','quality'=>'auto'],
+            ]);
+        }
 
         $bubble = Bubble::findOrFail($id);
         $bubble->communityPosts()->create([
             'user_id' => auth()->id(),
             'content' => $request->content,
+            'image'   => $imageUrl,
         ]);
 
         return back();
@@ -69,5 +86,19 @@ class CommunityController extends Controller
         abort_if(auth()->id() !== $post->user_id, 403);
         $post->delete();
         return back();
+    }
+
+    private function storeImage($file, string $folder, array $cloudinaryOptions = []): string
+    {
+        $key = env('CLOUDINARY_API_KEY', '');
+        if (!empty($key) && $key !== 'API_KEY') {
+            return Cloudinary::upload($file->getRealPath(), array_merge(
+                ['folder' => $folder, 'fetch_format' => 'auto', 'quality' => 'auto'],
+                $cloudinaryOptions
+            ))->getSecurePath();
+        }
+
+        $path = $file->store($folder, 'public');
+        return '/storage/' . $path;
     }
 }

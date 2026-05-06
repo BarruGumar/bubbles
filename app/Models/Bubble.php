@@ -23,6 +23,8 @@ class Bubble extends Model
         'community_cover_color',
         'community_tagline',
         'community_guidelines',
+        'community_image',
+        'community_banner',
     ];
 
     protected $casts = [

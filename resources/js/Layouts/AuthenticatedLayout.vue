@@ -41,8 +41,18 @@ function avatarInitial(name) {
                         @mouseenter="$event.currentTarget.style.background='#009ac70c'"
                         @mouseleave="$event.currentTarget.style.background='transparent'"
                     >
-                        <!-- Avatar circle -->
-                        <div :style="{
+                        <!-- Avatar -->
+                        <img
+                            v-if="user.avatar"
+                            :src="user.avatar"
+                            :style="{
+                                width: '32px', height: '32px', borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: `2px solid ${user.avatar_color ?? '#009ac7'}`,
+                                boxShadow: `0 2px 8px ${user.avatar_color ?? '#009ac7'}44`,
+                            }"
+                        />
+                        <div v-else :style="{
                             width: '32px', height: '32px', borderRadius: '50%',
                             background: user.avatar_color ?? '#009ac7',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
