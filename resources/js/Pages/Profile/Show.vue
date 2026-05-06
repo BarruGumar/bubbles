@@ -11,14 +11,33 @@ const props = defineProps({
 
 const authUser = computed(() => usePage().props.auth?.user)
 
-const postForm = useForm({ content: '' })
+const postForm = useForm({ content: '', image: null })
 const charCount = computed(() => postForm.content.length)
+const imageInput = ref(null)
+const imagePreview = ref(null)
+
+function onImageChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    postForm.image = file
+    imagePreview.value = URL.createObjectURL(file)
+}
+
+function removeImage() {
+    postForm.image = null
+    imagePreview.value = null
+    if (imageInput.value) imageInput.value.value = ''
+}
 
 function submitPost() {
     if (!postForm.content.trim()) return
     postForm.post(route('posts.store'), {
+        forceFormData: true,
         preserveScroll: true,
-        onSuccess: () => postForm.reset('content'),
+        onSuccess: () => {
+            postForm.reset('content', 'image')
+            removeImage()
+        },
     })
 }
 
@@ -132,16 +151,46 @@ function formatInitial(name) {
                             @blur="$event.target.style.borderColor='#4ebcff33'"
                             @keydown.ctrl.enter="submitPost"
                         />
+                        <div v-if="imagePreview" style="margin-top: 10px; position: relative; display: inline-block;">
+                            <img :src="imagePreview" style="max-height: 160px; max-width: 100%; border-radius: 10px; object-fit: cover; border: 1px solid #4ebcff22;" />
+                            <button
+                                type="button"
+                                @click="removeImage"
+                                style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.45); border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; color: white; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center;"
+                            >×</button>
+                        </div>
+
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-                            <span style="font-size: 11px; color: #b0c0cc;">{{ charCount }}/1000 · Ctrl+Enter para publicar</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 11px; color: #b0c0cc;">{{ charCount }}/1000 · Ctrl+Enter para publicar</span>
+                                <button
+                                    type="button"
+                                    @click="imageInput.click()"
+                                    :style="{
+                                        background: 'none', border: 'none', cursor: 'pointer',
+                                        color: postForm.image ? '#009ac7' : '#b0c0cc',
+                                        padding: '3px', borderRadius: '6px', transition: 'color .2s',
+                                        display: 'flex', alignItems: 'center',
+                                    }"
+                                    title="Adicionar imagem"
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
+                                        <circle cx="5.5" cy="6" r="1.2" fill="currentColor"/>
+                                        <path d="M1.5 11l3.5-3 3 3 2-2 3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <input ref="imageInput" type="file" accept="image/*" style="display:none;" @change="onImageChange" />
+                            </div>
                             <button
                                 @click="submitPost"
                                 :disabled="postForm.processing || !postForm.content.trim()"
                                 style="padding: 8px 20px; border-radius: 99px; background: #009ac7; border: none; color: white; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 12px #009ac730; transition: opacity .2s;"
                                 :style="{ opacity: postForm.processing || !postForm.content.trim() ? 0.5 : 1, cursor: !postForm.content.trim() ? 'not-allowed' : 'pointer' }"
-                            >Publicar</button>
+                            >{{ postForm.processing ? 'A publicar...' : 'Publicar' }}</button>
                         </div>
                         <p v-if="postForm.errors.content" style="font-size: 11px; color: #e05555; margin: 6px 0 0;">{{ postForm.errors.content }}</p>
+                        <p v-if="postForm.errors.image" style="font-size: 11px; color: #e05555; margin: 6px 0 0;">{{ postForm.errors.image }}</p>
                     </div>
                 </div>
             </div>
@@ -191,6 +240,11 @@ function formatInitial(name) {
                                 >×</button>
                             </div>
                             <p style="font-size: 14px; color: #2a4a5a; line-height: 1.65; margin: 0; white-space: pre-wrap;">{{ post.content }}</p>
+                            <img
+                                v-if="post.image"
+                                :src="post.image"
+                                style="margin-top: 12px; max-width: 100%; border-radius: 12px; object-fit: cover; max-height: 400px; display: block; border: 1px solid #4ebcff1a;"
+                            />
                         </div>
                     </div>
                 </div>
