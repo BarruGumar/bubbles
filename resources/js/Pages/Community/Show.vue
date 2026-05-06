@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 const props = defineProps({
     community: Object,
     posts:     Array,
+    isOwn:     Boolean,
 })
 
 const authUser    = computed(() => usePage().props.auth?.user)
@@ -15,6 +16,36 @@ const activityPct = computed(() => Math.min(100, Math.round(props.posts.length /
 
 const imageInput   = ref(null)
 const imagePreview = ref(null)
+
+// Community image/banner upload
+const communityImageInput  = ref(null)
+const communityBannerInput = ref(null)
+const communityImageForm   = useForm({ image: null })
+const communityBannerForm  = useForm({ banner: null })
+const communityImagePreview  = ref(props.community.image ?? null)
+const communityBannerPreview = ref(props.community.banner ?? null)
+
+function onCommunityImageChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    communityImagePreview.value = URL.createObjectURL(file)
+    communityImageForm.image = file
+    communityImageForm.post(route('community.image', props.community.id), {
+        forceFormData: true, preserveScroll: true,
+        onSuccess: () => communityImageForm.reset(),
+    })
+}
+
+function onCommunityBannerChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    communityBannerPreview.value = URL.createObjectURL(file)
+    communityBannerForm.banner = file
+    communityBannerForm.post(route('community.banner', props.community.id), {
+        forceFormData: true, preserveScroll: true,
+        onSuccess: () => communityBannerForm.reset(),
+    })
+}
 
 function onImageChange(e) {
     const file = e.target.files[0]
@@ -62,32 +93,70 @@ function formatInitial(name) {
             <div style="border-radius: 22px; overflow: visible; margin-bottom: 20px; box-shadow: 0 8px 32px #009ac70e; position: relative;">
 
                 <!-- Banner -->
-                <div :style="{
-                    height: '118px', position: 'relative', borderRadius: '22px 22px 0 0',
-                    background: community.banner
-                        ? `url('${community.banner}') center/cover no-repeat`
-                        : `linear-gradient(135deg, ${community.color}dd 0%, ${community.cover_color ?? community.color} 100%)`,
-                }">
+                <div
+                    :style="{
+                        height: '180px', position: 'relative', borderRadius: '22px 22px 0 0',
+                        background: communityBannerPreview
+                            ? `url('${communityBannerPreview}') center/cover no-repeat`
+                            : `linear-gradient(135deg, ${community.color}dd 0%, ${community.cover_color ?? community.color} 100%)`,
+                        cursor: isOwn ? 'pointer' : 'default',
+                    }"
+                    @click="isOwn && communityBannerInput.click()"
+                >
+                    <!-- Overlay editar banner (só para o criador) -->
+                    <div
+                        v-if="isOwn"
+                        class="banner-edit-overlay"
+                        style="position: absolute; inset: 0; border-radius: 22px 22px 0 0; background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center; transition: background .2s;"
+                        @mouseenter="$event.currentTarget.style.background='rgba(0,0,0,.32)'"
+                        @mouseleave="$event.currentTarget.style.background='rgba(0,0,0,0)'"
+                    >
+                        <span style="font-size: 12px; color: white; background: rgba(0,0,0,.45); padding: 6px 18px; border-radius: 99px; opacity: 0; transition: opacity .2s; pointer-events: none;"
+                            class="banner-edit-label">
+                            {{ communityBannerForm.processing ? 'A enviar...' : 'Alterar banner' }}
+                        </span>
+                    </div>
+                    <input ref="communityBannerInput" type="file" accept="image/*" style="display:none;" @change="onCommunityBannerChange" />
+
                     <!-- Círculo / imagem da comunidade sobressaído -->
                     <div style="position: absolute; bottom: -42px; left: 32px; z-index: 5;">
-                        <img
-                            v-if="community.image"
-                            :src="community.image"
-                            :style="{
+                        <div
+                            style="position: relative; width: 86px; height: 86px;"
+                            :style="{ cursor: isOwn ? 'pointer' : 'default' }"
+                            @click.stop="isOwn && communityImageInput.click()"
+                        >
+                            <img
+                                v-if="communityImagePreview"
+                                :src="communityImagePreview"
+                                :style="{
+                                    width: '86px', height: '86px', borderRadius: '50%',
+                                    objectFit: 'cover', border: '5px solid white',
+                                    boxShadow: `0 4px 20px ${community.color}66`,
+                                    display: 'block',
+                                }"
+                            />
+                            <div v-else :style="{
                                 width: '86px', height: '86px', borderRadius: '50%',
-                                objectFit: 'cover', border: '5px solid white',
+                                background: community.color,
+                                border: '5px solid white',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '30px', fontWeight: '900', color: 'white',
                                 boxShadow: `0 4px 20px ${community.color}66`,
-                                display: 'block',
-                            }"
-                        />
-                        <div v-else :style="{
-                            width: '86px', height: '86px', borderRadius: '50%',
-                            background: community.color,
-                            border: '5px solid white',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '30px', fontWeight: '900', color: 'white',
-                            boxShadow: `0 4px 20px ${community.color}66`,
-                        }">{{ community.label.replace('#', '').charAt(0).toUpperCase() }}</div>
+                            }">{{ community.label.replace('#', '').charAt(0).toUpperCase() }}</div>
+                            <!-- Overlay câmara (só criador) -->
+                            <div
+                                v-if="isOwn"
+                                style="position: absolute; inset: 0; border-radius: 50%; background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center; transition: background .2s;"
+                                @mouseenter="$event.currentTarget.style.background='rgba(0,0,0,.38)'"
+                                @mouseleave="$event.currentTarget.style.background='rgba(0,0,0,0)'"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 18 18" fill="none" style="opacity:0;transition:opacity .2s;" class="cam-icon">
+                                    <path d="M9 1.5v9M5.5 5 9 1.5 12.5 5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M3 12v3.5h12V12" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <input ref="communityImageInput" type="file" accept="image/*" style="display:none;" @change="onCommunityImageChange" />
                     </div>
                 </div>
 
@@ -287,4 +356,10 @@ function formatInitial(name) {
 
 <style scoped>
 textarea::placeholder { color: #b0c8d8; }
+
+/* Banner hover — mostra o label */
+.banner-edit-overlay:hover .banner-edit-label { opacity: 1 !important; }
+
+/* Círculo hover — mostra ícone câmara */
+div:hover > .cam-icon { opacity: 1 !important; }
 </style>

@@ -8,7 +8,7 @@ import { useConnections } from '@/Composables/useConnections'
 import { usePhysics }     from '@/Composables/usePhysics'
 import { useDrag }        from '@/Composables/useDrag'
 
-const { bubbles, hoveredId, connectSource, load, add, toggleSelect } = useBubbles()
+const { bubbles, hoveredId, connectSource, loading, load, add, toggleSelect } = useBubbles()
 const { connections, connect } = useConnections()
 const { step } = usePhysics()
 
@@ -352,8 +352,19 @@ const trends = computed(() =>
       </div>
     </Transition>
 
+    <!-- LOADING -->
+    <div
+      v-if="loading"
+      style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 10;"
+    >
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; opacity: 0.5;">
+        <div style="width: 38px; height: 38px; border-radius: 50%; border: 3px solid #009ac733; border-top-color: #009ac7; animation: spin .7s linear infinite;" />
+        <span style="font-size: 12px; font-weight: 600; color: #009ac7; letter-spacing: .04em;">A carregar bolhas...</span>
+      </div>
+    </div>
+
     <!-- SVG LAYER: connections + avatars -->
-    <ConnectionLines :connections="connections" :bubbles="bubbles" />
+    <ConnectionLines v-if="!loading" :connections="connections" :bubbles="bubbles" />
 
     <!-- BUBBLES -->
     <Bubble
@@ -541,6 +552,7 @@ const trends = computed(() =>
 <style scoped>
 .fade-enter-active, .fade-leave-active { transition: opacity .2s }
 .fade-enter-from,  .fade-leave-to      { opacity: 0 }
+@keyframes spin { to { transform: rotate(360deg) } }
 
 .pop-enter-active, .pop-leave-active   { transition: opacity .35s ease, transform .45s cubic-bezier(.2,.82,.2,1) }
 .pop-enter-from,   .pop-leave-to       { opacity: 0; transform: translateX(-50%) scale(.93) }

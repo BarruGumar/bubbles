@@ -38,11 +38,11 @@ function formatInitial(name) {
         <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px 80px;">
 
             <!-- Profile hero -->
-            <div style="border-radius: 22px; overflow: visible; margin-bottom: 20px; box-shadow: 0 8px 32px #009ac70e; position: relative;">
+            <div style="border-radius: 22px; overflow: visible; margin-bottom: 10px; box-shadow: 0 8px 32px #009ac70e; position: relative;">
 
                 <!-- Banner -->
                 <div :style="{
-                    height: '118px', borderRadius: '22px 22px 0 0', position: 'relative',
+                    height: '180px', borderRadius: '22px 22px 0 0', position: 'relative',
                     background: profileUser.banner
                         ? `url('${profileUser.banner}') center/cover no-repeat`
                         : `linear-gradient(135deg, ${profileUser.avatar_color}cc 0%, ${profileUser.avatar_color} 100%)`,

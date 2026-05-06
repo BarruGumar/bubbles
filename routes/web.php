@@ -36,6 +36,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/c/{id}/posts', [CommunityController::class, 'store'])->name('community.posts.store');
     Route::delete('/c/{id}/posts/{post}', [CommunityController::class, 'destroy'])->name('community.posts.destroy');
+    Route::post('/c/{id}/image', [CommunityController::class, 'uploadImage'])->name('community.image');
+    Route::post('/c/{id}/banner', [CommunityController::class, 'uploadBanner'])->name('community.banner');
 
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');

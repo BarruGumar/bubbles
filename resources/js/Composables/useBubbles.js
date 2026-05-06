@@ -68,11 +68,13 @@ const DEMO = [
 ]
 
 export function useBubbles() {
-  const bubbles       = ref(DEMO.map(makeLocal))
+  const bubbles       = ref([])
   const hoveredId     = ref(null)
   const connectSource = ref(null)
+  const loading       = ref(true)
 
   async function load() {
+    loading.value = true
     try {
       const { data } = await axios.get('/api/bubbles')
       if (Array.isArray(data) && data.length > 0) {
@@ -87,9 +89,13 @@ export function useBubbles() {
           avatars:   b.avatars ?? [],
           persisted: true,
         }))
+      } else {
+        bubbles.value = []
       }
     } catch {
-      console.warn('[Bubbles] API indisponível, a usar dados locais.')
+      bubbles.value = []
+    } finally {
+      loading.value = false
     }
   }
 
@@ -140,5 +146,5 @@ export function useBubbles() {
     bubbles.value.forEach(b => { b.selected = b.id === id ? !b.selected : false })
   }
 
-  return { bubbles, hoveredId, connectSource, load, add, toggleSelect }
+  return { bubbles, hoveredId, connectSource, loading, load, add, toggleSelect }
 }

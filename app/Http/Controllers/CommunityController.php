@@ -36,6 +36,7 @@ class CommunityController extends Controller
             ]);
 
         return Inertia::render('Community/Show', [
+            'isOwn'     => auth()->check() && auth()->id() === $bubble->user_id,
             'community' => [
                 'id'          => $bubble->id,
                 'label'       => $bubble->label,
@@ -85,6 +86,32 @@ class CommunityController extends Controller
     {
         abort_if(auth()->id() !== $post->user_id, 403);
         $post->delete();
+        return back();
+    }
+
+    public function uploadImage(Request $request, int $id): RedirectResponse
+    {
+        $bubble = Bubble::findOrFail($id);
+        abort_if(auth()->id() !== $bubble->user_id, 403);
+        $request->validate(['image' => 'required|image|max:2048']);
+        $url = $this->storeImage($request->file('image'), 'bubbles/communities', [
+            'public_id' => 'community_img_' . $id, 'overwrite' => true,
+            'transformation' => ['width'=>300,'height'=>300,'crop'=>'fill','fetch_format'=>'auto','quality'=>'auto'],
+        ]);
+        $bubble->update(['community_image' => $url]);
+        return back();
+    }
+
+    public function uploadBanner(Request $request, int $id): RedirectResponse
+    {
+        $bubble = Bubble::findOrFail($id);
+        abort_if(auth()->id() !== $bubble->user_id, 403);
+        $request->validate(['banner' => 'required|image|max:4096']);
+        $url = $this->storeImage($request->file('banner'), 'bubbles/communities', [
+            'public_id' => 'community_banner_' . $id, 'overwrite' => true,
+            'transformation' => ['width'=>1400,'height'=>500,'crop'=>'fill','fetch_format'=>'auto','quality'=>'auto'],
+        ]);
+        $bubble->update(['community_banner' => $url]);
         return back();
     }
 
