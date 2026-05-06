@@ -14,7 +14,7 @@ function avatarInitial(name) {
 <template>
     <div
         class="min-h-screen"
-        style="background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%); font-family: 'Segoe UI', system-ui, sans-serif;"
+        style="background: rgba(240,248,255,0.45); font-family: 'Segoe UI', system-ui, sans-serif;"
     >
         <!-- Topbar -->
         <nav style="position: sticky; top: 0; z-index: 40; background: rgba(255,255,255,0.75); backdrop-filter: blur(16px); border-bottom: 1px solid #009ac71a;">

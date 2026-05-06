@@ -21,14 +21,15 @@ const activityDash = computed(() => {
 const containerStyle = computed(() => {
   const { x, y, size, color, spawnScale, selected, activity, phase } = props.bubble
   const breathScale = 1 + Math.sin(phase || 0) * 0.008 * (0.4 + activity)
-  const finalScale  = spawnScale * (props.isHovered && !selected ? 1.03 : 1) * breathScale
+  const finalScale  = spawnScale * (props.isHovered && !selected ? 1.07 : 1) * breathScale
 
   let shadow
   if (props.isConnectSource) {
     shadow = `0 0 0 4px white, 0 0 0 7px #009ac7, 0 0 24px #009ac744`
+  } else if (props.isHovered && !selected) {
+    shadow = `0 14px 40px ${color}99, 0 4px 14px ${color}44, 0 0 ${18 + activity * 12}px ${color}44`
   } else {
-    const glow = props.isHovered ? '66' : '44'
-    shadow = `0 8px 26px ${color}${glow}, 0 2px 8px ${color}22, 0 0 ${10 + activity * 8}px ${color}22`
+    shadow = `0 8px 26px ${color}44, 0 2px 8px ${color}22, 0 0 ${10 + activity * 8}px ${color}22`
   }
 
   return {

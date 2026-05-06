@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php artisan *)"
+      "Bash(php artisan *)",
+      "Bash(Remove-Item \"C:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\resources\\\\js\\\\Pages\\\\BubbleAvatar.vue\")"
     ]
   }
 }

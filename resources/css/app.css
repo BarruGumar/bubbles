@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  background-image: url("/images/ChatGPT%20Image%205_05_2026,%2017_27_15.png");
+  background-image: url('/images/realistic-style-soap-bubbles-background.png');
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -13,5 +13,5 @@ body {
 
 body.no-profile-background {
   background-image: none !important;
-  background-color: #f8fafc;
+  background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%);
 }

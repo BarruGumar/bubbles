@@ -104,7 +104,7 @@ const trends = computed(() =>
 <template>
   <div
     class="w-screen h-screen overflow-hidden relative select-none"
-    style="background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%); font-family: 'Segoe UI', system-ui, sans-serif;"
+    style="background: transparent; font-family: 'Segoe UI', system-ui, sans-serif;"
     @click.self="clearSelection"
   >
 
