@@ -22,6 +22,7 @@ class ProfileController extends Controller
         $posts = $profileUser->posts()->latest()->get()->map(fn ($p) => [
             'id'         => $p->id,
             'content'    => $p->content,
+            'image'      => $p->image,
             'created_at' => $p->created_at->diffForHumans(),
         ]);
 
