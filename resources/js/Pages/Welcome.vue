@@ -15,7 +15,7 @@ const authUser = computed(() => usePage().props.auth?.user);
 </script>
 
 <template>
-  <Head title="Bubbles — Comunidades que flutuam" />
+  <Head title="Bubbles" />
   <div
     class="w-screen h-screen overflow-hidden relative select-none"
     style="background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%); font-family: 'Segoe UI', system-ui, sans-serif;"

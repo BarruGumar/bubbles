@@ -114,6 +114,7 @@ export function useBubbles() {
         x,
         y,
         size:                   85,
+        user_id:                template.userId      ?? null,
         community_title:        template.title       || lbl,
         community_description:  template.description || null,
         community_tagline:      template.tagline     || null,
@@ -127,8 +128,10 @@ export function useBubbles() {
         bubbles.value[idx].persisted = true
       }
       return bubbles.value.find(b => b.id === data.id) ?? null
-    } catch {
-      console.warn('[Bubbles] Não foi possível persistir a bolha.')
+    } catch (err) {
+      console.error('[Bubbles] Erro ao criar bolha:', err?.response?.data ?? err)
+      const idx = bubbles.value.findIndex(b => b.id === lid)
+      if (idx !== -1) bubbles.value.splice(idx, 1)
       return null
     }
   }

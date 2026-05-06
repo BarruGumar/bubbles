@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\BubbleCreated;
 use App\Events\BubbleMoved;
 use App\Models\Bubble;
 use Illuminate\Http\JsonResponse;
@@ -29,26 +28,23 @@ class BubbleController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'user_id' => ['nullable', 'exists:users,id'],
-            'label' => ['required', 'string', 'max:120'],
-            'color' => ['nullable', 'string', 'max:40'],
-            'x' => ['required', 'numeric'],
-            'y' => ['required', 'numeric'],
-            'size' => ['nullable', 'integer', 'min:40', 'max:220'],
-            'members' => ['nullable', 'integer', 'min:0'],
-            'community_title' => ['nullable', 'string', 'max:120'],
-            'community_description' => ['nullable', 'string', 'max:1000'],
-            'community_cover_color' => ['nullable', 'string', 'max:40'],
-            'community_tagline' => ['nullable', 'string', 'max:160'],
-            'community_guidelines' => ['nullable', 'array', 'max:5'],
+            'user_id'                => ['nullable', 'exists:users,id'],
+            'label'                  => ['required', 'string', 'max:120'],
+            'color'                  => ['nullable', 'string', 'max:40'],
+            'x'                      => ['required', 'numeric'],
+            'y'                      => ['required', 'numeric'],
+            'size'                   => ['nullable', 'integer', 'min:40', 'max:220'],
+            'community_title'        => ['nullable', 'string', 'max:120'],
+            'community_description'  => ['nullable', 'string', 'max:1000'],
+            'community_cover_color'  => ['nullable', 'string', 'max:40'],
+            'community_tagline'      => ['nullable', 'string', 'max:160'],
+            'community_guidelines'   => ['nullable', 'array', 'max:5'],
             'community_guidelines.*' => ['string', 'max:180'],
         ]);
 
         $bubble = Bubble::create($data);
 
-        event(new BubbleCreated($bubble));
-
-        return response()->json($bubble, 201);
+        return response()->json(['id' => $bubble->id], 201);
     }
 
     public function update(Request $request, Bubble $bubble): JsonResponse

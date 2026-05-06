@@ -3,15 +3,25 @@
 @tailwind utilities;
 
 body {
+    background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%);
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background-image: url('/images/realistic-style-soap-bubbles-background.png');
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-  background-attachment: fixed;
-  min-height: 100vh;
+  opacity: 0.18;
 }
 
-body.no-profile-background {
-  background-image: none !important;
-  background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%);
+#app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
 }

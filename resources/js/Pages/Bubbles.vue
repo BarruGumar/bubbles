@@ -81,6 +81,7 @@ async function createBubble() {
     tagline:     newTagline.value.trim(),
     coverColor:  newColor.value,
     guidelines:  newGuidelines.value.split('\n').map(g => g.trim()).filter(Boolean).slice(0, 5),
+    userId:      authUser.value?.id ?? null,
   })
   newLabel.value       = ''
   newTitle.value       = ''
