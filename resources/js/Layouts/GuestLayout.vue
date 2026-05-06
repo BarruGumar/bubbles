@@ -5,7 +5,9 @@ import { Link } from '@inertiajs/vue3'
 <template>
   <div
     class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-    style="background-image: linear-gradient(160deg, rgba(240, 248, 255, 0.55) 0%, rgba(218, 238, 249, 0.48) 50%, rgba(197, 229, 245, 0.5) 100%), url('/images/realistic-style-soap-bubbles-background.png'); background-position: center; background-size: cover; background-repeat: no-repeat; font-family: 'Segoe UI', system-ui, sans-serif;"
+    style="background-image: linear-gradient(160deg, rgba(240, 248, 255, 0.55) 0%, rgba(218, 238, 249, 0.48) 50%, rgba(197, 229, 245, 0.5) 100%),
+    url('/images/realistic-style-soap-bubbles-background.png'); background-position: center; background-size: cover; background-repeat: no-repeat; 
+    font-family: 'Segoe UI', system-ui, sans-serif;"
   >
     <!-- Grid -->
     <svg class="absolute inset-0 w-full h-full pointer-events-none" style="opacity: .04;">
