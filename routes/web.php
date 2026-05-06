@@ -8,9 +8,13 @@ use Inertia\Inertia;
 
 Route::get('/bubbles', function () {
     return Inertia::render('Bubbles');
-})->middleware(['auth']);
+})->middleware(['auth'])->name('bubbles');
 
 Route::get('/', function () {
+        if (auth()->check()) {
+        return redirect()->route('bubbles');
+    }
+
     return Inertia::render('Welcome', [
         'canLogin'    => Route::has('login'),
         'canRegister' => Route::has('register'),

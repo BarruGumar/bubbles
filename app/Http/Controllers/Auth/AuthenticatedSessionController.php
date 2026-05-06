@@ -33,8 +33,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
-    }
+        return redirect()->intended(route('bubbles', absolute: false));    }
 
     /**
      * Destroy an authenticated session.
