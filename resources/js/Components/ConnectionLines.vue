@@ -1,7 +1,8 @@
 <script setup>
 const props = defineProps({
-  connections: { type: Array, required: true },
-  bubbles:     { type: Array, required: true },
+  connections:       { type: Array, required: true },
+  friendConnections: { type: Array, default: () => [] },
+  bubbles:           { type: Array, required: true },
 })
 
 function getBubble(id) {
@@ -11,6 +12,17 @@ function getBubble(id) {
 function center(id) {
   const b = getBubble(id)
   return b ? { x: b.x + b.size / 2, y: b.y + b.size / 2 } : { x: 0, y: 0 }
+}
+
+function midpoint(fromId, toId) {
+  const a = center(fromId)
+  const b = center(toId)
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+}
+
+function badgeLabel(friendNames) {
+  if (!friendNames?.length) return '?'
+  return friendNames.length === 1 ? friendNames[0][0].toUpperCase() : friendNames.length
 }
 
 function avatarPos(bubble, angle) {
@@ -47,7 +59,40 @@ function balloonTextX(angle, msg) {
     class="absolute inset-0 w-full h-full pointer-events-none"
     style="z-index: 2;"
   >
-    <!-- Connection lines -->
+    <!-- Friend connection lines (amigos em comum) -->
+    <g v-for="(c, i) in friendConnections" :key="'fc-' + i">
+      <!-- Glow -->
+      <line
+        :x1="center(c.from).x" :y1="center(c.from).y"
+        :x2="center(c.to).x"   :y2="center(c.to).y"
+        stroke="#9b6bdf"
+        stroke-width="10"
+        stroke-linecap="round"
+        opacity="0.07"
+      />
+      <!-- Main line -->
+      <line
+        :x1="center(c.from).x" :y1="center(c.from).y"
+        :x2="center(c.to).x"   :y2="center(c.to).y"
+        stroke="#9b6bdf"
+        stroke-width="1.8"
+        stroke-dasharray="5 4"
+        opacity="0.4"
+        class="friend-line"
+      />
+      <!-- Midpoint badge -->
+      <g :transform="`translate(${midpoint(c.from, c.to).x}, ${midpoint(c.from, c.to).y})`">
+        <circle r="12" fill="white" stroke="#9b6bdf" stroke-width="1.4" opacity="0.95" />
+        <text
+          text-anchor="middle" dominant-baseline="central"
+          font-size="9" font-weight="800"
+          font-family="Segoe UI, system-ui, sans-serif"
+          fill="#9b6bdf"
+        >{{ badgeLabel(c.friendNames) }}</text>
+      </g>
+    </g>
+
+    <!-- Manual connection lines -->
     <line
       v-for="(c, i) in connections"
       :key="'conn-' + i"
@@ -124,6 +169,10 @@ function balloonTextX(angle, msg) {
 <style scoped>
 .conn-line {
   animation: dashFlow 2.4s linear infinite;
+}
+
+.friend-line {
+  animation: dashFlow 3.2s linear infinite reverse;
 }
 
 @keyframes dashFlow {

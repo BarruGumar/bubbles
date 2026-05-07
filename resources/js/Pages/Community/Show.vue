@@ -195,6 +195,32 @@ function deleteCommunity() {
                             <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 3px; letter-spacing: -.02em;">{{ community.title }}</h1>
                             <p style="font-size: 12px; color: #5a7a8a; margin: 0 0 10px; font-style: italic;">{{ community.tagline }}</p>
                             <p style="font-size: 13px; font-weight: 700; margin: 0;" :style="{ color: community.color }">{{ community.members }} membros · {{ posts.length }} posts</p>
+                            <!-- Criador visível a toda a gente -->
+                            <div v-if="community.creator" style="display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+                                <span style="font-size: 11px; color: #8ba0b0; font-weight: 600;">Criado por</span>
+                                <component
+                                    :is="community.creator.username ? Link : 'span'"
+                                    :href="community.creator.username ? route('profile.show', community.creator.username) : undefined"
+                                    style="display: flex; align-items: center; gap: 5px; text-decoration: none;"
+                                >
+                                    <img
+                                        v-if="community.creator.avatar"
+                                        :src="community.creator.avatar"
+                                        :style="{
+                                            width: '18px', height: '18px', borderRadius: '50%',
+                                            objectFit: 'cover', border: `1.5px solid ${community.color}`,
+                                            display: 'block',
+                                        }"
+                                    />
+                                    <div v-else :style="{
+                                        width: '18px', height: '18px', borderRadius: '50%',
+                                        background: community.creator.avatar_color,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '8px', fontWeight: '800', color: 'white',
+                                    }">{{ community.creator.name[0] }}</div>
+                                    <span :style="{ fontSize: '12px', fontWeight: '700', color: community.color }">{{ community.creator.name }}</span>
+                                </component>
+                            </div>
                         </div>
                         <!-- Badge do criador + botão Editar -->
                         <div v-if="authUser && isOwn" style="display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-top: 4px;">
@@ -443,9 +469,11 @@ function deleteCommunity() {
                                 :src="post.author.avatar"
                                 :style="{
                                     width: '38px', height: '38px', borderRadius: '50%',
-                                    objectFit: 'cover', border: `2px solid ${post.author.avatar_color}`,
-                                    display: 'block', transition: 'opacity .2s',
+                                    objectFit: 'cover', display: 'block', transition: 'opacity .2s',
+                                    border: post.isCreator ? `2px solid ${community.color}` : `2px solid ${post.author.avatar_color}`,
+                                    boxShadow: post.isCreator ? `0 0 0 3px ${community.color}30, 0 2px 10px ${community.color}50` : 'none',
                                 }"
+                                :class="{ 'creator-avatar': post.isCreator }"
                                 @mouseenter="$event.target.style.opacity='.75'"
                                 @mouseleave="$event.target.style.opacity='1'"
                             />
@@ -455,7 +483,10 @@ function deleteCommunity() {
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: '15px', fontWeight: '800', color: 'white',
                                 transition: 'opacity .2s',
+                                boxShadow: post.isCreator ? `0 0 0 3px ${community.color}30, 0 2px 10px ${community.color}50` : 'none',
+                                border: post.isCreator ? `2px solid ${community.color}` : 'none',
                             }"
+                            :class="{ 'creator-avatar': post.isCreator }"
                             @mouseenter="$event.currentTarget.style.opacity='.75'"
                             @mouseleave="$event.currentTarget.style.opacity='1'"
                             >{{ formatInitial(post.author.name) }}</div>
@@ -463,17 +494,32 @@ function deleteCommunity() {
 
                         <div style="flex: 1; min-width: 0;">
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                                <div>
-                                    <!-- Nome clicável -->
+                                <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px;">
+                                    <!-- Nome clicável — efeito especial se for o criador -->
                                     <component
                                         :is="post.author.username ? Link : 'span'"
                                         :href="post.author.username ? route('profile.show', post.author.username) : undefined"
-                                        style="font-size: 13px; font-weight: 700; color: #1a3a4a; text-decoration: none; transition: color .15s;"
-                                        @mouseenter="post.author.username && ($event.currentTarget.style.color='#009ac7')"
-                                        @mouseleave="post.author.username && ($event.currentTarget.style.color='#1a3a4a')"
-                                    >{{ post.author.name }}</component>
-                                    <span v-if="post.author.username" style="font-size: 11px; color: #009ac7; margin-left: 5px;">@{{ post.author.username }}</span>
-                                    <span style="font-size: 11px; color: #8ba0b0; margin-left: 8px;">{{ post.created_at }}</span>
+                                        :style="{
+                                            fontSize: '13px', fontWeight: '800', textDecoration: 'none', transition: 'opacity .15s',
+                                            color: post.isCreator ? community.color : '#1a3a4a',
+                                        }"
+                                        @mouseenter="$event.currentTarget.style.opacity='.7'"
+                                        @mouseleave="$event.currentTarget.style.opacity='1'"
+                                    >
+                                        <span v-if="post.isCreator" style="margin-right: 2px;">✦</span>{{ post.author.name }}
+                                    </component>
+                                    <!-- Badge Criador -->
+                                    <span
+                                        v-if="post.isCreator"
+                                        class="creator-badge"
+                                        :style="{
+                                            color: community.color,
+                                            borderColor: community.color + '55',
+                                            background: community.color + '14',
+                                        }"
+                                    >Criador</span>
+                                    <span v-if="post.author.username" :style="{ fontSize: '11px', color: post.isCreator ? community.color + 'bb' : '#009ac7' }">@{{ post.author.username }}</span>
+                                    <span style="font-size: 11px; color: #8ba0b0;">{{ post.created_at }}</span>
                                 </div>
                                 <button
                                     v-if="post.isOwn"
@@ -711,4 +757,28 @@ textarea::placeholder { color: #b0c8d8; }
 /* Modal — círculo hover */
 .edit-image-area:hover .edit-image-overlay { background: rgba(0,0,0,.38) !important; }
 .edit-image-area:hover .edit-cam-icon      { opacity: 1 !important; }
+
+/* Badge "Criador" nos posts */
+.creator-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 99px;
+    border: 1px solid;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+/* Glow pulsante no avatar do criador */
+.creator-avatar {
+    animation: creatorPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes creatorPulse {
+    0%, 100% { box-shadow: 0 0 0 3px var(--creator-glow, rgba(0,154,199,.18)), 0 2px 10px rgba(0,154,199,.3); }
+    50%       { box-shadow: 0 0 0 5px var(--creator-glow, rgba(0,154,199,.28)), 0 2px 14px rgba(0,154,199,.45); }
+}
 </style>

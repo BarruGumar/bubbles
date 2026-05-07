@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bubble;
 use App\Models\CommunityPost;
+use App\Models\User;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,8 @@ class CommunityController extends Controller
 {
     public function show(int $id): Response
     {
-        $bubble = Bubble::withCount('memberships')->findOrFail($id);
+        $bubble  = Bubble::withCount('memberships')->findOrFail($id);
+        $creator = User::find($bubble->user_id);
 
         $posts = $bubble->communityPosts()
             ->with('user')
@@ -32,7 +34,8 @@ class CommunityController extends Controller
                     'avatar_color' => $p->user->avatar_color ?? '#009ac7',
                     'avatar'       => $p->user->avatar,
                 ],
-                'isOwn' => auth()->check() && auth()->id() === $p->user_id,
+                'isOwn'      => auth()->check() && auth()->id() === $p->user_id,
+                'isCreator'  => $p->user_id === $bubble->user_id,
             ]);
 
         $memberAvatars = $bubble->memberships()
@@ -68,6 +71,13 @@ class CommunityController extends Controller
                 ],
                 'members'        => $bubble->memberships_count,
                 'member_avatars' => $memberAvatars,
+                'creator'        => $creator ? [
+                    'id'           => $creator->id,
+                    'name'         => $creator->name,
+                    'username'     => $creator->username,
+                    'avatar'       => $creator->avatar,
+                    'avatar_color' => $creator->avatar_color ?? '#009ac7',
+                ] : null,
             ],
             'posts' => $posts,
         ]);

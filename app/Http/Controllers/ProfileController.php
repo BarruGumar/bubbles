@@ -60,6 +60,25 @@ class ProfileController extends Controller
             'color' => $b->color ?? '#009ac7',
         ])->values();
 
+        $friendRecords = Friend::where('status', 'accepted')
+            ->where(function ($q) use ($profileUser) {
+                $q->where('user_id', $profileUser->id)
+                  ->orWhere('friend_id', $profileUser->id);
+            })
+            ->with(['user', 'friend'])
+            ->get();
+
+        $profileFriends = $friendRecords->map(function ($f) use ($profileUser) {
+            $u = $f->user_id === $profileUser->id ? $f->friend : $f->user;
+            return [
+                'id'           => $u->id,
+                'name'         => $u->name,
+                'username'     => $u->username,
+                'avatar'       => $u->avatar,
+                'avatar_color' => $u->avatar_color ?? '#009ac7',
+            ];
+        })->values();
+
         return Inertia::render('Profile/Show', [
             'profileUser' => [
                 'id'           => $profileUser->id,
@@ -72,11 +91,12 @@ class ProfileController extends Controller
                 'created_at'   => $profileUser->created_at->format('M Y'),
                 'posts_count'  => $posts->count(),
             ],
-            'posts'        => $posts,
-            'communities'  => $communities,
-            'isOwn'        => $isOwn,
-            'friendStatus' => $friendStatus,
-            'friendId'     => $friendId,
+            'posts'          => $posts,
+            'communities'    => $communities,
+            'profileFriends' => $profileFriends,
+            'isOwn'          => $isOwn,
+            'friendStatus'   => $friendStatus,
+            'friendId'       => $friendId,
         ]);
     }
 

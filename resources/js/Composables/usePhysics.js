@@ -24,7 +24,7 @@ export function usePhysics() {
         const dx   = b1.x - b2.x
         const dy   = b1.y - b2.y
         const d    = Math.hypot(dx, dy) || 0.01
-        const minD = (b1.size + s2) / 2 + 50
+        const minD = (b1.size + s2) / 2 + 18
         if (d < minD) {
           const s = (minD - d) / minD
           fx += (dx / d) * s * REPULSE

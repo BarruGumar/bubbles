@@ -4,12 +4,13 @@ import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
 const props = defineProps({
-    profileUser:  Object,
-    posts:        Array,
-    communities:  Array,
-    isOwn:        Boolean,
-    friendStatus: String, // null | 'none' | 'pending_sent' | 'pending_received' | 'accepted'
-    friendId:     Number, // Friend record id (null if not applicable)
+    profileUser:    Object,
+    posts:          Array,
+    communities:    Array,
+    profileFriends: Array,
+    isOwn:          Boolean,
+    friendStatus:   String, // null | 'none' | 'pending_sent' | 'pending_received' | 'accepted'
+    friendId:       Number, // Friend record id (null if not applicable)
 })
 
 const authUser = computed(() => usePage().props.auth?.user)
@@ -212,6 +213,40 @@ function removeFriend() {
                         @mouseenter="$event.currentTarget.style.background = c.color + '30'"
                         @mouseleave="$event.currentTarget.style.background = c.color + '18'"
                     >{{ c.label }}</Link>
+                </div>
+            </div>
+
+            <!-- Amigos -->
+            <div
+                v-if="profileFriends && profileFriends.length"
+                style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid #4ebcff1a; box-shadow: 0 2px 12px #009ac708; padding: 16px 22px; margin-bottom: 16px;"
+            >
+                <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .1em; margin: 0 0 14px;">Amigos · {{ profileFriends.length }}</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    <Link
+                        v-for="f in profileFriends"
+                        :key="f.id"
+                        :href="route('profile.show', f.username)"
+                        style="display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; width: 60px;"
+                    >
+                        <img
+                            v-if="f.avatar"
+                            :src="f.avatar"
+                            :style="{
+                                width: '46px', height: '46px', borderRadius: '50%',
+                                objectFit: 'cover', border: `2px solid ${f.avatar_color}`,
+                                boxShadow: `0 2px 8px ${f.avatar_color}44`, display: 'block',
+                            }"
+                        />
+                        <div v-else :style="{
+                            width: '46px', height: '46px', borderRadius: '50%',
+                            background: f.avatar_color,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '17px', fontWeight: '800', color: 'white',
+                            boxShadow: `0 2px 8px ${f.avatar_color}44`,
+                        }">{{ formatInitial(f.name) }}</div>
+                        <span style="font-size: 10px; font-weight: 600; color: #4a6a7a; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ f.name.split(' ')[0] }}</span>
+                    </Link>
                 </div>
             </div>
 

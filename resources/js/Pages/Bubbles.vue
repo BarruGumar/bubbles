@@ -9,7 +9,7 @@ import { usePhysics }     from '@/Composables/usePhysics'
 import { useDrag }        from '@/Composables/useDrag'
 
 const { bubbles, hoveredId, connectSource, loading, load, add, toggleSelect } = useBubbles()
-const { connections, connect } = useConnections()
+const { connections, friendConnections, load: loadConnections, loadFriendConnections, connect } = useConnections()
 const { step } = usePhysics()
 
 const authUser        = computed(() => usePage().props.auth?.user)
@@ -61,6 +61,8 @@ function loop() {
 
 onMounted(() => {
   load()
+  loadConnections()
+  loadFriendConnections()
   window.addEventListener('mousemove', onWindowMouseMove)
   window.addEventListener('mouseup',   onWindowMouseUp)
   window.addEventListener('keydown',   onKeyDown)
@@ -151,9 +153,8 @@ const trends = computed(() =>
           title="Nova bolha"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <rect x="2" y="4"   width="14" height="1.6" rx=".8" fill="currentColor"/>
+            <rect x="8.2" y="2" width="1.6" height="14" rx=".8" fill="currentColor"/>
             <rect x="2" y="8.2" width="14" height="1.6" rx=".8" fill="currentColor"/>
-            <rect x="2" y="12.4" width="14" height="1.6" rx=".8" fill="currentColor"/>
           </svg>
         </button>
 
@@ -391,7 +392,7 @@ const trends = computed(() =>
     </div>
 
     <!-- SVG LAYER: connections + avatars -->
-    <ConnectionLines v-if="!loading" :connections="connections" :bubbles="bubbles" />
+    <ConnectionLines v-if="!loading" :connections="connections" :friend-connections="friendConnections" :bubbles="bubbles" />
 
     <!-- BUBBLES -->
     <Bubble

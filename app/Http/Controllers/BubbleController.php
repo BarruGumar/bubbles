@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Events\BubbleMoved;
 use App\Models\Bubble;
+use App\Models\Friend;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -95,5 +98,75 @@ class BubbleController extends Controller
         $bubble->delete();
 
         return response()->json(status: 204);
+    }
+
+    public function friendConnections(): JsonResponse
+    {
+        if (! auth()->check()) {
+            return response()->json([]);
+        }
+
+        $user = auth()->user();
+
+        $friendIds = Friend::where('status', 'accepted')
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhere('friend_id', $user->id);
+            })
+            ->get()
+            ->map(fn ($f) => $f->user_id === $user->id ? $f->friend_id : $f->user_id)
+            ->unique()
+            ->values();
+
+        if ($friendIds->isEmpty()) {
+            return response()->json([]);
+        }
+
+        $friendCommunities = DB::table('community_user')
+            ->whereIn('user_id', $friendIds)
+            ->get(['user_id', 'community_id'])
+            ->groupBy('user_id');
+
+        $pairs = collect();
+
+        foreach ($friendCommunities as $friendId => $memberships) {
+            $communityIds = $memberships->pluck('community_id')->toArray();
+            if (count($communityIds) < 2) {
+                continue;
+            }
+
+            for ($i = 0; $i < count($communityIds); $i++) {
+                for ($j = $i + 1; $j < count($communityIds); $j++) {
+                    $from  = min($communityIds[$i], $communityIds[$j]);
+                    $to    = max($communityIds[$i], $communityIds[$j]);
+                    $key   = "{$from}-{$to}";
+                    $entry = $pairs->get($key, ['from' => $from, 'to' => $to, 'friendIds' => []]);
+
+                    if (! in_array((int) $friendId, $entry['friendIds'])) {
+                        $entry['friendIds'][] = (int) $friendId;
+                    }
+
+                    $pairs->put($key, $entry);
+                }
+            }
+        }
+
+        if ($pairs->isEmpty()) {
+            return response()->json([]);
+        }
+
+        $allFriendIds = $pairs->flatMap(fn ($p) => $p['friendIds'])->unique()->values();
+        $nameMap      = User::whereIn('id', $allFriendIds)->get(['id', 'name'])->keyBy('id');
+
+        $result = $pairs->values()->map(fn ($pair) => [
+            'from'        => $pair['from'],
+            'to'          => $pair['to'],
+            'friendNames' => collect($pair['friendIds'])
+                ->map(fn ($id) => $nameMap->get($id)?->name)
+                ->filter()
+                ->values()
+                ->toArray(),
+        ]);
+
+        return response()->json($result);
     }
 }

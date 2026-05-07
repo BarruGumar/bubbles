@@ -16,3 +16,5 @@ Route::apiResource('connections', ConnectionController::class)->only([
     'store',
     'destroy',
 ]);
+
+Route::get('/friend-connections', [BubbleController::class, 'friendConnections']);

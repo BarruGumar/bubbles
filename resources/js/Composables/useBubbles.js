@@ -4,6 +4,12 @@ import axios from 'axios'
 const COLORS = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b']
 let _localId  = -1
 
+// Tamanho dinâmico baseado no número de membros
+// 0 membros → 60px | 1 → ~67 | 25 → ~95 | 100 → ~130 | 400+ → 180 (máximo)
+function sizeFromMembers(n) {
+  return Math.round(Math.min(70 + Math.sqrt(n ?? 0) * 9, 220))
+}
+
 function makeLocal(raw) {
   return {
     ...raw,
@@ -84,7 +90,7 @@ export function useBubbles() {
           y:         b.y       ?? Math.random() * (window.innerHeight - 200) + 100,
           label:     b.label,
           color:     b.color   ?? '#009ac7',
-          size:      b.size    ?? 85,
+          size:      sizeFromMembers(b.members),
           members:   b.members ?? 0,
           isMember:  b.is_member ?? false,
           avatars:   b.avatars ?? [],
@@ -108,7 +114,7 @@ export function useBubbles() {
     const lid = _localId--
 
     bubbles.value.push(makeLocal({
-      id: lid, x, y, label: lbl, color, size: 85, members: 0, activity: 0.65,
+      id: lid, x, y, label: lbl, color, size: sizeFromMembers(1), members: 1, activity: 0.65,
       vx: (Math.random() - 0.5) * 2,
       vy: (Math.random() - 0.5) * 2,
       spawnScale: 0.1,
@@ -120,7 +126,7 @@ export function useBubbles() {
         color,
         x,
         y,
-        size:                   85,
+        size:                   sizeFromMembers(1),
         user_id:                template.userId      ?? null,
         community_title:        template.title       || lbl,
         community_description:  template.description || null,
