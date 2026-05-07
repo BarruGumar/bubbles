@@ -14,6 +14,7 @@ const { step } = usePhysics()
 
 const authUser        = computed(() => usePage().props.auth?.user)
 const pendingFriends  = computed(() => usePage().props.auth?.pending_friends_count ?? 0)
+const unreadMessages  = computed(() => usePage().props.auth?.unread_messages_count ?? 0)
 
 const PALETTE  = ['#009ac7','#4ebcff','#2ea87e','#e07b4a','#9b6bdf','#c74a6b','#e0a040','#6b9bdf']
 const newLabel = ref('')
@@ -159,12 +160,15 @@ const trends = computed(() =>
         </button>
 
         <!-- Mensagens -->
-        <button
+        <Link
+          v-if="authUser"
+          :href="route('conversations.index')"
           :style="{
-            width: '36px', height: '36px', borderRadius: '10px', border: 'none',
-            background: 'transparent', color: '#5a7a8a', cursor: 'pointer',
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'transparent', color: '#5a7a8a',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background .15s',
+            transition: 'background .15s', textDecoration: 'none',
+            position: 'relative',
           }"
           @mouseenter="$event.currentTarget.style.background='#009ac714'"
           @mouseleave="$event.currentTarget.style.background='transparent'"
@@ -173,7 +177,11 @@ const trends = computed(() =>
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M15 2.5H3a1 1 0 00-1 1v7.5a1 1 0 001 1h3.5l2.5 3 2.5-3H15a1 1 0 001-1V3.5a1 1 0 00-1-1z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-        </button>
+          <span
+            v-if="unreadMessages > 0"
+            style="position: absolute; top: 4px; right: 4px; min-width: 14px; height: 14px; padding: 0 3px; background: #009ac7; color: white; border-radius: 99px; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; line-height: 1;"
+          >{{ unreadMessages }}</span>
+        </Link>
 
         <!-- Notificações -->
         <button

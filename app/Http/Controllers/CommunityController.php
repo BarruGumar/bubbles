@@ -19,23 +19,45 @@ class CommunityController extends Controller
         $bubble  = Bubble::withCount('memberships')->findOrFail($id);
         $creator = User::find($bubble->user_id);
 
+        $userId = auth()->id();
+
         $posts = $bubble->communityPosts()
-            ->with('user')
+            ->withCount('likes')
+            ->with([
+                'user',
+                'likes'    => fn ($q) => $q->where('user_id', $userId ?? 0),
+                'comments' => fn ($q) => $q->with('user')->orderBy('created_at'),
+            ])
             ->latest()
             ->get()
             ->map(fn ($p) => [
-                'id'         => $p->id,
-                'content'    => $p->content,
-                'image'      => $p->image,
-                'created_at' => $p->created_at->diffForHumans(),
-                'author'     => [
+                'id'          => $p->id,
+                'content'     => $p->content,
+                'image'       => $p->image,
+                'created_at'  => $p->created_at->diffForHumans(),
+                'author'      => [
                     'name'         => $p->user->name,
                     'username'     => $p->user->username,
                     'avatar_color' => $p->user->avatar_color ?? '#009ac7',
                     'avatar'       => $p->user->avatar,
                 ],
-                'isOwn'      => auth()->check() && auth()->id() === $p->user_id,
-                'isCreator'  => $p->user_id === $bubble->user_id,
+                'isOwn'       => auth()->check() && auth()->id() === $p->user_id,
+                'isCreator'   => $p->user_id === $bubble->user_id,
+                'likes_count' => $p->likes_count,
+                'is_liked'    => $p->likes->isNotEmpty(),
+                'comments'    => $p->comments->map(fn ($c) => [
+                    'id'         => $c->id,
+                    'content'    => $c->content,
+                    'created_at' => $c->created_at->diffForHumans(),
+                    'is_own'     => $userId && $c->user_id === $userId,
+                    'author'     => [
+                        'id'           => $c->user->id,
+                        'name'         => $c->user->name,
+                        'username'     => $c->user->username,
+                        'avatar'       => $c->user->avatar,
+                        'avatar_color' => $c->user->avatar_color ?? '#009ac7',
+                    ],
+                ])->values(),
             ]);
 
         $memberAvatars = $bubble->memberships()
@@ -159,7 +181,9 @@ class CommunityController extends Controller
 
     public function destroy(int $id, CommunityPost $post): RedirectResponse
     {
-        abort_if(auth()->id() !== $post->user_id, 403);
+        $bubble = Bubble::findOrFail($id);
+        $isCommunityCreator = auth()->id() === $bubble->user_id;
+        abort_if(auth()->id() !== $post->user_id && !$isCommunityCreator, 403);
         $post->delete();
         return back();
     }

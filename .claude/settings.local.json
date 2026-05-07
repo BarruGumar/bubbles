@@ -6,7 +6,15 @@
       "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\" -Directory)",
       "Bash(Select-Object Name)",
       "Bash(npm run *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(php -l app/Models/Conversation.php)",
+      "Bash(php -l app/Models/Message.php)",
+      "Bash(php -l app/Models/User.php)",
+      "Bash(php -l app/Http/Controllers/ConversationController.php)",
+      "Bash(php -l app/Http/Middleware/HandleInertiaRequests.php)",
+      "Bash(php -r \"echo file_get_contents\\('storage/logs/laravel.log'\\);\")",
+      "Bash(php -r ' *)",
+      "PowerShell(cd c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles; php artisan tinker --execute=\"try { \\\\$c = new \\\\App\\\\Http\\\\Controllers\\\\BubbleController\\(\\); \\\\$r = \\\\$c->index\\(\\); \\\\$data = json_decode\\(\\\\$r->getContent\\(\\), true\\); echo count\\(\\\\$data\\) . ' bubbles'; echo '\\\\n'; echo json_encode\\(\\\\$data[0] ?? 'no data'\\); } catch\\(\\\\Exception \\\\$e\\) { echo \\\\$e->getMessage\\(\\); }\")"
     ]
   }
 }

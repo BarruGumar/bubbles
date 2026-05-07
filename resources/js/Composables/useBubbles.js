@@ -99,7 +99,8 @@ export function useBubbles() {
       } else {
         bubbles.value = []
       }
-    } catch {
+    } catch (err) {
+      console.error('[Bubbles] Erro ao carregar bolhas:', err?.response?.data ?? err)
       bubbles.value = []
     } finally {
       loading.value = false

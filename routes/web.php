@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\FriendController;
+use App\Http\Controllers\LikeController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +49,11 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
+    Route::post('/posts/{post}/like', [LikeController::class, 'togglePost'])->name('posts.like');
+    Route::post('/posts/{post}/comments', [CommentController::class, 'storePost'])->name('posts.comments.store');
+    Route::post('/community-posts/{post}/like', [LikeController::class, 'toggleCommunityPost'])->name('community-posts.like');
+    Route::post('/community-posts/{post}/comments', [CommentController::class, 'storeCommunityPost'])->name('community-posts.comments.store');
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
     // Community settings + delete (criador apenas)
     Route::put('/c/{id}/settings', [CommunityController::class, 'updateSettings'])->name('community.update');
@@ -54,6 +62,12 @@ Route::middleware('auth')->group(function () {
     // Community membership
     Route::post('/c/{id}/join', [CommunityController::class, 'join'])->name('community.join');
     Route::delete('/c/{id}/leave', [CommunityController::class, 'leave'])->name('community.leave');
+
+    // Conversations
+    Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
+    Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
+    Route::post('/conversations', [ConversationController::class, 'store'])->name('conversations.store');
+    Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'storeMessage'])->name('messages.store');
 
     // Friends
     Route::get('/friends', [FriendController::class, 'index'])->name('friends.index');

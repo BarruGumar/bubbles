@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Conversation;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -33,10 +34,22 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user'                  => $request->user(),
-                'pending_friends_count' => $request->user()
+                'pending_friends_count'  => $request->user()
                     ? \App\Models\Friend::where('friend_id', $request->user()->id)
                         ->where('status', 'pending')
                         ->count()
+                    : 0,
+                'unread_messages_count' => $request->user()
+                    ? \App\Models\Message::join('conversation_user as cu', function ($join) use ($request) {
+                        $join->on('cu.conversation_id', '=', 'messages.conversation_id')
+                             ->where('cu.user_id', $request->user()->id);
+                    })
+                    ->where('messages.user_id', '!=', $request->user()->id)
+                    ->where(function ($q) {
+                        $q->whereNull('cu.last_read_at')
+                          ->orWhereRaw('messages.created_at > cu.last_read_at');
+                    })
+                    ->count()
                     : 0,
             ],
         ];
