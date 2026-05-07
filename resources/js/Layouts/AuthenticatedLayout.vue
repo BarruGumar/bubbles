@@ -2,9 +2,10 @@
 import { ref, computed } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 
-const page  = usePage()
-const user  = computed(() => page.props.auth?.user)
-const open  = ref(false)
+const page             = usePage()
+const user             = computed(() => page.props.auth?.user)
+const pendingFriends   = computed(() => page.props.auth?.pending_friends_count ?? 0)
+const open             = ref(false)
 
 function avatarInitial(name) {
     return (name ?? '?')[0].toUpperCase()
@@ -31,6 +32,19 @@ function avatarInitial(name) {
                         @mouseenter="$event.target.style.color='#009ac7'"
                         @mouseleave="$event.target.style.color='#5a7a8a'"
                     >Explorar</Link>
+                    <Link
+                        v-if="user"
+                        :href="route('friends.index')"
+                        style="font-size: 13px; font-weight: 600; color: #5a7a8a; text-decoration: none; transition: color .2s; position: relative; display: inline-flex; align-items: center; gap: 6px;"
+                        @mouseenter="$event.currentTarget.style.color='#009ac7'"
+                        @mouseleave="$event.currentTarget.style.color='#5a7a8a'"
+                    >
+                        Amigos
+                        <span
+                            v-if="pendingFriends > 0"
+                            style="display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; background: #c74a6b; color: white; border-radius: 99px; font-size: 10px; font-weight: 800; line-height: 1;"
+                        >{{ pendingFriends }}</span>
+                    </Link>
                 </div>
 
                 <!-- Right: user avatar dropdown -->

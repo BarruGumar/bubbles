@@ -15,7 +15,7 @@ class CommunityController extends Controller
 {
     public function show(int $id): Response
     {
-        $bubble = Bubble::findOrFail($id);
+        $bubble = Bubble::withCount('memberships')->findOrFail($id);
 
         $posts = $bubble->communityPosts()
             ->with('user')
@@ -35,27 +35,92 @@ class CommunityController extends Controller
                 'isOwn' => auth()->check() && auth()->id() === $p->user_id,
             ]);
 
+        $memberAvatars = $bubble->memberships()
+            ->orderBy('community_user.created_at', 'asc')
+            ->take(6)
+            ->get()
+            ->map(fn ($u) => [
+                'name'         => $u->name,
+                'username'     => $u->username,
+                'avatar'       => $u->avatar,
+                'avatar_color' => $u->avatar_color ?? '#009ac7',
+            ])
+            ->values()
+            ->toArray();
+
         return Inertia::render('Community/Show', [
-            'isOwn'     => auth()->check() && auth()->id() === $bubble->user_id,
+            'isOwn'    => auth()->check() && auth()->id() === $bubble->user_id,
+            'isMember' => auth()->check() && $bubble->memberships()->where('user_id', auth()->id())->exists(),
             'community' => [
-                'id'          => $bubble->id,
-                'label'       => $bubble->label,
-                'title'       => $bubble->community_title ?: $bubble->label,
-                'description' => $bubble->community_description ?: 'Comunidade criada no bubbles.',
-                'tagline'     => $bubble->community_tagline ?: 'Conecta, partilha e participa.',
-                'color'       => $bubble->color ?? '#009ac7',
-                'cover_color' => $bubble->community_cover_color ?: ($bubble->color ?? '#009ac7'),
-                'image'       => $bubble->community_image,
-                'banner'      => $bubble->community_banner,
-                'guidelines'  => $bubble->community_guidelines ?: [
+                'id'             => $bubble->id,
+                'label'          => $bubble->label,
+                'title'          => $bubble->community_title ?: $bubble->label,
+                'description'    => $bubble->community_description ?: 'Comunidade criada no bubbles.',
+                'tagline'        => $bubble->community_tagline ?: 'Conecta, partilha e participa.',
+                'color'          => $bubble->color ?? '#009ac7',
+                'cover_color'    => $bubble->community_cover_color ?: ($bubble->color ?? '#009ac7'),
+                'image'          => $bubble->community_image,
+                'banner'         => $bubble->community_banner,
+                'guidelines'     => $bubble->community_guidelines ?: [
                     'Respeita os outros membros.',
                     'Evita spam e conteúdos repetidos.',
                     'Partilha conteúdo relevante para o tema.',
                 ],
-                'members' => $bubble->members ?? 0,
+                'members'        => $bubble->memberships_count,
+                'member_avatars' => $memberAvatars,
             ],
             'posts' => $posts,
         ]);
+    }
+
+    public function updateSettings(Request $request, int $id): RedirectResponse
+    {
+        $bubble = Bubble::findOrFail($id);
+        abort_if(auth()->id() !== $bubble->user_id, 403);
+
+        $data = $request->validate([
+            'label'                  => ['required', 'string', 'max:120'],
+            'community_title'        => ['nullable', 'string', 'max:120'],
+            'community_tagline'      => ['nullable', 'string', 'max:160'],
+            'community_description'  => ['nullable', 'string', 'max:1000'],
+            'color'                  => ['nullable', 'string', 'max:40'],
+            'community_guidelines'   => ['nullable', 'array', 'max:5'],
+            'community_guidelines.*' => ['string', 'max:180'],
+        ]);
+
+        if (isset($data['color'])) {
+            $data['community_cover_color'] = $data['color'];
+        }
+
+        $bubble->update($data);
+
+        return back()->with('status', 'community-updated');
+    }
+
+    public function deleteCommunity(int $id): RedirectResponse
+    {
+        $bubble = Bubble::findOrFail($id);
+        abort_if(auth()->id() !== $bubble->user_id, 403);
+
+        $bubble->delete();
+
+        return redirect()->route('bubbles');
+    }
+
+    public function join(int $id): RedirectResponse
+    {
+        $bubble = Bubble::findOrFail($id);
+        $bubble->memberships()->syncWithoutDetaching([auth()->id()]);
+
+        return back();
+    }
+
+    public function leave(int $id): RedirectResponse
+    {
+        $bubble = Bubble::findOrFail($id);
+        $bubble->memberships()->detach(auth()->id());
+
+        return back();
     }
 
     public function store(Request $request, int $id): RedirectResponse

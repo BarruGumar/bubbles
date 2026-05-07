@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(php artisan *)",
-      "Bash(Remove-Item \"C:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\resources\\\\js\\\\Pages\\\\BubbleAvatar.vue\")"
+      "Bash(Remove-Item \"C:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\resources\\\\js\\\\Pages\\\\BubbleAvatar.vue\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(npm run *)",
+      "Bash(npx vite *)"
     ]
   }
 }

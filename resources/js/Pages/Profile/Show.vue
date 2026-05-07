@@ -4,9 +4,12 @@ import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
 const props = defineProps({
-    profileUser: Object,
-    posts:       Array,
-    isOwn:       Boolean,
+    profileUser:  Object,
+    posts:        Array,
+    communities:  Array,
+    isOwn:        Boolean,
+    friendStatus: String, // null | 'none' | 'pending_sent' | 'pending_received' | 'accepted'
+    friendId:     Number, // Friend record id (null if not applicable)
 })
 
 const authUser = computed(() => usePage().props.auth?.user)
@@ -47,6 +50,18 @@ function deletePost(id) {
 
 function formatInitial(name) {
     return (name ?? '?')[0].toUpperCase()
+}
+
+function sendFriendRequest() {
+    router.post(route('friends.send', props.profileUser.username), {}, { preserveScroll: true })
+}
+
+function acceptFriendRequest() {
+    router.patch(route('friends.accept', props.friendId), {}, { preserveScroll: true })
+}
+
+function removeFriend() {
+    router.delete(route('friends.reject', props.friendId), { preserveScroll: true })
 }
 </script>
 
@@ -96,11 +111,70 @@ function formatInitial(name) {
                             <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 2px;">{{ profileUser.name }}</h1>
                             <p style="font-size: 13px; color: #009ac7; font-weight: 600; margin: 0;">@{{ profileUser.username }}</p>
                         </div>
+                        <!-- Editar (próprio perfil) -->
                         <Link
                             v-if="isOwn"
                             :href="route('profile.edit')"
                             style="font-size: 12px; font-weight: 700; color: #009ac7; text-decoration: none; padding: 7px 18px; border-radius: 99px; border: 1.5px solid #009ac744; background: #009ac708; transition: all .2s; white-space: nowrap;"
                         >Editar perfil</Link>
+
+                        <!-- Botões de amizade (perfil de outro utilizador) -->
+                        <div v-else-if="friendStatus" style="display: flex; gap: 8px; flex-wrap: wrap;">
+
+                            <!-- Sem relação → pode enviar pedido -->
+                            <button
+                                v-if="friendStatus === 'none'"
+                                @click="sendFriendRequest"
+                                style="font-size: 12px; font-weight: 700; color: white; padding: 7px 18px; border-radius: 99px; border: none; background: #009ac7; cursor: pointer; white-space: nowrap; box-shadow: 0 3px 12px #009ac730; transition: opacity .2s;"
+                                @mouseenter="$event.target.style.opacity='.8'"
+                                @mouseleave="$event.target.style.opacity='1'"
+                            >+ Adicionar amigo</button>
+
+                            <!-- Pedido enviado → aguardando -->
+                            <template v-else-if="friendStatus === 'pending_sent'">
+                                <button
+                                    disabled
+                                    style="font-size: 12px; font-weight: 700; color: #8ba0b0; padding: 7px 18px; border-radius: 99px; border: 1.5px solid #c8d8e0; background: #f0f8ff; cursor: not-allowed; white-space: nowrap;"
+                                >Pedido enviado</button>
+                                <button
+                                    @click="removeFriend"
+                                    style="font-size: 12px; font-weight: 600; color: #8ba0b0; padding: 7px 14px; border-radius: 99px; border: 1.5px solid #c8d8e0; background: transparent; cursor: pointer; white-space: nowrap; transition: all .2s;"
+                                    @mouseenter="$event.currentTarget.style.borderColor='#e05555'; $event.currentTarget.style.color='#e05555'"
+                                    @mouseleave="$event.currentTarget.style.borderColor='#c8d8e0'; $event.currentTarget.style.color='#8ba0b0'"
+                                >Cancelar</button>
+                            </template>
+
+                            <!-- Pedido recebido → aceitar ou recusar -->
+                            <template v-else-if="friendStatus === 'pending_received'">
+                                <button
+                                    @click="acceptFriendRequest"
+                                    style="font-size: 12px; font-weight: 700; color: white; padding: 7px 18px; border-radius: 99px; border: none; background: #009ac7; cursor: pointer; white-space: nowrap; box-shadow: 0 3px 12px #009ac730; transition: opacity .2s;"
+                                    @mouseenter="$event.target.style.opacity='.8'"
+                                    @mouseleave="$event.target.style.opacity='1'"
+                                >Aceitar pedido</button>
+                                <button
+                                    @click="removeFriend"
+                                    style="font-size: 12px; font-weight: 600; color: #8ba0b0; padding: 7px 14px; border-radius: 99px; border: 1.5px solid #c8d8e0; background: transparent; cursor: pointer; white-space: nowrap; transition: all .2s;"
+                                    @mouseenter="$event.currentTarget.style.borderColor='#e05555'; $event.currentTarget.style.color='#e05555'"
+                                    @mouseleave="$event.currentTarget.style.borderColor='#c8d8e0'; $event.currentTarget.style.color='#8ba0b0'"
+                                >Recusar</button>
+                            </template>
+
+                            <!-- Já são amigos -->
+                            <template v-else-if="friendStatus === 'accepted'">
+                                <button
+                                    disabled
+                                    style="font-size: 12px; font-weight: 700; color: #2ea87e; padding: 7px 18px; border-radius: 99px; border: 1.5px solid #2ea87e55; background: #2ea87e0c; cursor: default; white-space: nowrap;"
+                                >✓ Amigos</button>
+                                <button
+                                    @click="removeFriend"
+                                    style="font-size: 12px; font-weight: 600; color: #8ba0b0; padding: 7px 14px; border-radius: 99px; border: 1.5px solid #c8d8e0; background: transparent; cursor: pointer; white-space: nowrap; transition: all .2s;"
+                                    @mouseenter="$event.currentTarget.style.borderColor='#e05555'; $event.currentTarget.style.color='#e05555'"
+                                    @mouseleave="$event.currentTarget.style.borderColor='#c8d8e0'; $event.currentTarget.style.color='#8ba0b0'"
+                                >Remover</button>
+                            </template>
+
+                        </div>
                     </div>
 
                     <p v-if="profileUser.bio" style="font-size: 14px; color: #3a5a6a; margin: 14px 0 0; line-height: 1.6;">{{ profileUser.bio }}</p>
@@ -115,6 +189,29 @@ function formatInitial(name) {
                             <span style="font-size: 11px; color: #8ba0b0; font-weight: 600;">Membro desde {{ profileUser.created_at }}</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Comunidades -->
+            <div
+                v-if="communities && communities.length"
+                style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid #4ebcff1a; box-shadow: 0 2px 12px #009ac708; padding: 16px 22px; margin-bottom: 16px;"
+            >
+                <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .1em; margin: 0 0 12px;">Comunidades</p>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <Link
+                        v-for="c in communities"
+                        :key="c.id"
+                        :href="route('community.show', c.id)"
+                        :style="{
+                            display: 'inline-block', padding: '5px 13px', borderRadius: '99px',
+                            background: c.color + '18', color: c.color,
+                            fontSize: '12px', fontWeight: '700', textDecoration: 'none',
+                            border: `1px solid ${c.color}33`, transition: 'all .2s',
+                        }"
+                        @mouseenter="$event.currentTarget.style.background = c.color + '30'"
+                        @mouseleave="$event.currentTarget.style.background = c.color + '18'"
+                    >{{ c.label }}</Link>
                 </div>
             </div>
 

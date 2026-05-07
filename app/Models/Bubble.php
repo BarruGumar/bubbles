@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bubble extends Model
@@ -48,5 +49,11 @@ class Bubble extends Model
     public function incomingConnections(): HasMany
     {
         return $this->hasMany(Connection::class, 'to_bubble_id');
+    }
+
+    public function memberships(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'community_user', 'community_id', 'user_id')
+                    ->withTimestamps();
     }
 }

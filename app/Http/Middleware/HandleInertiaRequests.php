@@ -32,7 +32,12 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user'                  => $request->user(),
+                'pending_friends_count' => $request->user()
+                    ? \App\Models\Friend::where('friend_id', $request->user()->id)
+                        ->where('status', 'pending')
+                        ->count()
+                    : 0,
             ],
         ];
     }

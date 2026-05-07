@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Friend;
 use App\Models\User;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -19,12 +20,45 @@ class ProfileController extends Controller
     public function show(string $username): Response
     {
         $profileUser = User::where('username', $username)->firstOrFail();
+        $isOwn       = auth()->check() && auth()->id() === $profileUser->id;
+
         $posts = $profileUser->posts()->latest()->get()->map(fn ($p) => [
             'id'         => $p->id,
             'content'    => $p->content,
             'image'      => $p->image,
             'created_at' => $p->created_at->diffForHumans(),
         ]);
+
+        $friendStatus = null;
+        $friendId     = null;
+
+        if (auth()->check() && ! $isOwn) {
+            $record = Friend::where(function ($q) use ($profileUser) {
+                $q->where('user_id', auth()->id())->where('friend_id', $profileUser->id);
+            })->orWhere(function ($q) use ($profileUser) {
+                $q->where('user_id', $profileUser->id)->where('friend_id', auth()->id());
+            })->first();
+
+            if (! $record) {
+                $friendStatus = 'none';
+            } elseif ($record->status === 'pending' && $record->user_id === auth()->id()) {
+                $friendStatus = 'pending_sent';
+                $friendId     = $record->id;
+            } elseif ($record->status === 'pending') {
+                $friendStatus = 'pending_received';
+                $friendId     = $record->id;
+            } else {
+                $friendStatus = 'accepted';
+                $friendId     = $record->id;
+            }
+        }
+
+        $communities = $profileUser->communities()->get()->map(fn ($b) => [
+            'id'    => $b->id,
+            'label' => $b->label,
+            'title' => $b->community_title ?: $b->label,
+            'color' => $b->color ?? '#009ac7',
+        ])->values();
 
         return Inertia::render('Profile/Show', [
             'profileUser' => [
@@ -38,8 +72,11 @@ class ProfileController extends Controller
                 'created_at'   => $profileUser->created_at->format('M Y'),
                 'posts_count'  => $posts->count(),
             ],
-            'posts' => $posts,
-            'isOwn' => auth()->check() && auth()->id() === $profileUser->id,
+            'posts'        => $posts,
+            'communities'  => $communities,
+            'isOwn'        => $isOwn,
+            'friendStatus' => $friendStatus,
+            'friendId'     => $friendId,
         ]);
     }
 

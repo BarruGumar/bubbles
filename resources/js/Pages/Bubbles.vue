@@ -12,7 +12,8 @@ const { bubbles, hoveredId, connectSource, loading, load, add, toggleSelect } = 
 const { connections, connect } = useConnections()
 const { step } = usePhysics()
 
-const authUser = computed(() => usePage().props.auth?.user)
+const authUser        = computed(() => usePage().props.auth?.user)
+const pendingFriends  = computed(() => usePage().props.auth?.pending_friends_count ?? 0)
 
 const PALETTE  = ['#009ac7','#4ebcff','#2ea87e','#e07b4a','#9b6bdf','#c74a6b','#e0a040','#6b9bdf']
 const newLabel = ref('')
@@ -191,6 +192,32 @@ const trends = computed(() =>
           </svg>
         </button>
 
+
+        <!-- Amigos -->
+        <Link
+          v-if="authUser"
+          :href="route('friends.index')"
+          :style="{
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'transparent', color: '#5a7a8a',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .15s', textDecoration: 'none',
+            position: 'relative',
+          }"
+          @mouseenter="$event.currentTarget.style.background='#009ac714'"
+          @mouseleave="$event.currentTarget.style.background='transparent'"
+          title="Amigos"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="6.5" cy="5.5" r="2.3" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M1.5 14.5c.8-2.5 2.8-3.8 5-3.8s4.2 1.3 5 3.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M13 7.5a2 2 0 010 4m2.5 3c-.6-1.8-1.8-2.8-3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <span
+            v-if="pendingFriends > 0"
+            style="position: absolute; top: 4px; right: 4px; min-width: 14px; height: 14px; padding: 0 3px; background: #c74a6b; color: white; border-radius: 99px; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; line-height: 1;"
+          >{{ pendingFriends }}</span>
+        </Link>
 
         <!-- Perfil -->
         <Link

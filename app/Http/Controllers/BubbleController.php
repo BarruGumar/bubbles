@@ -20,7 +20,20 @@ class BubbleController extends Controller
 
     public function index(): JsonResponse
     {
-        $bubbles = Bubble::query()->latest('id')->get();
+        $memberIds = auth()->check()
+            ? auth()->user()->communities()->pluck('bubbles.id')->toArray()
+            : [];
+
+        $bubbles = Bubble::withCount('memberships')->latest('id')->get()->map(fn ($b) => [
+            'id'        => $b->id,
+            'label'     => $b->label,
+            'color'     => $b->color,
+            'x'         => $b->x,
+            'y'         => $b->y,
+            'size'      => $b->size,
+            'members'   => $b->memberships_count,
+            'is_member' => in_array($b->id, $memberIds),
+        ]);
 
         return response()->json($bubbles);
     }
@@ -43,6 +56,10 @@ class BubbleController extends Controller
         ]);
 
         $bubble = Bubble::create($data);
+
+        if (auth()->check()) {
+            $bubble->memberships()->attach(auth()->id());
+        }
 
         return response()->json(['id' => $bubble->id], 201);
     }

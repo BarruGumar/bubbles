@@ -86,6 +86,7 @@ export function useBubbles() {
           color:     b.color   ?? '#009ac7',
           size:      b.size    ?? 85,
           members:   b.members ?? 0,
+          isMember:  b.is_member ?? false,
           avatars:   b.avatars ?? [],
           persisted: true,
         }))

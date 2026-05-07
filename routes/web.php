@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\FriendController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +46,20 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
+
+    // Community settings + delete (criador apenas)
+    Route::put('/c/{id}/settings', [CommunityController::class, 'updateSettings'])->name('community.update');
+    Route::delete('/c/{id}', [CommunityController::class, 'deleteCommunity'])->name('community.delete');
+
+    // Community membership
+    Route::post('/c/{id}/join', [CommunityController::class, 'join'])->name('community.join');
+    Route::delete('/c/{id}/leave', [CommunityController::class, 'leave'])->name('community.leave');
+
+    // Friends
+    Route::get('/friends', [FriendController::class, 'index'])->name('friends.index');
+    Route::post('/friends/{username}', [FriendController::class, 'send'])->name('friends.send');
+    Route::patch('/friends/{friend}/accept', [FriendController::class, 'accept'])->name('friends.accept');
+    Route::delete('/friends/{friend}', [FriendController::class, 'reject'])->name('friends.reject');
 });
 
 require __DIR__ . '/auth.php';
