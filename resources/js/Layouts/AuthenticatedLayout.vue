@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
+import ToastContainer from '@/Components/ToastContainer.vue'
 
 const page             = usePage()
 const user             = computed(() => page.props.auth?.user)
@@ -157,6 +158,8 @@ function avatarInitial(name) {
         <main style="position: relative; z-index: 1;">
             <slot />
         </main>
+
+        <ToastContainer />
     </div>
 </template>
 

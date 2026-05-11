@@ -5,7 +5,8 @@
       "Bash(xargs grep -l \"uploadImage\\\\|uploadBanner\\\\|community\")",
       "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\routes\" -Name)",
       "Bash(dir \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\routes\")",
-      "Bash(powershell -Command \"grep -r 'community\\\\.show' routes/ --include='*.php' | head -20\")"
+      "Bash(powershell -Command \"grep -r 'community\\\\.show' routes/ --include='*.php' | head -20\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\app\\\\Http\\\\Controllers\" -File)"
     ]
   }
 }

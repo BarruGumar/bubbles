@@ -42,17 +42,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
     Route::post('/profile/banner', [ProfileController::class, 'uploadBanner'])->name('profile.banner');
 
-    Route::post('/c/{id}/posts', [CommunityController::class, 'store'])->name('community.posts.store');
+    // Posts de perfil
+    Route::post('/posts', [PostController::class, 'store'])->middleware('throttle:posts')->name('posts.store');
+    Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
+
+    // Posts de comunidade
+    Route::post('/c/{id}/posts', [CommunityController::class, 'store'])->middleware('throttle:posts')->name('community.posts.store');
     Route::delete('/c/{id}/posts/{post}', [CommunityController::class, 'destroy'])->name('community.posts.destroy');
     Route::post('/c/{id}/image', [CommunityController::class, 'uploadImage'])->name('community.image');
     Route::post('/c/{id}/banner', [CommunityController::class, 'uploadBanner'])->name('community.banner');
 
-    Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
-    Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
-    Route::post('/posts/{post}/like', [LikeController::class, 'togglePost'])->name('posts.like');
-    Route::post('/posts/{post}/comments', [CommentController::class, 'storePost'])->name('posts.comments.store');
-    Route::post('/community-posts/{post}/like', [LikeController::class, 'toggleCommunityPost'])->name('community-posts.like');
-    Route::post('/community-posts/{post}/comments', [CommentController::class, 'storeCommunityPost'])->name('community-posts.comments.store');
+    // Likes e comentários
+    Route::post('/posts/{post}/like', [LikeController::class, 'togglePost'])->middleware('throttle:reactions')->name('posts.like');
+    Route::post('/posts/{post}/comments', [CommentController::class, 'storePost'])->middleware('throttle:reactions')->name('posts.comments.store');
+    Route::post('/community-posts/{post}/like', [LikeController::class, 'toggleCommunityPost'])->middleware('throttle:reactions')->name('community-posts.like');
+    Route::post('/community-posts/{post}/comments', [CommentController::class, 'storeCommunityPost'])->middleware('throttle:reactions')->name('community-posts.comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
     // Community settings + delete (criador apenas)
@@ -67,11 +71,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::post('/conversations', [ConversationController::class, 'store'])->name('conversations.store');
-    Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'storeMessage'])->name('messages.store');
+    Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'storeMessage'])->middleware('throttle:messages')->name('messages.store');
 
     // Friends
     Route::get('/friends', [FriendController::class, 'index'])->name('friends.index');
-    Route::post('/friends/{username}', [FriendController::class, 'send'])->name('friends.send');
+    Route::post('/friends/{username}', [FriendController::class, 'send'])->middleware('throttle:friends')->name('friends.send');
     Route::patch('/friends/{friend}/accept', [FriendController::class, 'accept'])->name('friends.accept');
     Route::delete('/friends/{friend}', [FriendController::class, 'reject'])->name('friends.reject');
 });

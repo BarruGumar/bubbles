@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreMessageRequest;
 use App\Models\Conversation;
 use App\Models\Friend;
 use App\Support\StoresImages;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -98,17 +100,12 @@ class ConversationController extends Controller
         return redirect()->route('conversations.show', $conversation->id);
     }
 
-    public function storeMessage(Request $request, Conversation $conversation): RedirectResponse
+    public function storeMessage(StoreMessageRequest $request, Conversation $conversation): RedirectResponse
     {
         abort_unless(
             $conversation->participants()->where('user_id', auth()->id())->exists(),
             403
         );
-
-        $request->validate([
-            'content' => 'nullable|string|max:2000|required_without:image',
-            'image'   => 'nullable|image|max:5120',
-        ]);
 
         $imageUrl = null;
         if ($request->hasFile('image')) {
@@ -156,40 +153,50 @@ class ConversationController extends Controller
 
     private function listConversations(): array
     {
-        return auth()->user()
+        $userId = auth()->id();
+
+        $convList = auth()->user()
             ->conversations()
             ->with(['participants', 'lastMessage'])
             ->orderByDesc('conversations.updated_at')
-            ->get()
-            ->map(function ($conv) {
-                $pivot       = $conv->participants->firstWhere('id', auth()->id())?->pivot;
-                $other       = $conv->participants->firstWhere('id', '!=', auth()->id());
-                $unreadCount = $conv->messages()
-                    ->where('user_id', '!=', auth()->id())
-                    ->when(
-                        $pivot?->last_read_at,
-                        fn ($q, $dt) => $q->where('created_at', '>', $dt)
-                    )
-                    ->count();
+            ->get();
 
-                return [
-                    'id'           => $conv->id,
-                    'unread_count' => $unreadCount,
-                    'last_message' => $conv->lastMessage ? [
-                        'content'    => $conv->lastMessage->content,
-                        'created_at' => $conv->lastMessage->created_at->toISOString(),
-                        'is_own'     => $conv->lastMessage->user_id === auth()->id(),
-                    ] : null,
-                    'other_user'   => $other ? [
-                        'id'           => $other->id,
-                        'name'         => $other->name,
-                        'username'     => $other->username,
-                        'avatar'       => $other->avatar,
-                        'avatar_color' => $other->avatar_color ?? '#009ac7',
-                    ] : null,
-                ];
+        if ($convList->isEmpty()) {
+            return [];
+        }
+
+        // Single query instead of N+1 COUNT per conversation
+        $unreadCounts = DB::table('messages')
+            ->join('conversation_user', function ($join) use ($userId) {
+                $join->on('messages.conversation_id', '=', 'conversation_user.conversation_id')
+                     ->where('conversation_user.user_id', '=', $userId);
             })
-            ->values()
-            ->toArray();
+            ->whereIn('messages.conversation_id', $convList->pluck('id'))
+            ->where('messages.user_id', '!=', $userId)
+            ->whereRaw('(conversation_user.last_read_at IS NULL OR messages.created_at > conversation_user.last_read_at)')
+            ->groupBy('messages.conversation_id')
+            ->select('messages.conversation_id', DB::raw('COUNT(*) as cnt'))
+            ->pluck('cnt', 'conversation_id');
+
+        return $convList->map(function ($conv) use ($userId, $unreadCounts) {
+            $other = $conv->participants->firstWhere('id', '!=', $userId);
+
+            return [
+                'id'           => $conv->id,
+                'unread_count' => (int) ($unreadCounts->get($conv->id, 0)),
+                'last_message' => $conv->lastMessage ? [
+                    'content'    => $conv->lastMessage->content,
+                    'created_at' => $conv->lastMessage->created_at->toISOString(),
+                    'is_own'     => $conv->lastMessage->user_id === $userId,
+                ] : null,
+                'other_user'   => $other ? [
+                    'id'           => $other->id,
+                    'name'         => $other->name,
+                    'username'     => $other->username,
+                    'avatar'       => $other->avatar,
+                    'avatar_color' => $other->avatar_color ?? '#009ac7',
+                ] : null,
+            ];
+        })->values()->toArray();
     }
 }

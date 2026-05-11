@@ -1,17 +1,44 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref } from 'vue'
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import { useToast } from '@/composables/useToast'
+
+const { show: toast } = useToast()
 
 const props = defineProps({
     profileUser:    Object,
     posts:          Array,
+    nextCursor:     String,
+    hasMorePosts:   Boolean,
     communities:    Array,
     profileFriends: Array,
     isOwn:          Boolean,
-    friendStatus:   String, // null | 'none' | 'pending_sent' | 'pending_received' | 'accepted'
-    friendId:       Number, // Friend record id (null if not applicable)
+    friendStatus:   String,
+    friendId:       Number,
 })
+
+const localPosts    = ref([...props.posts])
+const currentCursor = ref(props.nextCursor)
+const hasMore       = ref(props.hasMorePosts)
+const loadingMore   = ref(false)
+
+function loadMore() {
+    if (!hasMore.value || loadingMore.value) return
+    loadingMore.value = true
+    router.reload({
+        data:          { cursor: currentCursor.value },
+        only:          ['posts', 'nextCursor', 'hasMorePosts'],
+        preserveScroll: true,
+        onSuccess: () => {
+            localPosts.value    = [...localPosts.value, ...props.posts]
+            currentCursor.value = props.nextCursor
+            hasMore.value       = props.hasMorePosts
+            loadingMore.value   = false
+        },
+        onError: () => { loadingMore.value = false },
+    })
+}
 
 const authUser = computed(() => usePage().props.auth?.user)
 
@@ -23,15 +50,21 @@ const imagePreview = ref(null)
 function onImageChange(e) {
     const file = e.target.files[0]
     if (!file) return
+    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
     postForm.image = file
     imagePreview.value = URL.createObjectURL(file)
 }
 
 function removeImage() {
+    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
     postForm.image = null
     imagePreview.value = null
     if (imageInput.value) imageInput.value.value = ''
 }
+
+onUnmounted(() => {
+    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
+})
 
 function submitPost() {
     if (!postForm.content.trim()) return
@@ -41,7 +74,9 @@ function submitPost() {
         onSuccess: () => {
             postForm.reset('content', 'image')
             removeImage()
+            toast('Publicação criada com sucesso.')
         },
+        onError: () => toast('Erro ao publicar. Tenta novamente.', 'error'),
     })
 }
 
@@ -484,14 +519,14 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
             </div>
 
             <!-- Posts feed -->
-            <div v-if="posts.length === 0" style="text-align: center; padding: 60px 20px;">
+            <div v-if="localPosts.length === 0" style="text-align: center; padding: 60px 20px;">
                 <p style="font-size: 32px; margin: 0 0 12px;">🫧</p>
                 <p style="font-size: 14px; color: #8ba0b0;">{{ isOwn ? 'Ainda não publicaste nada. Começa agora!' : 'Ainda não há posts aqui.' }}</p>
             </div>
 
             <div v-else style="display: flex; flex-direction: column; gap: 12px;">
                 <div
-                    v-for="post in posts"
+                    v-for="post in localPosts"
                     :key="post.id"
                     style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid #4ebcff1a; box-shadow: 0 2px 12px #009ac708; padding: 20px;"
                 >
@@ -657,6 +692,17 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Load more -->
+            <div v-if="hasMore" style="text-align: center; margin-top: 8px;">
+                <button
+                    @click="loadMore"
+                    :disabled="loadingMore"
+                    style="padding: 10px 28px; border-radius: 99px; border: 1.5px solid #4ebcff44; background: rgba(255,255,255,0.85); color: #009ac7; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s; backdrop-filter: blur(10px);"
+                    @mouseenter="$event.currentTarget.style.background='#e8f7ff'"
+                    @mouseleave="$event.currentTarget.style.background='rgba(255,255,255,0.85)'"
+                >{{ loadingMore ? 'A carregar...' : 'Carregar mais' }}</button>
             </div>
 
         </div>

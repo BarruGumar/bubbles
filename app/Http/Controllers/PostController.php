@@ -2,22 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePostRequest;
 use App\Models\Post;
 use App\Support\StoresImages;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class PostController extends Controller
 {
     use StoresImages;
 
-    public function store(Request $request): RedirectResponse
+    public function store(StorePostRequest $request): RedirectResponse
     {
-        $request->validate([
-            'content' => ['required', 'string', 'min:1', 'max:1000'],
-            'image'   => ['nullable', 'image', 'max:4096'],
-        ]);
-
         $imageUrl = null;
         if ($request->hasFile('image')) {
             $imageUrl = $this->storeImage($request->file('image'), 'bubbles/profile-posts', [
@@ -35,9 +31,7 @@ class PostController extends Controller
 
     public function destroy(Post $post): RedirectResponse
     {
-        if ($post->user_id !== auth()->id()) {
-            abort(403);
-        }
+        Gate::authorize('delete', $post);
 
         $post->delete();
 

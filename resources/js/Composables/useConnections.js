@@ -31,11 +31,13 @@ export function useConnections() {
 
   async function connect(fromId, toId) {
     if (fromId === toId || has(fromId, toId)) return
-    connections.value.push({ from: fromId, to: toId })
+    const entry = { from: fromId, to: toId }
+    connections.value.push(entry)
     try {
       await axios.post('/api/connections', { from_bubble_id: fromId, to_bubble_id: toId })
-    } catch {
-      console.warn('[Connections] Não foi possível persistir a conexão.')
+    } catch (err) {
+      connections.value = connections.value.filter(c => c !== entry)
+      console.warn('[Connections] Não foi possível persistir a conexão.', err)
     }
   }
 

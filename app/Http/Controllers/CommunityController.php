@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCommunityPostRequest;
+use App\Http\Requests\UpdateCommunitySettingsRequest;
 use App\Models\Bubble;
 use App\Models\CommunityPost;
 use App\Models\User;
 use App\Support\StoresImages;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,7 +26,7 @@ class CommunityController extends Controller
 
         $userId = auth()->id();
 
-        $posts = $bubble->communityPosts()
+        $paginated = $bubble->communityPosts()
             ->withCount('likes')
             ->with([
                 'user',
@@ -31,36 +34,37 @@ class CommunityController extends Controller
                 'comments' => fn ($q) => $q->with('user')->orderBy('created_at'),
             ])
             ->latest()
-            ->get()
-            ->map(fn ($p) => [
-                'id'          => $p->id,
-                'content'     => $p->content,
-                'image'       => $p->image,
-                'created_at'  => $p->created_at->diffForHumans(),
-                'author'      => [
-                    'name'         => $p->user->name,
-                    'username'     => $p->user->username,
-                    'avatar_color' => $p->user->avatar_color ?? '#009ac7',
-                    'avatar'       => $p->user->avatar,
+            ->cursorPaginate(12);
+
+        $posts = $paginated->getCollection()->map(fn ($p) => [
+            'id'          => $p->id,
+            'content'     => $p->content,
+            'image'       => $p->image,
+            'created_at'  => $p->created_at->diffForHumans(),
+            'author'      => [
+                'name'         => $p->user->name,
+                'username'     => $p->user->username,
+                'avatar_color' => $p->user->avatar_color ?? '#009ac7',
+                'avatar'       => $p->user->avatar,
+            ],
+            'isOwn'       => auth()->check() && auth()->id() === $p->user_id,
+            'isCreator'   => $p->user_id === $bubble->user_id,
+            'likes_count' => $p->likes_count,
+            'is_liked'    => $p->likes->isNotEmpty(),
+            'comments'    => $p->comments->map(fn ($c) => [
+                'id'         => $c->id,
+                'content'    => $c->content,
+                'created_at' => $c->created_at->diffForHumans(),
+                'is_own'     => $userId && $c->user_id === $userId,
+                'author'     => [
+                    'id'           => $c->user->id,
+                    'name'         => $c->user->name,
+                    'username'     => $c->user->username,
+                    'avatar'       => $c->user->avatar,
+                    'avatar_color' => $c->user->avatar_color ?? '#009ac7',
                 ],
-                'isOwn'       => auth()->check() && auth()->id() === $p->user_id,
-                'isCreator'   => $p->user_id === $bubble->user_id,
-                'likes_count' => $p->likes_count,
-                'is_liked'    => $p->likes->isNotEmpty(),
-                'comments'    => $p->comments->map(fn ($c) => [
-                    'id'         => $c->id,
-                    'content'    => $c->content,
-                    'created_at' => $c->created_at->diffForHumans(),
-                    'is_own'     => $userId && $c->user_id === $userId,
-                    'author'     => [
-                        'id'           => $c->user->id,
-                        'name'         => $c->user->name,
-                        'username'     => $c->user->username,
-                        'avatar'       => $c->user->avatar,
-                        'avatar_color' => $c->user->avatar_color ?? '#009ac7',
-                    ],
-                ])->values(),
-            ]);
+            ])->values(),
+        ])->values();
 
         $memberAvatars = $bubble->memberships()
             ->orderBy('community_user.created_at', 'asc')
@@ -94,6 +98,7 @@ class CommunityController extends Controller
                     'Partilha conteúdo relevante para o tema.',
                 ],
                 'members'        => $bubble->memberships_count,
+                'posts_count'    => $bubble->communityPosts()->count(),
                 'member_avatars' => $memberAvatars,
                 'creator'        => $creator ? [
                     'id'           => $creator->id,
@@ -103,24 +108,18 @@ class CommunityController extends Controller
                     'avatar_color' => $creator->avatar_color ?? '#009ac7',
                 ] : null,
             ],
-            'posts' => $posts,
+            'posts'        => $posts,
+            'nextCursor'   => $paginated->nextCursor()?->encode(),
+            'hasMorePosts' => $paginated->hasMorePages(),
         ]);
     }
 
-    public function updateSettings(Request $request, int $id): RedirectResponse
+    public function updateSettings(UpdateCommunitySettingsRequest $request, int $id): RedirectResponse
     {
         $bubble = Bubble::findOrFail($id);
-        abort_if(auth()->id() !== $bubble->user_id, 403);
+        Gate::authorize('manage', $bubble);
 
-        $data = $request->validate([
-            'label'                  => ['required', 'string', 'max:120'],
-            'community_title'        => ['nullable', 'string', 'max:120'],
-            'community_tagline'      => ['nullable', 'string', 'max:160'],
-            'community_description'  => ['nullable', 'string', 'max:1000'],
-            'color'                  => ['nullable', 'string', 'max:40'],
-            'community_guidelines'   => ['nullable', 'array', 'max:5'],
-            'community_guidelines.*' => ['string', 'max:180'],
-        ]);
+        $data = $request->validated();
 
         if (isset($data['color'])) {
             $data['community_cover_color'] = $data['color'];
@@ -134,7 +133,7 @@ class CommunityController extends Controller
     public function deleteCommunity(int $id): RedirectResponse
     {
         $bubble = Bubble::findOrFail($id);
-        abort_if(auth()->id() !== $bubble->user_id, 403);
+        Gate::authorize('manage', $bubble);
 
         $bubble->delete();
 
@@ -157,13 +156,8 @@ class CommunityController extends Controller
         return back();
     }
 
-    public function store(Request $request, int $id): RedirectResponse
+    public function store(StoreCommunityPostRequest $request, int $id): RedirectResponse
     {
-        $request->validate([
-            'content' => 'required|string|max:1000',
-            'image'   => 'nullable|image|max:4096',
-        ]);
-
         $imageUrl = null;
         if ($request->hasFile('image')) {
             $imageUrl = $this->storeImage($request->file('image'), 'bubbles/posts', [
@@ -183,9 +177,7 @@ class CommunityController extends Controller
 
     public function destroy(int $id, CommunityPost $post): RedirectResponse
     {
-        $bubble = Bubble::findOrFail($id);
-        $isCommunityCreator = auth()->id() === $bubble->user_id;
-        abort_if(auth()->id() !== $post->user_id && !$isCommunityCreator, 403);
+        Gate::authorize('delete', $post);
         $post->delete();
         return back();
     }
@@ -193,7 +185,7 @@ class CommunityController extends Controller
     public function uploadImage(Request $request, int $id): RedirectResponse
     {
         $bubble = Bubble::findOrFail($id);
-        abort_if(auth()->id() !== $bubble->user_id, 403);
+        Gate::authorize('manage', $bubble);
         $request->validate(['image' => 'required|image|max:2048']);
         $url = $this->storeImage($request->file('image'), 'bubbles/communities', [
             'public_id' => 'community_img_' . $id, 'overwrite' => true,
@@ -206,7 +198,7 @@ class CommunityController extends Controller
     public function uploadBanner(Request $request, int $id): RedirectResponse
     {
         $bubble = Bubble::findOrFail($id);
-        abort_if(auth()->id() !== $bubble->user_id, 403);
+        Gate::authorize('manage', $bubble);
         $request->validate(['banner' => 'required|image|max:4096']);
         $url = $this->storeImage($request->file('banner'), 'bubbles/communities', [
             'public_id' => 'community_banner_' . $id, 'overwrite' => true,

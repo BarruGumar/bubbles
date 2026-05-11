@@ -25,35 +25,36 @@ class ProfileController extends Controller
 
         $userId = auth()->id();
 
-        $posts = $profileUser->posts()
+        $paginated = $profileUser->posts()
             ->withCount('likes')
             ->with([
                 'likes'    => fn ($q) => $q->where('user_id', $userId ?? 0),
                 'comments' => fn ($q) => $q->with('user')->orderBy('created_at'),
             ])
             ->latest()
-            ->get()
-            ->map(fn ($p) => [
-                'id'          => $p->id,
-                'content'     => $p->content,
-                'image'       => $p->image,
-                'created_at'  => $p->created_at->diffForHumans(),
-                'likes_count' => $p->likes_count,
-                'is_liked'    => $p->likes->isNotEmpty(),
-                'comments'    => $p->comments->map(fn ($c) => [
-                    'id'         => $c->id,
-                    'content'    => $c->content,
-                    'created_at' => $c->created_at->diffForHumans(),
-                    'is_own'     => $userId && $c->user_id === $userId,
-                    'author'     => [
-                        'id'           => $c->user->id,
-                        'name'         => $c->user->name,
-                        'username'     => $c->user->username,
-                        'avatar'       => $c->user->avatar,
-                        'avatar_color' => $c->user->avatar_color ?? '#009ac7',
-                    ],
-                ])->values(),
-            ]);
+            ->cursorPaginate(12);
+
+        $posts = $paginated->getCollection()->map(fn ($p) => [
+            'id'          => $p->id,
+            'content'     => $p->content,
+            'image'       => $p->image,
+            'created_at'  => $p->created_at->diffForHumans(),
+            'likes_count' => $p->likes_count,
+            'is_liked'    => $p->likes->isNotEmpty(),
+            'comments'    => $p->comments->map(fn ($c) => [
+                'id'         => $c->id,
+                'content'    => $c->content,
+                'created_at' => $c->created_at->diffForHumans(),
+                'is_own'     => $userId && $c->user_id === $userId,
+                'author'     => [
+                    'id'           => $c->user->id,
+                    'name'         => $c->user->name,
+                    'username'     => $c->user->username,
+                    'avatar'       => $c->user->avatar,
+                    'avatar_color' => $c->user->avatar_color ?? '#009ac7',
+                ],
+            ])->values(),
+        ])->values();
 
         $friendStatus = null;
         $friendId     = null;
@@ -116,9 +117,11 @@ class ProfileController extends Controller
                 'avatar'       => $profileUser->avatar,
                 'banner'       => $profileUser->banner,
                 'created_at'   => $profileUser->created_at->format('M Y'),
-                'posts_count'  => $posts->count(),
+                'posts_count'  => $profileUser->posts()->count(),
             ],
             'posts'          => $posts,
+            'nextCursor'     => $paginated->nextCursor()?->encode(),
+            'hasMorePosts'   => $paginated->hasMorePages(),
             'communities'    => $communities,
             'profileFriends' => $profileFriends,
             'isOwn'          => $isOwn,

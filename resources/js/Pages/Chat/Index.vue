@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
@@ -17,6 +17,14 @@ const messagesEl   = ref(null)
 const msgForm      = useForm({ content: '', image: null })
 const imagePreview = ref(null)
 const imageInput   = ref(null)
+
+const isMobile    = ref(false)
+const showSidebar = ref(true)
+
+function checkMobile() {
+    isMobile.value = window.innerWidth < 640
+    if (!isMobile.value) showSidebar.value = true
+}
 
 function avatarInitial(name) {
     return (name ?? '?')[0].toUpperCase()
@@ -69,20 +77,32 @@ function scrollToBottom(smooth = true) {
     })
 }
 
-onMounted(() => scrollToBottom(false))
+onMounted(() => {
+    scrollToBottom(false)
+    checkMobile()
+    if (props.activeConversation && isMobile.value) showSidebar.value = false
+    window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+    window.removeEventListener('resize', checkMobile)
+    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
+})
 
 watch(() => props.messages, () => scrollToBottom(true), { deep: true })
 
 function onImageChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    msgForm.image  = file
+    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
+    msgForm.image      = file
     imagePreview.value = URL.createObjectURL(file)
-    e.target.value = ''
+    e.target.value     = ''
 }
 
 function removeImage() {
-    msgForm.image  = null
+    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
+    msgForm.image      = null
     imagePreview.value = null
 }
 
@@ -129,15 +149,18 @@ function startWith(recipientId) {
             <!-- ═══════════════════════════════════════
                  SIDEBAR  ─  conversation list
             ════════════════════════════════════════ -->
-            <aside style="
-                width: 300px;
-                min-width: 300px;
-                display: flex;
-                flex-direction: column;
-                border-right: 1px solid #009ac712;
-                background: rgba(255,255,255,0.60);
-                backdrop-filter: blur(24px);
-            ">
+            <aside
+                v-show="!isMobile || showSidebar"
+                :style="{
+                    width: isMobile ? '100%' : '300px',
+                    minWidth: isMobile ? 'unset' : '300px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRight: '1px solid #009ac712',
+                    background: 'rgba(255,255,255,0.60)',
+                    backdropFilter: 'blur(24px)',
+                }"
+            >
                 <!-- Sidebar header -->
                 <div style="
                     padding: 20px 20px 14px;
@@ -232,6 +255,7 @@ function startWith(recipientId) {
                         v-for="conv in conversations"
                         :key="conv.id"
                         :href="route('conversations.show', conv.id)"
+                        @click="isMobile && (showSidebar = false)"
                         style="
                             display: flex;
                             align-items: center;
@@ -327,13 +351,16 @@ function startWith(recipientId) {
             <!-- ═══════════════════════════════════════
                  MAIN  ─  message area
             ════════════════════════════════════════ -->
-            <main style="
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                min-width: 0;
-                background: transparent;
-            ">
+            <main
+                v-show="!isMobile || !showSidebar"
+                style="
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    min-width: 0;
+                    background: transparent;
+                "
+            >
 
                 <!-- ── No conversation selected ── -->
                 <div
@@ -459,6 +486,22 @@ function startWith(recipientId) {
                         backdrop-filter: blur(20px);
                         border-bottom: 1px solid #009ac712;
                     ">
+                        <!-- Back button on mobile -->
+                        <button
+                            v-if="isMobile"
+                            @click="showSidebar = true"
+                            style="
+                                flex-shrink: 0;
+                                width: 34px; height: 34px; border-radius: 50%;
+                                border: 1.5px solid #009ac733;
+                                background: rgba(0,154,199,0.06);
+                                color: #009ac7; font-size: 16px; font-weight: 700;
+                                cursor: pointer; display: flex; align-items: center; justify-content: center;
+                                transition: background .15s;
+                            "
+                            @mouseenter="$event.currentTarget.style.background='rgba(0,154,199,0.14)'"
+                            @mouseleave="$event.currentTarget.style.background='rgba(0,154,199,0.06)'"
+                        >←</button>
                         <img
                             v-if="activeConversation.other_user?.avatar"
                             :src="activeConversation.other_user.avatar"
