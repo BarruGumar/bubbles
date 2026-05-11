@@ -28,14 +28,15 @@ class BubbleController extends Controller
             : [];
 
         $bubbles = Bubble::withCount('memberships')->latest('id')->get()->map(fn ($b) => [
-            'id'        => $b->id,
-            'label'     => $b->label,
-            'color'     => $b->color,
-            'x'         => $b->x,
-            'y'         => $b->y,
-            'size'      => $b->size,
-            'members'   => $b->memberships_count,
-            'is_member' => in_array($b->id, $memberIds),
+            'id'              => $b->id,
+            'label'           => $b->label,
+            'color'           => $b->color,
+            'x'               => $b->x,
+            'y'               => $b->y,
+            'size'            => $b->size,
+            'members'         => $b->memberships_count,
+            'is_member'       => in_array($b->id, $memberIds),
+            'community_image' => $b->community_image,
         ]);
 
         return response()->json($bubbles);

@@ -93,6 +93,7 @@ export function useBubbles() {
           size:      sizeFromMembers(b.members),
           members:   b.members ?? 0,
           isMember:  b.is_member ?? false,
+          image:     b.community_image ?? null,
           avatars:   b.avatars ?? [],
           persisted: true,
         }))

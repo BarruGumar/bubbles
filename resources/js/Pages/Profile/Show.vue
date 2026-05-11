@@ -130,8 +130,15 @@ function toggleLike(post) {
     localLikes[post.id] = { count: prev.count + (willLike ? 1 : -1), isLiked: willLike }
     router.post(route('posts.like', post.id), {}, {
         preserveScroll: true,
-        onSuccess: () => { delete localLikes[post.id] },
-        onError:   () => { localLikes[post.id] = prev },
+        onSuccess: () => {
+            const idx = localPosts.value.findIndex(p => p.id === post.id)
+            if (idx !== -1) {
+                localPosts.value[idx].is_liked    = willLike
+                localPosts.value[idx].likes_count = prev.count + (willLike ? 1 : -1)
+            }
+            delete localLikes[post.id]
+        },
+        onError: () => { localLikes[post.id] = prev },
     })
 }
 

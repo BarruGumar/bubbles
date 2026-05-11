@@ -32,30 +32,36 @@ const containerStyle = computed(() => {
     shadow = `0 8px 26px ${color}44, 0 2px 8px ${color}22, 0 0 ${10 + activity * 8}px ${color}22`
   }
 
+  const { image } = props.bubble
+
   return {
-    position:       'absolute',
-    zIndex:         props.isHovered && !selected ? 32 : 20,
-    left:           `${x}px`,
-    top:            `${y}px`,
-    width:          `${size}px`,
-    height:         `${size}px`,
-    borderRadius:   '50%',
-    background:     `radial-gradient(circle at 38% 32%, ${color}ee 0%, ${color} 60%)`,
-    cursor:         selected ? 'default' : props.isDragging ? 'grabbing' : 'grab',
-    display:        'flex',
-    flexDirection:  'column',
-    alignItems:     'center',
-    justifyContent: 'center',
-    gap:            '3px',
-    opacity:        selected ? 0 : (props.anyHovered && !props.isHovered ? 0.52 : 1),
-    pointerEvents:  selected ? 'none' : 'auto',
-    boxShadow:      shadow,
-    transform:      `scale(${finalScale.toFixed(4)})`,
-    transition:     props.isDragging
+    position:           'absolute',
+    zIndex:             props.isHovered && !selected ? 32 : 20,
+    left:               `${x}px`,
+    top:                `${y}px`,
+    width:              `${size}px`,
+    height:             `${size}px`,
+    borderRadius:       '50%',
+    backgroundImage:    image
+      ? `radial-gradient(circle at 38% 32%, ${color}55 0%, ${color}99 100%), url(${image})`
+      : `radial-gradient(circle at 38% 32%, ${color}ee 0%, ${color} 60%)`,
+    backgroundSize:     'cover',
+    backgroundPosition: 'center',
+    cursor:             selected ? 'default' : props.isDragging ? 'grabbing' : 'grab',
+    display:            'flex',
+    flexDirection:      'column',
+    alignItems:         'center',
+    justifyContent:     'center',
+    gap:                '3px',
+    opacity:            selected ? 0 : (props.anyHovered && !props.isHovered ? 0.52 : 1),
+    pointerEvents:      selected ? 'none' : 'auto',
+    boxShadow:          shadow,
+    transform:          `scale(${finalScale.toFixed(4)})`,
+    transition:         props.isDragging
       ? 'none'
       : 'box-shadow .35s ease, transform .45s cubic-bezier(.22,.78,.26,1), opacity .3s ease',
-    overflow:       'hidden',
-    willChange:     'transform',
+    overflow:           'hidden',
+    willChange:         'transform',
   }
 })
 </script>

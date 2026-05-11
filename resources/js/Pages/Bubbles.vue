@@ -429,14 +429,18 @@ const trends = computed(() =>
           width:          '300px',
           height:         '300px',
           borderRadius:   '50%',
-          background:     `radial-gradient(circle at 38% 32%, ${selectedBubble.color}ee 0%, ${selectedBubble.color} 60%)`,
-          boxShadow:      `0 0 0 5px white, 0 0 0 9px ${selectedBubble.color}88, 0 24px 64px ${selectedBubble.color}55`,
-          overflow:       'hidden',
-          display:        'flex',
-          flexDirection:  'column',
-          alignItems:     'center',
-          justifyContent: 'center',
-          cursor:         'default',
+          backgroundImage:    selectedBubble.image
+            ? `radial-gradient(circle at 38% 32%, ${selectedBubble.color}55 0%, ${selectedBubble.color}99 100%), url(${selectedBubble.image})`
+            : `radial-gradient(circle at 38% 32%, ${selectedBubble.color}ee 0%, ${selectedBubble.color} 60%)`,
+          backgroundSize:     'cover',
+          backgroundPosition: 'center',
+          boxShadow:          `0 0 0 5px white, 0 0 0 9px ${selectedBubble.color}88, 0 24px 64px ${selectedBubble.color}55`,
+          overflow:           'hidden',
+          display:            'flex',
+          flexDirection:      'column',
+          alignItems:         'center',
+          justifyContent:     'center',
+          cursor:             'default',
         }"
         @click.stop
         @mousedown.stop
