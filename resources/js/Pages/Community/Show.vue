@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import ImageCropper from '@/Components/ImageCropper.vue'
 
 const props = defineProps({
     community:  Object,
@@ -26,26 +27,56 @@ const communityBannerForm  = useForm({ banner: null })
 const communityImagePreview  = ref(props.community.image ?? null)
 const communityBannerPreview = ref(props.community.banner ?? null)
 
+// Cropper state
+const cropperSrc  = ref(null)
+const cropperMode = ref(null) // 'image' | 'banner'
+
 function onCommunityImageChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    communityImagePreview.value = URL.createObjectURL(file)
-    communityImageForm.image = file
-    communityImageForm.post(route('community.image', props.community.id), {
-        forceFormData: true, preserveScroll: true,
-        onSuccess: () => communityImageForm.reset(),
-    })
+    cropperSrc.value  = URL.createObjectURL(file)
+    cropperMode.value = 'image'
+    e.target.value    = ''
 }
 
 function onCommunityBannerChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    communityBannerPreview.value = URL.createObjectURL(file)
-    communityBannerForm.banner = file
-    communityBannerForm.post(route('community.banner', props.community.id), {
-        forceFormData: true, preserveScroll: true,
-        onSuccess: () => communityBannerForm.reset(),
-    })
+    cropperSrc.value  = URL.createObjectURL(file)
+    cropperMode.value = 'banner'
+    e.target.value    = ''
+}
+
+function onCropConfirm(blob) {
+    const isImage = cropperMode.value === 'image'
+    const ext     = blob.type === 'image/png' ? 'png' : 'jpg'
+    const filename = isImage ? `community_image.${ext}` : `community_banner.${ext}`
+    const file = new File([blob], filename, { type: blob.type })
+    const blobUrl = URL.createObjectURL(blob)
+
+    if (isImage) {
+        communityImagePreview.value = blobUrl
+        communityImageForm.image = file
+        communityImageForm.post(route('community.image', props.community.id), {
+            forceFormData: true, preserveScroll: true,
+            onSuccess: () => communityImageForm.reset(),
+        })
+    } else {
+        communityBannerPreview.value = blobUrl
+        communityBannerForm.banner = file
+        communityBannerForm.post(route('community.banner', props.community.id), {
+            forceFormData: true, preserveScroll: true,
+            onSuccess: () => communityBannerForm.reset(),
+        })
+    }
+
+    cropperSrc.value  = null
+    cropperMode.value = null
+}
+
+function onCropCancel() {
+    cropperSrc.value  = null
+    cropperMode.value = null
 }
 
 function onImageChange(e) {
@@ -921,6 +952,19 @@ function deleteComment(commentId) {
         </Transition>
 
     </AuthenticatedLayout>
+
+    <Teleport to="body">
+        <ImageCropper
+            v-if="cropperSrc"
+            :src="cropperSrc"
+            :aspect-ratio="cropperMode === 'banner' ? 3 : 1"
+            :circle="cropperMode === 'image'"
+            :output-width="cropperMode === 'banner' ? 1400 : 300"
+            :output-height="cropperMode === 'banner' ? 500 : 300"
+            @confirm="onCropConfirm"
+            @cancel="onCropCancel"
+        />
+    </Teleport>
 </template>
 
 <style scoped>

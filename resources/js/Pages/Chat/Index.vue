@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { Head, Link, router, usePage } from '@inertiajs/vue3'
+import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
 const props = defineProps({
@@ -13,9 +13,10 @@ const props = defineProps({
 const page     = usePage()
 const authUser = computed(() => page.props.auth?.user)
 
-const newMessage  = ref('')
-const messagesEl  = ref(null)
-const sending     = ref(false)
+const messagesEl   = ref(null)
+const msgForm      = useForm({ content: '', image: null })
+const imagePreview = ref(null)
+const imageInput   = ref(null)
 
 function avatarInitial(name) {
     return (name ?? '?')[0].toUpperCase()
@@ -72,17 +73,32 @@ onMounted(() => scrollToBottom(false))
 
 watch(() => props.messages, () => scrollToBottom(true), { deep: true })
 
+function onImageChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    msgForm.image  = file
+    imagePreview.value = URL.createObjectURL(file)
+    e.target.value = ''
+}
+
+function removeImage() {
+    msgForm.image  = null
+    imagePreview.value = null
+}
+
 function send() {
-    const text = newMessage.value.trim()
-    if (!text || sending.value || !props.activeConversation) return
-    sending.value = true
-    router.post(
+    const hasText  = msgForm.content.trim().length > 0
+    const hasImage = !!msgForm.image
+    if ((!hasText && !hasImage) || msgForm.processing || !props.activeConversation) return
+    msgForm.post(
         route('messages.store', props.activeConversation.id),
-        { content: text },
         {
+            forceFormData:  true,
             preserveScroll: true,
-            onSuccess: () => { newMessage.value = '' },
-            onFinish:  () => { sending.value = false },
+            onSuccess: () => {
+                msgForm.reset('content', 'image')
+                imagePreview.value = null
+            },
         }
     )
 }
@@ -544,21 +560,30 @@ function startWith(recipientId) {
                                     "
                                     :style="item.is_own
                                         ? {
-                                            background: `linear-gradient(135deg, ${authUser?.avatar_color ?? '#009ac7'}, ${authUser?.avatar_color ?? '#009ac7'}cc)`,
+                                            background: item.image_url && !item.content ? 'transparent' : `linear-gradient(135deg, ${authUser?.avatar_color ?? '#009ac7'}, ${authUser?.avatar_color ?? '#009ac7'}cc)`,
                                             color: 'white',
                                             borderBottomRightRadius: '5px',
-                                            boxShadow: `0 4px 16px ${authUser?.avatar_color ?? '#009ac7'}44`,
+                                            boxShadow: item.image_url && !item.content ? 'none' : `0 4px 16px ${authUser?.avatar_color ?? '#009ac7'}44`,
+                                            padding: item.image_url ? '0' : '10px 14px',
                                           }
                                         : {
-                                            background: 'rgba(255,255,255,0.78)',
-                                            backdropFilter: 'blur(12px)',
+                                            background: item.image_url && !item.content ? 'transparent' : 'rgba(255,255,255,0.78)',
+                                            backdropFilter: item.image_url && !item.content ? 'none' : 'blur(12px)',
                                             color: '#1a3a4a',
                                             borderBottomLeftRadius: '5px',
-                                            border: '1px solid #009ac714',
-                                            boxShadow: '0 2px 8px #009ac70a',
+                                            border: item.image_url && !item.content ? 'none' : '1px solid #009ac714',
+                                            boxShadow: item.image_url && !item.content ? 'none' : '0 2px 8px #009ac70a',
+                                            padding: item.image_url ? '0' : '10px 14px',
                                           }
                                     "
-                                >{{ item.content }}</div>
+                                >
+                                    <img
+                                        v-if="item.image_url"
+                                        :src="item.image_url"
+                                        style="display: block; max-width: 260px; max-height: 320px; border-radius: 14px; width: 100%;"
+                                    />
+                                    <span v-if="item.content" :style="item.image_url ? { display: 'block', padding: '8px 14px 10px' } : {}">{{ item.content }}</span>
+                                </div>
 
                                 <span style="font-size: 10px; color: #b0c0cc; margin-top: 3px; padding: 0 3px;">
                                     {{ formatTime(item.created_at) }}
@@ -575,34 +600,47 @@ function startWith(recipientId) {
                         backdrop-filter: blur(20px);
                         border-top: 1px solid #009ac712;
                         display: flex;
-                        align-items: flex-end;
-                        gap: 10px;
+                        flex-direction: column;
+                        gap: 8px;
                     ">
-                        <!-- Image placeholder -->
-                        <button
-                            disabled
-                            title="Imagens em breve"
-                            style="
-                                flex-shrink: 0;
-                                width: 40px; height: 40px;
-                                border-radius: 50%;
-                                border: 1.5px solid #c8d8e066;
-                                background: transparent;
-                                cursor: not-allowed;
-                                display: flex; align-items: center; justify-content: center;
-                                color: #c8d8e0;
-                                transition: all .2s;
-                            "
+                        <!-- Image preview strip -->
+                        <div v-if="imagePreview" style="display: flex; align-items: flex-start; gap: 8px;">
+                            <div style="position: relative; display: inline-block;">
+                                <img :src="imagePreview" style="max-height: 80px; max-width: 140px; border-radius: 10px; display: block; border: 1.5px solid #009ac730;" />
+                                <button
+                                    @click="removeImage"
+                                    style="position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; border: none; background: #e05555; color: white; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;"
+                                >×</button>
+                            </div>
+                        </div>
+
+                        <!-- Buttons + textarea row -->
+                        <div style="display: flex; align-items: flex-end; gap: 10px;">
+
+                        <!-- Image button -->
+                        <label
+                            :style="{
+                                flexShrink: 0,
+                                width: '40px', height: '40px',
+                                borderRadius: '50%',
+                                border: imagePreview ? '1.5px solid #009ac7' : '1.5px solid #c8d8e066',
+                                background: imagePreview ? '#009ac714' : 'transparent',
+                                cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: imagePreview ? '#009ac7' : '#b0c0cc',
+                                transition: 'all .2s',
+                            }"
                         >
+                            <input ref="imageInput" type="file" accept="image/*" style="display: none;" @change="onImageChange" />
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/>
                                 <polyline points="21 15 16 10 5 21"/>
                             </svg>
-                        </button>
+                        </label>
 
                         <!-- Textarea -->
                         <textarea
-                            v-model="newMessage"
+                            v-model="msgForm.content"
                             placeholder="Escreve uma mensagem…"
                             rows="1"
                             @keydown="handleKeydown"
@@ -630,7 +668,7 @@ function startWith(recipientId) {
                         <!-- Send button -->
                         <button
                             @click="send"
-                            :disabled="!newMessage.trim() || sending"
+                            :disabled="(!msgForm.content.trim() && !msgForm.image) || msgForm.processing"
                             style="
                                 flex-shrink: 0;
                                 width: 40px; height: 40px;
@@ -643,8 +681,8 @@ function startWith(recipientId) {
                                 box-shadow: 0 3px 12px #009ac740;
                                 transition: transform .2s, box-shadow .2s, opacity .2s;
                             "
-                            :style="{ opacity: (!newMessage.trim() || sending) ? '0.45' : '1' }"
-                            @mouseenter="e => { if (newMessage.trim() && !sending) { e.currentTarget.style.transform='scale(1.1)'; e.currentTarget.style.boxShadow='0 6px 20px #009ac750' } }"
+                            :style="{ opacity: ((!msgForm.content.trim() && !msgForm.image) || msgForm.processing) ? '0.45' : '1' }"
+                            @mouseenter="e => { if ((msgForm.content.trim() || msgForm.image) && !msgForm.processing) { e.currentTarget.style.transform='scale(1.1)'; e.currentTarget.style.boxShadow='0 6px 20px #009ac750' } }"
                             @mouseleave="e => { e.currentTarget.style.transform='scale(1)'; e.currentTarget.style.boxShadow='0 3px 12px #009ac740' }"
                         >
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -652,6 +690,8 @@ function startWith(recipientId) {
                                 <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                             </svg>
                         </button>
+
+                        </div><!-- end row -->
                     </div>
 
                 </template>

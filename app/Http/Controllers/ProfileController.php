@@ -5,18 +5,19 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Friend;
 use App\Models\User;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Support\StoresImages;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    use StoresImages;
+
     public function show(string $username): Response
     {
         $profileUser = User::where('username', $username)->firstOrFail();
@@ -83,6 +84,7 @@ class ProfileController extends Controller
             'label' => $b->label,
             'title' => $b->community_title ?: $b->label,
             'color' => $b->color ?? '#009ac7',
+            'image' => $b->community_image,
         ])->values();
 
         $friendRecords = Friend::where('status', 'accepted')
@@ -179,20 +181,6 @@ class ProfileController extends Controller
         $request->user()->update(['banner' => $url]);
 
         return back()->with('status', 'banner-updated');
-    }
-
-    private function storeImage($file, string $folder, array $cloudinaryOptions = []): string
-    {
-        $key = env('CLOUDINARY_API_KEY', '');
-        if (!empty($key) && $key !== 'API_KEY') {
-            return Cloudinary::upload($file->getRealPath(), array_merge(
-                ['folder' => $folder, 'fetch_format' => 'auto', 'quality' => 'auto'],
-                $cloudinaryOptions
-            ))->getSecurePath();
-        }
-
-        $path = $file->store($folder, 'public');
-        return '/storage/' . $path;
     }
 
     public function destroy(Request $request): RedirectResponse

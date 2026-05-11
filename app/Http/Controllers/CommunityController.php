@@ -5,15 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Bubble;
 use App\Models\CommunityPost;
 use App\Models\User;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Support\StoresImages;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CommunityController extends Controller
 {
+    use StoresImages;
+
+
     public function show(int $id): Response
     {
         $bubble  = Bubble::withCount('memberships')->findOrFail($id);
@@ -212,19 +214,5 @@ class CommunityController extends Controller
         ]);
         $bubble->update(['community_banner' => $url]);
         return back();
-    }
-
-    private function storeImage($file, string $folder, array $cloudinaryOptions = []): string
-    {
-        $key = env('CLOUDINARY_API_KEY', '');
-        if (!empty($key) && $key !== 'API_KEY') {
-            return Cloudinary::upload($file->getRealPath(), array_merge(
-                ['folder' => $folder, 'fetch_format' => 'auto', 'quality' => 'auto'],
-                $cloudinaryOptions
-            ))->getSecurePath();
-        }
-
-        $path = $file->store($folder, 'public');
-        return '/storage/' . $path;
     }
 }

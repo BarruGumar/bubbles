@@ -118,6 +118,29 @@ function submitComment(post) {
 function deleteComment(commentId) {
     router.delete(route('comments.destroy', commentId), { preserveScroll: true })
 }
+
+// ── Community network layout ───────────────────────────────────────
+// All coordinates live in a 580×auto virtual canvas (matches card inner width).
+const BUBBLE_R = 32   // community bubble radius in the virtual canvas
+
+function ringR(n) {
+    if (n === 0) return 80
+    const minArc = 2 * BUBBLE_R + 20   // min arc between adjacent bubble edges
+    return Math.max(80, Math.min(minArc * n / (2 * Math.PI), 290 - BUBBLE_R - 16))
+}
+
+const communityPos = computed(() => {
+    const n  = props.communities.length
+    const rR = ringR(n)
+    const cy = rR + BUBBLE_R + 24   // vertical center of the ring
+    return props.communities.map((c, i) => {
+        const angle = (i / n) * 2 * Math.PI - Math.PI / 2   // start from top
+        return { ...c, bx: 290 + Math.cos(angle) * rR, by: cy + Math.sin(angle) * rR }
+    })
+})
+
+const hubPos = computed(() => ({ x: 290, y: ringR(props.communities.length) + BUBBLE_R + 24 }))
+const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 2 + 16)
 </script>
 
 <template>
@@ -131,25 +154,25 @@ function deleteComment(commentId) {
 
                 <!-- Banner -->
                 <div :style="{
-                    height: '180px', borderRadius: '22px 22px 0 0', position: 'relative',
+                    height: '190px', borderRadius: '22px 22px 0 0', position: 'relative',
                     background: profileUser.banner
                         ? `url('${profileUser.banner}') center/cover no-repeat`
                         : `linear-gradient(135deg, ${profileUser.avatar_color}cc 0%, ${profileUser.avatar_color} 100%)`,
                 }">
                     <!-- Avatar overlapping -->
-                    <div style="position: absolute; bottom: -42px; left: 32px; z-index: 5;">
+                    <div style="position: absolute; bottom: -45px; left: 32px; z-index: 5;">
                         <img
                             v-if="profileUser.avatar"
                             :src="profileUser.avatar"
                             :style="{
-                                width: '86px', height: '86px', borderRadius: '50%',
+                                width: '90px', height: '90px', borderRadius: '50%',
                                 objectFit: 'cover', border: '5px solid white',
                                 boxShadow: `0 4px 20px ${profileUser.avatar_color}66`,
                                 display: 'block',
                             }"
                         />
                         <div v-else :style="{
-                            width: '86px', height: '86px', borderRadius: '50%',
+                            width: '90px', height: '90px', borderRadius: '50%',
                             background: profileUser.avatar_color,
                             border: '5px solid white',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -253,26 +276,99 @@ function deleteComment(commentId) {
                 </div>
             </div>
 
-            <!-- Comunidades -->
             <div
                 v-if="communities && communities.length"
-                style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid #4ebcff1a; box-shadow: 0 2px 12px #009ac708; padding: 16px 22px; margin-bottom: 16px;"
+                style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid #4ebcff1a; box-shadow: 0 2px 12px #009ac708; padding: 16px 22px 20px; margin-bottom: 16px;"
             >
-                <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .1em; margin: 0 0 12px;">Comunidades</p>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .1em; margin: 0 0 2px;">Comunidades · {{ communities.length }}</p>
+
+                <div style="position: relative; width: 100%;" :style="{ paddingTop: (netH / 580 * 100) + '%' }">
+
+                    <svg
+                        :viewBox="`0 0 580 ${netH}`"
+                        preserveAspectRatio="xMidYMid meet"
+                        style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;"
+                    >
+                        <line
+                            v-for="c in communityPos"
+                            :key="'h-' + c.id"
+                            :x1="hubPos.x" :y1="hubPos.y"
+                            :x2="c.bx"     :y2="c.by"
+                            :stroke="c.color"
+                            stroke-opacity="0.28"
+                            stroke-width="1.5"
+                            stroke-dasharray="5 4"
+                        />
+                        <template v-if="communityPos.length >= 3">
+                            <line
+                                v-for="(c, i) in communityPos"
+                                :key="'r-' + c.id"
+                                :x1="c.bx" :y1="c.by"
+                                :x2="communityPos[(i + 1) % communityPos.length].bx"
+                                :y2="communityPos[(i + 1) % communityPos.length].by"
+                                :stroke="c.color"
+                                stroke-opacity="0.14"
+                                stroke-width="1"
+                            />
+                        </template>
+                    </svg>
+
+                    <div
+                        style="position: absolute; transform: translate(-50%, -50%); z-index: 2;"
+                        :style="{ left: (hubPos.x / 580 * 100) + '%', top: (hubPos.y / netH * 100) + '%' }"
+                    >
+                        <img
+                            v-if="profileUser.avatar"
+                            :src="profileUser.avatar"
+                            :style="{
+                                width: '46px', height: '46px', borderRadius: '50%',
+                                objectFit: 'cover', border: '3px solid white', display: 'block',
+                                boxShadow: `0 4px 14px ${profileUser.avatar_color}55`,
+                            }"
+                        />
+                        <div v-else :style="{
+                            width: '46px', height: '46px', borderRadius: '50%',
+                            background: `radial-gradient(circle at 38% 32%, ${profileUser.avatar_color}ee, ${profileUser.avatar_color})`,
+                            border: '3px solid white',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '17px', fontWeight: '900', color: 'white',
+                            boxShadow: `0 4px 14px ${profileUser.avatar_color}55`,
+                        }">{{ formatInitial(profileUser.name) }}</div>
+                    </div>
+
                     <Link
-                        v-for="c in communities"
+                        v-for="c in communityPos"
                         :key="c.id"
                         :href="route('community.show', c.id)"
-                        :style="{
-                            display: 'inline-block', padding: '5px 13px', borderRadius: '99px',
-                            background: c.color + '18', color: c.color,
-                            fontSize: '12px', fontWeight: '700', textDecoration: 'none',
-                            border: `1px solid ${c.color}33`, transition: 'all .2s',
-                        }"
-                        @mouseenter="$event.currentTarget.style.background = c.color + '30'"
-                        @mouseleave="$event.currentTarget.style.background = c.color + '18'"
-                    >{{ c.label }}</Link>
+                        style="position: absolute; transform: translate(-50%, -50%); text-decoration: none; z-index: 3;"
+                        :style="{ left: (c.bx / 580 * 100) + '%', top: (c.by / netH * 100) + '%' }"
+                    >
+                        <div
+                            :style="{
+                                width: '64px', height: '64px', borderRadius: '50%',
+                                background: `radial-gradient(circle at 38% 32%, ${c.color}ee 0%, ${c.color} 60%)`,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                position: 'relative', overflow: 'hidden', cursor: 'pointer',
+                                boxShadow: `0 6px 20px ${c.color}55, 0 2px 6px ${c.color}33`,
+                                transition: 'transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s',
+                            }"
+                            @mouseenter="e => { e.currentTarget.style.transform='scale(1.13)'; e.currentTarget.style.boxShadow=`0 10px 30px ${c.color}77, 0 4px 12px ${c.color}44`; }"
+                            @mouseleave="e => { e.currentTarget.style.transform='scale(1)';    e.currentTarget.style.boxShadow=`0 6px 20px ${c.color}55, 0 2px 6px ${c.color}33`; }"
+                        >
+                            <div
+                                v-if="c.image"
+                                :style="{
+                                    position: 'absolute', inset: 0, borderRadius: '50%',
+                                    backgroundImage: `url('${c.image}')`, backgroundSize: 'cover',
+                                    backgroundPosition: 'center', opacity: '.3',
+                                }"
+                            />
+                            <div style="position: absolute; top: 7px; left: 14%; width: 72%; height: 36%; border-radius: 50%; background: rgba(255,255,255,.22); transform: rotate(-10deg); pointer-events: none;" />
+                            <!-- Label -->
+                            <span style="position: relative; font-size: 9px; font-weight: 800; color: white; text-align: center; padding: 0 5px; line-height: 1.25; text-shadow: 0 1px 3px rgba(0,0,0,.35); word-break: break-word; max-width: 100%;">{{ c.label }}</span>
+                        </div>
+                    </Link>
+
                 </div>
             </div>
 

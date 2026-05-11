@@ -24,7 +24,7 @@ return [
     | may even configure multiple disks for the same driver. Examples for
     | most supported storage drivers are configured here for reference.
     |
-    | Supported drivers: "local", "ftp", "sftp", "s3"
+    | Supported drivers: "local", "ftp", "sftp", "s3", "cloudinary"
     |
     */
 
@@ -46,6 +46,17 @@ return [
             'throw' => false,
             'report' => false,
         ],
+
+                'cloudinary' => [
+            'driver' => 'cloudinary',
+            'key' => env('CLOUDINARY_KEY', env('CLOUDINARY_API_KEY')),
+            'secret' => env('CLOUDINARY_SECRET', env('CLOUDINARY_API_SECRET')),
+            'cloud' => env('CLOUDINARY_CLOUD_NAME', env('CLOUDINARY_CLOUD')),
+            'url' => env('CLOUDINARY_URL'),
+            'secure' => env('CLOUDINARY_SECURE', true),
+            'prefix' => env('CLOUDINARY_PREFIX'),
+        ],
+
 
         's3' => [
             'driver' => 's3',

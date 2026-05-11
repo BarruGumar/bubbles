@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"banner\\\\|avatar\\\\|image.*upload\\\\|upload.*image\")",
+      "Bash(xargs grep -l \"uploadImage\\\\|uploadBanner\\\\|community\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\routes\" -Name)",
+      "Bash(dir \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\routes\")",
+      "Bash(powershell -Command \"grep -r 'community\\\\.show' routes/ --include='*.php' | head -20\")"
+    ]
+  }
+}

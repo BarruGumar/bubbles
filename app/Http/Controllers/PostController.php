@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Support\StoresImages;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
+    use StoresImages;
+
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
@@ -42,18 +44,4 @@ class PostController extends Controller
         return back();
     }
 
-    private function storeImage($file, string $folder, array $cloudinaryOptions = []): string
-    {
-        $key = env('CLOUDINARY_API_KEY', '');
-        if (!empty($key) && $key !== 'API_KEY') {
-            return Cloudinary::upload($file->getRealPath(), array_merge(
-                ['folder' => $folder, 'fetch_format' => 'auto', 'quality' => 'auto'],
-                $cloudinaryOptions
-            ))->getSecurePath();
-        }
-
-        $path = $file->store($folder, 'public');
-
-        return '/storage/' . $path;
-    }
 }

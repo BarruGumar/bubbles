@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { Link, useForm, usePage } from '@inertiajs/vue3'
+import ImageCropper from '@/Components/ImageCropper.vue'
 
 defineProps({
     mustVerifyEmail: Boolean,
@@ -31,18 +32,48 @@ const form = useForm({
 
 const initial = computed(() => (form.name || '?')[0].toUpperCase())
 
+// ── Cropper ──
+const cropperSrc  = ref(null)
+const cropperMode = ref(null) // 'avatar' | 'banner'
+
 function onAvatarChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    avatarForm.avatar   = file
-    avatarPreview.value = URL.createObjectURL(file) // instant local preview
+    cropperSrc.value  = URL.createObjectURL(file)
+    cropperMode.value = 'avatar'
+    e.target.value    = '' // allow re-selecting same file
 }
 
 function onBannerChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    bannerForm.banner   = file
-    bannerPreview.value = URL.createObjectURL(file)
+    cropperSrc.value  = URL.createObjectURL(file)
+    cropperMode.value = 'banner'
+    e.target.value    = ''
+}
+
+function onCropConfirm(blob) {
+    const isAvatar = cropperMode.value === 'avatar'
+    const ext      = blob.type === 'image/png' ? 'png' : 'jpg'
+    const filename  = isAvatar ? `avatar.${ext}` : `banner.${ext}`
+    const file      = new File([blob], filename, { type: blob.type })
+    const blobUrl   = URL.createObjectURL(blob)
+
+    if (isAvatar) {
+        avatarForm.avatar   = file
+        avatarPreview.value = blobUrl
+    } else {
+        bannerForm.banner   = file
+        bannerPreview.value = blobUrl
+    }
+
+    cropperSrc.value  = null
+    cropperMode.value = null
+}
+
+function onCropCancel() {
+    cropperSrc.value  = null
+    cropperMode.value = null
 }
 
 function submitAvatar() {
@@ -64,6 +95,20 @@ function submitBanner() {
 </script>
 
 <template>
+    <!-- Cropper modal — rendered at body level to avoid z-index issues -->
+    <Teleport to="body">
+        <ImageCropper
+            v-if="cropperSrc"
+            :src="cropperSrc"
+            :aspect-ratio="cropperMode === 'banner' ? 3 : 1"
+            :circle="cropperMode === 'avatar'"
+            :output-width="cropperMode === 'banner' ? 1200 : 400"
+            :output-height="cropperMode === 'banner' ? 400  : 400"
+            @confirm="onCropConfirm"
+            @cancel="onCropCancel"
+        />
+    </Teleport>
+
     <section>
         <header style="margin-bottom: 24px;">
             <h2 style="font-size: 15px; font-weight: 800; color: #1a3a4a; margin: 0 0 4px;">Informação de perfil</h2>

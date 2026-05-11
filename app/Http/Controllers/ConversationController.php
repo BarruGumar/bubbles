@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\Friend;
+use App\Support\StoresImages;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,6 +12,7 @@ use Inertia\Response;
 
 class ConversationController extends Controller
 {
+    use StoresImages;
     public function index(): Response
     {
         $conversations = $this->listConversations();
@@ -103,11 +105,20 @@ class ConversationController extends Controller
             403
         );
 
-        $request->validate(['content' => 'required|string|max:2000']);
+        $request->validate([
+            'content' => 'nullable|string|max:2000|required_without:image',
+            'image'   => 'nullable|image|max:5120',
+        ]);
+
+        $imageUrl = null;
+        if ($request->hasFile('image')) {
+            $imageUrl = $this->storeImage($request->file('image'), 'messages');
+        }
 
         $message = $conversation->messages()->create([
-            'user_id' => auth()->id(),
-            'content' => $request->input('content'),
+            'user_id'   => auth()->id(),
+            'content'   => $request->input('content'),
+            'image_url' => $imageUrl,
         ]);
 
         $conversation->update(['last_message_id' => $message->id]);
