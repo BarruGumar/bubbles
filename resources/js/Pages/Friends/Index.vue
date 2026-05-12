@@ -19,6 +19,10 @@ function accept(friendId) {
 function reject(friendId) {
     router.delete(route('friends.reject', friendId), { preserveScroll: true })
 }
+
+function startConversation(friend) {
+    router.post(route('conversations.store'), { recipient_id: friend.id })
+}
 </script>
 
 <template>
@@ -171,7 +175,14 @@ function reject(friendId) {
                             <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ friend.name }}</p>
                             <p v-if="friend.username" style="font-size: 11px; color: #009ac7; margin: 2px 0 0;">@{{ friend.username }}</p>
                         </Link>
-
+                                                        
+                        <button
+                                    @click="startConversation(friend)"
+                                    style="font-size: 12px; font-weight: 700; color: white; padding: 7px 18px; border-radius: 99px; border: none; background: linear-gradient(135deg,#009ac7,#4ebcff); cursor: pointer; white-space: nowrap; box-shadow: 0 3px 12px #009ac730; transition: opacity .2s;"
+                                    @mouseenter="$event.target.style.opacity='.85'"
+                                    @mouseleave="$event.target.style.opacity='1'"
+                                >💬 Mensagem</button>
+                                
                         <button
                             @click="reject(friend.friendId)"
                             style="padding: 7px 14px; border-radius: 99px; border: 1.5px solid #c8d8e0; background: transparent; color: #8ba0b0; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; flex-shrink: 0;"

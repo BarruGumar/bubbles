@@ -3,6 +3,7 @@ import { computed, onUnmounted, reactive, ref } from 'vue'
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ImageCropper from '@/Components/ImageCropper.vue'
+import PostCardSkeleton from '@/Components/PostCardSkeleton.vue'
 import { useToast } from '@/Composables/useToast'
 import { useLikes } from '@/Composables/useLikes'
 import { useComments } from '@/Composables/useComments'
@@ -766,15 +767,19 @@ const { expandedComments, commentTexts, toggleComments, submitComment, deleteCom
                 </div>
             </div>
 
+            <!-- Skeleton cards enquanto carrega mais -->
+            <div v-if="loadingMore" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                <PostCardSkeleton v-for="n in 3" :key="n" />
+            </div>
+
             <!-- Carregar mais posts -->
-            <div v-if="hasMore" style="text-align: center; margin-top: 8px;">
+            <div v-if="hasMore && !loadingMore" style="text-align: center; margin-top: 8px;">
                 <button
                     @click="loadMore"
-                    :disabled="loadingMore"
                     style="padding: 10px 28px; border-radius: 99px; border: 1.5px solid #4ebcff44; background: rgba(255,255,255,0.85); color: #009ac7; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s; backdrop-filter: blur(10px);"
                     @mouseenter="$event.currentTarget.style.background='#e8f7ff'"
                     @mouseleave="$event.currentTarget.style.background='rgba(255,255,255,0.85)'"
-                >{{ loadingMore ? 'A carregar...' : 'Carregar mais' }}</button>
+                >Carregar mais</button>
             </div>
 
         </div>
