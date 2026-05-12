@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import ToastContainer from '@/Components/ToastContainer.vue'
+import { clImg } from '@/Composables/useCloudinary'
 
 const page             = usePage()
 const user             = computed(() => page.props.auth?.user)
@@ -73,7 +74,7 @@ function avatarInitial(name) {
                         <!-- Avatar -->
                         <img
                             v-if="user.avatar"
-                            :src="user.avatar"
+                            :src="clImg(user.avatar, 64, 64, 'fill', 'face')"
                             :style="{
                                 width: '32px', height: '32px', borderRadius: '50%',
                                 objectFit: 'cover',

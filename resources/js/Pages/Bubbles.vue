@@ -56,31 +56,55 @@ function onKeyDown(e) {
   if (e.key === 'Escape') clearSelection()
 }
 
-let animId = null
-function loop() {
-  step(bubbles.value, dragging.value?.id)
+let animId   = null
+let lastTime = 0
+
+function loop(timestamp) {
+  const dt = timestamp - lastTime
+  lastTime = timestamp
+  // Skip physics after a large gap (tab was hidden or page froze).
+  // Normal 60fps ≈ 16ms; anything beyond 100ms means we missed frames.
+  if (dt < 100) step(bubbles.value, dragging.value?.id)
   animId = requestAnimationFrame(loop)
+}
+
+function startLoop() {
+  if (animId !== null) return
+  lastTime = performance.now()
+  animId = requestAnimationFrame(loop)
+}
+
+function stopLoop() {
+  if (animId === null) return
+  cancelAnimationFrame(animId)
+  animId = null
+}
+
+function onVisibilityChange() {
+  document.hidden ? stopLoop() : startLoop()
 }
 
 onMounted(() => {
   load()
   loadConnections()
   loadFriendConnections()
-  window.addEventListener('mousemove', onWindowMouseMove)
-  window.addEventListener('mouseup',   onWindowMouseUp)
-  window.addEventListener('keydown',   onKeyDown)
-  window.addEventListener('touchmove', onWindowTouchMove, { passive: false })
-  window.addEventListener('touchend',  onWindowTouchEnd)
-  animId = requestAnimationFrame(loop)
+  window.addEventListener('mousemove',    onWindowMouseMove)
+  window.addEventListener('mouseup',      onWindowMouseUp)
+  window.addEventListener('keydown',      onKeyDown)
+  window.addEventListener('touchmove',    onWindowTouchMove, { passive: false })
+  window.addEventListener('touchend',     onWindowTouchEnd)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  startLoop()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', onWindowMouseMove)
-  window.removeEventListener('mouseup',   onWindowMouseUp)
-  window.removeEventListener('keydown',   onKeyDown)
-  window.removeEventListener('touchmove', onWindowTouchMove)
-  window.removeEventListener('touchend',  onWindowTouchEnd)
-  cancelAnimationFrame(animId)
+  window.removeEventListener('mousemove',    onWindowMouseMove)
+  window.removeEventListener('mouseup',      onWindowMouseUp)
+  window.removeEventListener('keydown',      onKeyDown)
+  window.removeEventListener('touchmove',    onWindowTouchMove)
+  window.removeEventListener('touchend',     onWindowTouchEnd)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  stopLoop()
 })
 
 async function createBubble() {

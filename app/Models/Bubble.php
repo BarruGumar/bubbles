@@ -25,7 +25,9 @@ class Bubble extends Model
         'community_tagline',
         'community_guidelines',
         'community_image',
+        'community_image_public_id',
         'community_banner',
+        'community_banner_public_id',
     ];
 
     protected $casts = [

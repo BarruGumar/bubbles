@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import { clImg } from '@/Composables/useCloudinary'
 
 const props = defineProps({
     conversations:      { type: Array,  default: () => [] },
@@ -220,7 +221,8 @@ function startWith(recipientId) {
                         >
                             <img
                                 v-if="f.avatar"
-                                :src="f.avatar"
+                                :src="clImg(f.avatar, 80, 80, 'fill', 'face')"
+                                loading="lazy"
                                 :style="{
                                     width: '38px', height: '38px', borderRadius: '50%',
                                     objectFit: 'cover', flexShrink: '0',
@@ -282,7 +284,8 @@ function startWith(recipientId) {
                         <div style="position: relative; flex-shrink: 0;">
                             <img
                                 v-if="conv.other_user?.avatar"
-                                :src="conv.other_user.avatar"
+                                :src="clImg(conv.other_user.avatar, 88, 88, 'fill', 'face')"
+                                loading="lazy"
                                 :style="{
                                     width: '42px', height: '42px', borderRadius: '50%',
                                     objectFit: 'cover',
@@ -406,7 +409,7 @@ function startWith(recipientId) {
                                 <!-- Avatar -->
                                 <img
                                     v-if="f.avatar"
-                                    :src="f.avatar"
+                                    :src="clImg(f.avatar, 96, 96, 'fill', 'face')"
                                     :style="{
                                         width: '46px', height: '46px', borderRadius: '50%',
                                         objectFit: 'cover', flexShrink: '0',
@@ -504,7 +507,7 @@ function startWith(recipientId) {
                         >←</button>
                         <img
                             v-if="activeConversation.other_user?.avatar"
-                            :src="activeConversation.other_user.avatar"
+                            :src="clImg(activeConversation.other_user.avatar, 80, 80, 'fill', 'face')"
                             :style="{
                                 width: '38px', height: '38px', borderRadius: '50%',
                                 objectFit: 'cover',
@@ -622,7 +625,8 @@ function startWith(recipientId) {
                                 >
                                     <img
                                         v-if="item.image_url"
-                                        :src="item.image_url"
+                                        :src="clImg(item.image_url, 520, 0, 'limit')"
+                                        loading="lazy"
                                         style="display: block; max-width: 260px; max-height: 320px; border-radius: 14px; width: 100%;"
                                     />
                                     <span v-if="item.content" :style="item.image_url ? { display: 'block', padding: '8px 14px 10px' } : {}">{{ item.content }}</span>

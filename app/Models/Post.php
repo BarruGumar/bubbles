@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Post extends Model
 {
-    protected $fillable = ['content', 'user_id', 'image'];
+    protected $fillable = ['content', 'user_id', 'image', 'image_public_id'];
 
     public function user(): BelongsTo
     {

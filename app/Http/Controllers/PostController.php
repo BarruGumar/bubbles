@@ -15,15 +15,20 @@ class PostController extends Controller
     public function store(StorePostRequest $request): RedirectResponse
     {
         $imageUrl = null;
+        $imagePid = null;
+
         if ($request->hasFile('image')) {
-            $imageUrl = $this->storeImage($request->file('image'), 'bubbles/profile-posts', [
-                'transformation' => ['width' => 1200, 'height' => 800, 'crop' => 'limit', 'fetch_format' => 'auto', 'quality' => 'auto'],
-            ]);
+            ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
+                $request->file('image'),
+                'bubbles/profile-posts',
+                ['transformation' => ['width' => 1200, 'height' => 800, 'crop' => 'limit', 'fetch_format' => 'auto', 'quality' => 'auto']]
+            );
         }
 
         $request->user()->posts()->create([
-            'content' => $request->content,
-            'image'   => $imageUrl,
+            'content'          => $request->content,
+            'image'            => $imageUrl,
+            'image_public_id'  => $imagePid,
         ]);
 
         return back();
@@ -33,9 +38,10 @@ class PostController extends Controller
     {
         Gate::authorize('delete', $post);
 
+        $this->deleteCloudinaryImage($post->image_public_id);
+
         $post->delete();
 
         return back();
     }
-
 }

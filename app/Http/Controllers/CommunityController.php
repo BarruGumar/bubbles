@@ -166,17 +166,22 @@ class CommunityController extends Controller
     public function store(StoreCommunityPostRequest $request, int $id): RedirectResponse
     {
         $imageUrl = null;
+        $imagePid = null;
+
         if ($request->hasFile('image')) {
-            $imageUrl = $this->storeImage($request->file('image'), 'bubbles/posts', [
-                'transformation' => ['width'=>1200,'height'=>800,'crop'=>'limit','fetch_format'=>'auto','quality'=>'auto'],
-            ]);
+            ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
+                $request->file('image'),
+                'bubbles/posts',
+                ['transformation' => ['width'=>1200,'height'=>800,'crop'=>'limit','fetch_format'=>'auto','quality'=>'auto']]
+            );
         }
 
         $bubble = Bubble::findOrFail($id);
         $bubble->communityPosts()->create([
-            'user_id' => auth()->id(),
-            'content' => $request->content,
-            'image'   => $imageUrl,
+            'user_id'         => auth()->id(),
+            'content'         => $request->content,
+            'image'           => $imageUrl,
+            'image_public_id' => $imagePid,
         ]);
 
         return back();
@@ -185,6 +190,7 @@ class CommunityController extends Controller
     public function destroy(int $id, CommunityPost $post): RedirectResponse
     {
         Gate::authorize('delete', $post);
+        $this->deleteCloudinaryImage($post->image_public_id);
         $post->delete();
         return back();
     }
@@ -194,11 +200,16 @@ class CommunityController extends Controller
         $bubble = Bubble::findOrFail($id);
         Gate::authorize('manage', $bubble);
         $request->validate(['image' => 'required|image|max:2048']);
-        $url = $this->storeImage($request->file('image'), 'bubbles/communities', [
-            'public_id' => 'community_img_' . $id, 'overwrite' => true,
+
+        $this->deleteCloudinaryImage($bubble->community_image_public_id);
+
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('image'), 'bubbles/communities', [
+            'public_id'      => 'community_img_' . $id,
+            'overwrite'      => true,
             'transformation' => ['width'=>300,'height'=>300,'crop'=>'fill','fetch_format'=>'auto','quality'=>'auto'],
         ]);
-        $bubble->update(['community_image' => $url]);
+
+        $bubble->update(['community_image' => $url, 'community_image_public_id' => $pid]);
         return back();
     }
 
@@ -207,11 +218,16 @@ class CommunityController extends Controller
         $bubble = Bubble::findOrFail($id);
         Gate::authorize('manage', $bubble);
         $request->validate(['banner' => 'required|image|max:4096']);
-        $url = $this->storeImage($request->file('banner'), 'bubbles/communities', [
-            'public_id' => 'community_banner_' . $id, 'overwrite' => true,
+
+        $this->deleteCloudinaryImage($bubble->community_banner_public_id);
+
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('banner'), 'bubbles/communities', [
+            'public_id'      => 'community_banner_' . $id,
+            'overwrite'      => true,
             'transformation' => ['width'=>1400,'height'=>500,'crop'=>'fill','fetch_format'=>'auto','quality'=>'auto'],
         ]);
-        $bubble->update(['community_banner' => $url]);
+
+        $bubble->update(['community_banner' => $url, 'community_banner_public_id' => $pid]);
         return back();
     }
 }

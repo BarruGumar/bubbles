@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import { clImg } from '@/Composables/useCloudinary'
 
 const props = defineProps({
     friends:  Array,
@@ -47,7 +48,7 @@ function startConversation(friend) {
                         <Link :href="route('profile.show', req.username)" style="text-decoration: none; flex-shrink: 0;">
                             <img
                                 v-if="req.avatar"
-                                :src="req.avatar"
+                                :src="clImg(req.avatar, 96, 96, 'fill', 'face')"
                                 :style="{
                                     width: '46px', height: '46px', borderRadius: '50%',
                                     objectFit: 'cover', border: `2px solid ${req.avatar_color}`,
@@ -101,7 +102,7 @@ function startConversation(friend) {
                         <Link :href="route('profile.show', req.username)" style="text-decoration: none; flex-shrink: 0;">
                             <img
                                 v-if="req.avatar"
-                                :src="req.avatar"
+                                :src="clImg(req.avatar, 96, 96, 'fill', 'face')"
                                 :style="{
                                     width: '46px', height: '46px', borderRadius: '50%',
                                     objectFit: 'cover', border: `2px solid ${req.avatar_color}`,
@@ -155,7 +156,7 @@ function startConversation(friend) {
                         <Link :href="route('profile.show', friend.username)" style="text-decoration: none; flex-shrink: 0;">
                             <img
                                 v-if="friend.avatar"
-                                :src="friend.avatar"
+                                :src="clImg(friend.avatar, 96, 96, 'fill', 'face')"
                                 :style="{
                                     width: '46px', height: '46px', borderRadius: '50%',
                                     objectFit: 'cover', border: `2px solid ${friend.avatar_color}`,

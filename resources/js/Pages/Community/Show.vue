@@ -4,6 +4,7 @@ import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ImageCropper from '@/Components/ImageCropper.vue'
 import PostCardSkeleton from '@/Components/PostCardSkeleton.vue'
+import { clImg } from '@/Composables/useCloudinary'
 import { useToast } from '@/Composables/useToast'
 import { useLikes } from '@/Composables/useLikes'
 import { useComments } from '@/Composables/useComments'
@@ -256,7 +257,7 @@ const { expandedComments, commentTexts, toggleComments, submitComment, deleteCom
                     :style="{
                         height: '180px', position: 'relative', borderRadius: '22px 22px 0 0',
                         background: communityBannerPreview
-                            ? `url('${communityBannerPreview}') center/cover no-repeat`
+                            ? `url('${clImg(communityBannerPreview, 1400, 500, 'fill')}') center/cover no-repeat`
                             : `linear-gradient(135deg, ${community.color}dd 0%, ${community.cover_color ?? community.color} 100%)`,
                     }"
                 >
@@ -267,7 +268,7 @@ const { expandedComments, commentTexts, toggleComments, submitComment, deleteCom
                         <div style="position: relative; width: 86px; height: 86px;">
                             <img
                                 v-if="communityImagePreview"
-                                :src="communityImagePreview"
+                                :src="clImg(communityImagePreview, 200, 200, 'fill')"
                                 :style="{
                                     width: '86px', height: '86px', borderRadius: '50%',
                                     objectFit: 'cover', border: '4.5px solid white',
@@ -305,7 +306,7 @@ const { expandedComments, commentTexts, toggleComments, submitComment, deleteCom
                                 >
                                     <img
                                         v-if="community.creator.avatar"
-                                        :src="community.creator.avatar"
+                                        :src="clImg(community.creator.avatar, 40, 40, 'fill', 'face')"
                                         :style="{
                                             width: '18px', height: '18px', borderRadius: '50%',
                                             objectFit: 'cover', border: `1.5px solid ${community.color}`,
@@ -423,7 +424,8 @@ const { expandedComments, commentTexts, toggleComments, submitComment, deleteCom
                     >
                         <img
                             v-if="member.avatar"
-                            :src="member.avatar"
+                            :src="clImg(member.avatar, 80, 80, 'fill', 'face')"
+                            loading="lazy"
                             :style="{
                                 width: '38px', height: '38px', borderRadius: '50%',
                                 objectFit: 'cover', border: `2px solid ${member.avatar_color}`,
@@ -566,7 +568,8 @@ const { expandedComments, commentTexts, toggleComments, submitComment, deleteCom
                         >
                             <img
                                 v-if="post.author.avatar"
-                                :src="post.author.avatar"
+                                :src="clImg(post.author.avatar, 80, 80, 'fill', 'face')"
+                                loading="lazy"
                                 :style="{
                                     width: '38px', height: '38px', borderRadius: '50%',
                                     objectFit: 'cover', display: 'block', transition: 'opacity .2s',
@@ -649,7 +652,8 @@ const { expandedComments, commentTexts, toggleComments, submitComment, deleteCom
                             <!-- Post image -->
                             <img
                                 v-if="post.image"
-                                :src="post.image"
+                                :src="clImg(post.image, 800, 0, 'limit')"
+                                loading="lazy"
                                 style="margin-top: 12px; max-width: 100%; border-radius: 12px; object-fit: cover; max-height: 400px; display: block; border: 1px solid #4ebcff1a;"
                             />
                         </div>

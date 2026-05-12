@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref } from 'vue'
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import PostCardSkeleton from '@/Components/PostCardSkeleton.vue'
+import { clImg } from '@/Composables/useCloudinary'
 import { useToast } from '@/Composables/useToast'
 import { useLikes } from '@/Composables/useLikes'
 import { useComments } from '@/Composables/useComments'
@@ -165,17 +166,17 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                 <div :style="{
                     height: '190px', borderRadius: '22px 22px 0 0', position: 'relative',
                     background: profileUser.banner
-                        ? `url('${profileUser.banner}') center/cover no-repeat`
+                        ? `url('${clImg(profileUser.banner, 1200, 400, 'fill')}') center/cover no-repeat`
                         : `linear-gradient(135deg, ${profileUser.avatar_color}cc 0%, ${profileUser.avatar_color} 100%)`,
                 }">
                     <!-- Avatar overlapping -->
                     <div style="position: absolute; bottom: -45px; left: 32px; z-index: 5;">
                         <img
                             v-if="profileUser.avatar"
-                            :src="profileUser.avatar"
+                            :src="clImg(profileUser.avatar, 200, 200, 'fill', 'face')"
                             :style="{
                                 width: '90px', height: '90px', borderRadius: '50%',
-                                objectFit: 'cover', border: '5px solid white',
+                                objectFit: 'cover', border: '4px solid white',
                                 boxShadow: `0 4px 20px ${profileUser.avatar_color}66`,
                                 display: 'block',
                             }"
@@ -183,7 +184,7 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                         <div v-else :style="{
                             width: '90px', height: '90px', borderRadius: '50%',
                             background: profileUser.avatar_color,
-                            border: '5px solid white',
+                            border: '4px solid white',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '30px', fontWeight: '900', color: 'white',
                             boxShadow: `0 4px 20px ${profileUser.avatar_color}66`,
@@ -516,7 +517,8 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                         <!-- Avatar -->
                         <img
                             v-if="profileUser.avatar"
-                            :src="profileUser.avatar"
+                            :src="clImg(profileUser.avatar, 80, 80, 'fill', 'face')"
+                            loading="lazy"
                             :style="{
                                 width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
                                 objectFit: 'cover', border: `2px solid ${profileUser.avatar_color}`,
@@ -562,7 +564,8 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                             <p style="font-size: 14px; color: #2a4a5a; line-height: 1.65; margin: 0; white-space: pre-wrap;">{{ post.content }}</p>
                             <img
                                 v-if="post.image"
-                                :src="post.image"
+                                :src="clImg(post.image, 800, 0, 'limit')"
+                                loading="lazy"
                                 style="margin-top: 12px; max-width: 100%; border-radius: 12px; object-fit: cover; max-height: 400px; display: block; border: 1px solid #4ebcff1a;"
                             />
                         </div>

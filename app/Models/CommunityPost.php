@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class CommunityPost extends Model
 {
-    protected $fillable = ['bubble_id', 'user_id', 'content', 'image'];
+    protected $fillable = ['bubble_id', 'user_id', 'content', 'image', 'image_public_id'];
 
     public function bubble(): BelongsTo
     {

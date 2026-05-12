@@ -4,28 +4,69 @@ namespace App\Support;
 
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 
 trait StoresImages
 {
+    /**
+     * Upload an image and return only the URL (backward-compatible).
+     */
     private function storeImage(UploadedFile $file, string $folder, array $cloudinaryOptions = []): string
+    {
+        return $this->storeImageWithMeta($file, $folder, $cloudinaryOptions)['url'];
+    }
+
+    /**
+     * Upload an image and return ['url' => ..., 'public_id' => ...].
+     * public_id is null when using local storage.
+     */
+    protected function storeImageWithMeta(UploadedFile $file, string $folder, array $cloudinaryOptions = []): array
     {
         if ($this->cloudinaryIsConfigured()) {
             $response = Cloudinary::uploadApi()->upload($file->getRealPath(), array_merge(
                 ['folder' => $folder, 'fetch_format' => 'auto', 'quality' => 'auto'],
                 $cloudinaryOptions
             ));
-            return $response['secure_url'];
+
+            return [
+                'url'       => $response['secure_url'],
+                'public_id' => $response['public_id'],
+            ];
         }
 
         $path = $file->store($folder, 'public');
 
-        return '/storage/' . $path;
+        return [
+            'url'       => '/storage/' . $path,
+            'public_id' => null,
+        ];
+    }
+
+    /**
+     * Delete an image from Cloudinary by public_id.
+     * Silently ignored when Cloudinary is not configured or public_id is null.
+     * Never throws — logs on failure so the app keeps working.
+     */
+    protected function deleteCloudinaryImage(?string $publicId): void
+    {
+        if (! $publicId || ! $this->cloudinaryIsConfigured()) {
+            return;
+        }
+
+        try {
+            Cloudinary::uploadApi()->destroy($publicId);
+        } catch (\Throwable $e) {
+            Log::warning('Cloudinary delete failed', [
+                'public_id' => $publicId,
+                'error'     => $e->getMessage(),
+            ]);
+        }
     }
 
     private function cloudinaryIsConfigured(): bool
     {
         $disk = config('filesystems.disks.cloudinary', []);
-        $url = $disk['url'] ?? null;
+        $url  = $disk['url'] ?? null;
 
         if (is_string($url) && $this->hasRealCloudinaryValue($url)) {
             return true;

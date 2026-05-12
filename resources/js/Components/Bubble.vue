@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { clImg } from '@/Composables/useCloudinary'
 
 const props = defineProps({
   bubble:          { type: Object,  required: true },
@@ -33,6 +34,7 @@ const containerStyle = computed(() => {
   }
 
   const { image } = props.bubble
+  const optimizedImage = image ? clImg(image, 300, 300, 'fill') : null
 
   return {
     position:           'absolute',
@@ -42,8 +44,8 @@ const containerStyle = computed(() => {
     width:              `${size}px`,
     height:             `${size}px`,
     borderRadius:       '50%',
-    backgroundImage:    image
-      ? `radial-gradient(circle at 38% 32%, ${color}55 0%, ${color}99 100%), url(${image})`
+    backgroundImage:    optimizedImage
+      ? `radial-gradient(circle at 38% 32%, ${color}55 0%, ${color}99 100%), url(${optimizedImage})`
       : `radial-gradient(circle at 38% 32%, ${color}ee 0%, ${color} 60%)`,
     backgroundSize:     'cover',
     backgroundPosition: 'center',
