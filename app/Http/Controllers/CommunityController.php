@@ -79,9 +79,11 @@ class CommunityController extends Controller
             ->values()
             ->toArray();
 
+        $isOwn = auth()->check() && auth()->id() === $bubble->user_id;
+
         return Inertia::render('Community/Show', [
-            'isOwn'    => auth()->check() && auth()->id() === $bubble->user_id,
-            'isMember' => auth()->check() && $bubble->memberships()->where('user_id', auth()->id())->exists(),
+            'isOwn'    => $isOwn,
+            'isMember' => $isOwn || (auth()->check() && $bubble->memberships()->where('user_id', auth()->id())->exists()),
             'community' => [
                 'id'             => $bubble->id,
                 'label'          => $bubble->label,
@@ -151,6 +153,11 @@ class CommunityController extends Controller
     public function leave(int $id): RedirectResponse
     {
         $bubble = Bubble::findOrFail($id);
+
+        if ($bubble->user_id === auth()->id()) {
+            return back();
+        }
+
         $bubble->memberships()->detach(auth()->id());
 
         return back();

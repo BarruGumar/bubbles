@@ -3,7 +3,9 @@ import { computed, onUnmounted, reactive, ref } from 'vue'
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ImageCropper from '@/Components/ImageCropper.vue'
-import { useToast } from '@/composables/useToast'
+import { useToast } from '@/Composables/useToast'
+import { useLikes } from '@/Composables/useLikes'
+import { useComments } from '@/Composables/useComments'
 
 const { show: toast } = useToast()
 
@@ -229,50 +231,14 @@ function deleteCommunity() {
 }
 
 // ── Likes & comments ──────────────────────────────────────────────
-const expandedComments = ref(new Set())
-const commentTexts     = reactive({})
-const localLikes       = reactive({})
-
-function likeCount(post)  { return localLikes[post.id]?.count   ?? post.likes_count }
-function isLiked(post)    { return localLikes[post.id]?.isLiked ?? post.is_liked    }
-
-function toggleLike(post) {
-    if (!authUser.value) return
-    const prev     = { count: likeCount(post), isLiked: isLiked(post) }
-    const willLike = !prev.isLiked
-    localLikes[post.id] = { count: prev.count + (willLike ? 1 : -1), isLiked: willLike }
-    router.post(route('community-posts.like', post.id), {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-            const idx = localPosts.value.findIndex(p => p.id === post.id)
-            if (idx !== -1) {
-                localPosts.value[idx].is_liked    = willLike
-                localPosts.value[idx].likes_count = prev.count + (willLike ? 1 : -1)
-            }
-            delete localLikes[post.id]
-        },
-        onError: () => { localLikes[post.id] = prev },
-    })
-}
-
-function toggleComments(postId) {
-    const s = new Set(expandedComments.value)
-    s.has(postId) ? s.delete(postId) : s.add(postId)
-    expandedComments.value = s
-}
-
-function submitComment(post) {
-    const text = (commentTexts[post.id] ?? '').trim()
-    if (!text) return
-    router.post(route('community-posts.comments.store', post.id), { content: text }, {
-        preserveScroll: true,
-        onSuccess: () => { commentTexts[post.id] = '' },
-    })
-}
-
-function deleteComment(commentId) {
-    router.delete(route('comments.destroy', commentId), { preserveScroll: true })
-}
+const { localLikes, likeCount, isLiked, toggleLike } = useLikes(
+    localPosts,
+    (id) => route('community-posts.like', id),
+    authUser,
+)
+const { expandedComments, commentTexts, toggleComments, submitComment, deleteComment } = useComments(
+    (id) => route('community-posts.comments.store', id),
+)
 </script>
 
 <template>
@@ -303,7 +269,7 @@ function deleteComment(commentId) {
                                 :src="communityImagePreview"
                                 :style="{
                                     width: '86px', height: '86px', borderRadius: '50%',
-                                    objectFit: 'cover', border: '5px solid white',
+                                    objectFit: 'cover', border: '4.5px solid white',
                                     boxShadow: `0 4px 20px ${community.color}66`,
                                     display: 'block',
                                 }"
@@ -311,7 +277,7 @@ function deleteComment(commentId) {
                             <div v-else :style="{
                                 width: '86px', height: '86px', borderRadius: '50%',
                                 background: community.color,
-                                border: '5px solid white',
+                                border: '4.5px solid white',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: '30px', fontWeight: '900', color: 'white',
                                 boxShadow: `0 4px 20px ${community.color}66`,

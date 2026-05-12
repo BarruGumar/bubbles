@@ -1,8 +1,10 @@
 <script setup>
-import { computed, onUnmounted, reactive, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { useToast } from '@/composables/useToast'
+import { useToast } from '@/Composables/useToast'
+import { useLikes } from '@/Composables/useLikes'
+import { useComments } from '@/Composables/useComments'
 
 const { show: toast } = useToast()
 
@@ -116,50 +118,14 @@ function startConversation() {
 }
 
 // ── Likes & comments ──────────────────────────────────────────────
-const expandedComments = ref(new Set())
-const commentTexts     = reactive({})
-const localLikes       = reactive({})
-
-function likeCount(post)  { return localLikes[post.id]?.count   ?? post.likes_count }
-function isLiked(post)    { return localLikes[post.id]?.isLiked ?? post.is_liked    }
-
-function toggleLike(post) {
-    if (!authUser.value) return
-    const prev     = { count: likeCount(post), isLiked: isLiked(post) }
-    const willLike = !prev.isLiked
-    localLikes[post.id] = { count: prev.count + (willLike ? 1 : -1), isLiked: willLike }
-    router.post(route('posts.like', post.id), {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-            const idx = localPosts.value.findIndex(p => p.id === post.id)
-            if (idx !== -1) {
-                localPosts.value[idx].is_liked    = willLike
-                localPosts.value[idx].likes_count = prev.count + (willLike ? 1 : -1)
-            }
-            delete localLikes[post.id]
-        },
-        onError: () => { localLikes[post.id] = prev },
-    })
-}
-
-function toggleComments(postId) {
-    const s = new Set(expandedComments.value)
-    s.has(postId) ? s.delete(postId) : s.add(postId)
-    expandedComments.value = s
-}
-
-function submitComment(post) {
-    const text = (commentTexts[post.id] ?? '').trim()
-    if (!text) return
-    router.post(route('posts.comments.store', post.id), { content: text }, {
-        preserveScroll: true,
-        onSuccess: () => { commentTexts[post.id] = '' },
-    })
-}
-
-function deleteComment(commentId) {
-    router.delete(route('comments.destroy', commentId), { preserveScroll: true })
-}
+const { localLikes, likeCount, isLiked, toggleLike } = useLikes(
+    localPosts,
+    (id) => route('posts.like', id),
+    authUser,
+)
+const { expandedComments, commentTexts, toggleComments, submitComment, deleteComment } = useComments(
+    (id) => route('posts.comments.store', id),
+)
 
 // ── Community network layout ───────────────────────────────────────
 // All coordinates live in a 580×auto virtual canvas (matches card inner width).
@@ -318,6 +284,17 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                 </div>
             </div>
 
+            <!-- Empty communities state -->
+            <div
+                v-if="!communities || communities.length === 0"
+                style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid #4ebcff1a; box-shadow: 0 2px 12px #009ac708; padding: 28px 22px; margin-bottom: 16px; text-align: center;"
+            >
+                <p style="font-size: 22px; margin: 0 0 8px;">🫧</p>
+                <p style="font-size: 13px; color: #8ba0b0; margin: 0;">
+                    {{ isOwn ? 'Ainda não fazes parte de nenhuma comunidade. Explora as bolhas!' : 'Ainda não faz parte de nenhuma comunidade.' }}
+                </p>
+            </div>
+
             <div
                 v-if="communities && communities.length"
                 style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid #4ebcff1a; box-shadow: 0 2px 12px #009ac708; padding: 16px 22px 20px; margin-bottom: 16px;"
@@ -386,9 +363,14 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                         :style="{ left: (c.bx / 580 * 100) + '%', top: (c.by / netH * 100) + '%' }"
                     >
                         <div
+                            :title="c.title !== c.label ? c.title : undefined"
                             :style="{
                                 width: '64px', height: '64px', borderRadius: '50%',
-                                background: `radial-gradient(circle at 38% 32%, ${c.color}ee 0%, ${c.color} 60%)`,
+                                backgroundImage: c.image
+                                    ? `radial-gradient(circle at 38% 32%, ${c.color}55 0%, ${c.color}99 100%), url('${c.image}')`
+                                    : `radial-gradient(circle at 38% 32%, ${c.color}ee 0%, ${c.color} 60%)`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                 position: 'relative', overflow: 'hidden', cursor: 'pointer',
                                 boxShadow: `0 6px 20px ${c.color}55, 0 2px 6px ${c.color}33`,
@@ -397,14 +379,6 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                             @mouseenter="e => { e.currentTarget.style.transform='scale(1.13)'; e.currentTarget.style.boxShadow=`0 10px 30px ${c.color}77, 0 4px 12px ${c.color}44`; }"
                             @mouseleave="e => { e.currentTarget.style.transform='scale(1)';    e.currentTarget.style.boxShadow=`0 6px 20px ${c.color}55, 0 2px 6px ${c.color}33`; }"
                         >
-                            <div
-                                v-if="c.image"
-                                :style="{
-                                    position: 'absolute', inset: 0, borderRadius: '50%',
-                                    backgroundImage: `url('${c.image}')`, backgroundSize: 'cover',
-                                    backgroundPosition: 'center', opacity: '.3',
-                                }"
-                            />
                             <div style="position: absolute; top: 7px; left: 14%; width: 72%; height: 36%; border-radius: 50%; background: rgba(255,255,255,.22); transform: rotate(-10deg); pointer-events: none;" />
                             <!-- Label -->
                             <span style="position: relative; font-size: 9px; font-weight: 800; color: white; text-align: center; padding: 0 5px; line-height: 1.25; text-shadow: 0 1px 3px rgba(0,0,0,.35); word-break: break-word; max-width: 100%;">{{ c.label }}</span>

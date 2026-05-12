@@ -5,35 +5,39 @@ namespace App\Http\Controllers;
 use App\Models\Comment;
 use App\Models\CommunityPost;
 use App\Models\Post;
+use App\Support\FormatsPostResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
-    public function storePost(Request $request, Post $post): RedirectResponse
+    use FormatsPostResponse;
+
+    public function storePost(Request $request, Post $post): RedirectResponse|JsonResponse
     {
         $request->validate(['content' => 'required|string|max:500']);
         $post->comments()->create([
             'user_id' => auth()->id(),
             'content' => $request->input('content'),
         ]);
-        return back();
+        return $this->postResponse();
     }
 
-    public function storeCommunityPost(Request $request, CommunityPost $post): RedirectResponse
+    public function storeCommunityPost(Request $request, CommunityPost $post): RedirectResponse|JsonResponse
     {
         $request->validate(['content' => 'required|string|max:500']);
         $post->comments()->create([
             'user_id' => auth()->id(),
             'content' => $request->input('content'),
         ]);
-        return back();
+        return $this->postResponse();
     }
 
-    public function destroy(Comment $comment): RedirectResponse
+    public function destroy(Comment $comment): RedirectResponse|JsonResponse
     {
         abort_unless($comment->user_id === auth()->id(), 403);
         $comment->delete();
-        return back();
+        return $this->postResponse();
     }
 }

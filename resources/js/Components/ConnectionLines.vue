@@ -1,9 +1,15 @@
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   connections:       { type: Array, required: true },
   friendConnections: { type: Array, default: () => [] },
   bubbles:           { type: Array, required: true },
 })
+
+const validFriendConnections = computed(() =>
+  props.friendConnections.filter(c => getBubble(c.from) && getBubble(c.to))
+)
 
 function getBubble(id) {
   return props.bubbles.find(b => b.id === id)
@@ -60,7 +66,7 @@ function balloonTextX(angle, msg) {
     style="z-index: 2;"
   >
     <!-- Friend connection lines (amigos em comum) -->
-    <g v-for="(c, i) in friendConnections" :key="'fc-' + i">
+    <g v-for="(c, i) in validFriendConnections" :key="'fc-' + i">
       <!-- Glow -->
       <line
         :x1="center(c.from).x" :y1="center(c.from).y"
@@ -80,8 +86,12 @@ function balloonTextX(angle, msg) {
         opacity="0.4"
         class="friend-line"
       />
-      <!-- Midpoint badge -->
-      <g :transform="`translate(${midpoint(c.from, c.to).x}, ${midpoint(c.from, c.to).y})`">
+      <!-- Midpoint badge — pointer-events: auto overrides the parent SVG's none -->
+      <g
+        :transform="`translate(${midpoint(c.from, c.to).x}, ${midpoint(c.from, c.to).y})`"
+        style="pointer-events: auto; cursor: default;"
+      >
+        <title v-if="c.friendNames?.length">{{ c.friendNames.join(', ') }}</title>
         <circle r="12" fill="white" stroke="#9b6bdf" stroke-width="1.4" opacity="0.95" />
         <text
           text-anchor="middle" dominant-baseline="central"

@@ -9,7 +9,7 @@ const props = defineProps({
   isConnectSource: { type: Boolean, default: false },
 })
 
-defineEmits(['mousedown', 'mouseenter', 'mouseleave', 'contextmenu'])
+defineEmits(['mousedown', 'mouseenter', 'mouseleave', 'contextmenu', 'touchstart'])
 
 const ARC_C = 276.46
 
@@ -73,6 +73,7 @@ const containerStyle = computed(() => {
     @mouseenter="$emit('mouseenter')"
     @mouseleave="$emit('mouseleave')"
     @contextmenu="$emit('contextmenu', $event)"
+    @touchstart="$emit('touchstart', $event)"
   >
     <!-- Glass highlight -->
     <div :style="{

@@ -1,8 +1,8 @@
 const DAMPING       = 0.91
 const REPULSE       = 2.8
 const ATTRACT       = 0.00085
-const DRIFT         = 0.035
-const MAX_SPD       = 0.5
+const DRIFT         = 0.040
+const MAX_SPD       = 0.45
 const EXPANDED_SIZE = 300
 
 export function usePhysics() {
