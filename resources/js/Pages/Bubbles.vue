@@ -627,7 +627,7 @@ const trendsOpen = ref(window.innerWidth >= 640)
     <!-- HINT -->
     <div style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none;">
       <span style="font-size: 10px; color: #009ac7aa; background: rgba(255,255,255,.6); padding: 5px 16px; border-radius: 99px; backdrop-filter: blur(8px);">
-        Arrasta · Clica para expandir · Esc para fechar
+        Segura para arrastar · Clica para expandir · Esc para fechar
       </span>
     </div>
 
