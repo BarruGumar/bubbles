@@ -38,6 +38,7 @@ class ProfileController extends Controller
             'id'          => $p->id,
             'content'     => $p->content,
             'image'       => $p->image,
+            'video'       => $p->video,
             'created_at'  => $p->created_at->diffForHumans(),
             'likes_count'   => $p->likes_count,
             'is_liked'      => $p->likes->isNotEmpty(),

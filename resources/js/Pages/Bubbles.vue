@@ -483,8 +483,9 @@ const trendsOpen = ref(window.innerWidth >= 640)
                   @mouseenter="$event.currentTarget.style.background='#f0f8ff'"
                   @mouseleave="$event.currentTarget.style.background='transparent'"
                 >
-                  <div :style="{ width:'36px', height:'36px', borderRadius:'50%', flexShrink:'0', background:`radial-gradient(circle at 38% 32%, ${c.color}ee 0%, ${c.color} 60%)`, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 3px 10px ${c.color}44` }">
-                    <span style="font-size: 9px; font-weight: 800; color: white;">{{ c.label?.slice(0,3) }}</span>
+                  <div :style="{ width:'36px', height:'36px', borderRadius:'50%', flexShrink:'0', overflow:'hidden', boxShadow:`0 3px 10px ${c.color}44`, background:`radial-gradient(circle at 38% 32%, ${c.color}ee 0%, ${c.color} 60%)`, display:'flex', alignItems:'center', justifyContent:'center' }">
+                    <img v-if="c.image" :src="c.image" style="width:100%; height:100%; object-fit:cover; display:block;" />
+                    <span v-else style="font-size: 9px; font-weight: 800; color: white;">{{ c.label?.slice(0,3) }}</span>
                   </div>
                   <div style="flex:1; min-width:0;">
                     <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ c.title }}</p>

@@ -16,6 +16,7 @@ class StoreCommunityPostRequest extends FormRequest
         return [
             'content' => ['required', 'string', 'max:1000'],
             'image'   => ['nullable', 'image', 'max:4096'],
+            'video'   => ['nullable', 'mimetypes:video/mp4,video/webm,video/quicktime,video/x-msvideo,video/mpeg', 'max:102400'],
         ];
     }
 }

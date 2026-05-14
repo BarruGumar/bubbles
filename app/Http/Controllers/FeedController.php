@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bubble;
 use App\Models\CommunityPost;
 use App\Models\Friend;
 use App\Models\Post;
@@ -32,7 +33,10 @@ class FeedController extends Controller
             fn ($f) => $f->user_id === $authId ? $f->friend_id : $f->user_id
         )->toArray();
 
-        $communityIds = $user->communities()->pluck('bubbles.id')->toArray();
+        $communityIds = $user->communities()->pluck('bubbles.id')
+            ->merge(Bubble::where('user_id', $authId)->pluck('id'))
+            ->unique()
+            ->toArray();
 
         $withLikes = fn ($q) => $q->where('user_id', $authId);
 
@@ -83,6 +87,7 @@ class FeedController extends Controller
             'id'       => $p->id,
             'content'  => $p->content,
             'image'    => $p->image,
+            'video'    => $p->video,
             'created_at' => $p->created_at->diffForHumans(),
             'likes_count'   => $p->likes_count,
             'is_liked'      => $p->likes->isNotEmpty(),
@@ -114,6 +119,7 @@ class FeedController extends Controller
             'id'       => $p->id,
             'content'  => $p->content,
             'image'    => $p->image,
+            'video'    => $p->video,
             'created_at' => $p->created_at->diffForHumans(),
             'likes_count'   => $p->likes_count,
             'is_liked'      => $p->likes->isNotEmpty(),

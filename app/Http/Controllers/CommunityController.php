@@ -41,6 +41,7 @@ class CommunityController extends Controller
             'id'          => $p->id,
             'content'     => $p->content,
             'image'       => $p->image,
+            'video'       => $p->video,
             'created_at'  => $p->created_at->diffForHumans(),
             'author'      => [
                 'name'         => $p->user->name,
@@ -169,6 +170,8 @@ class CommunityController extends Controller
     {
         $imageUrl = null;
         $imagePid = null;
+        $videoUrl = null;
+        $videoPid = null;
 
         if ($request->hasFile('image')) {
             ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
@@ -178,12 +181,21 @@ class CommunityController extends Controller
             );
         }
 
+        if ($request->hasFile('video')) {
+            ['url' => $videoUrl, 'public_id' => $videoPid] = $this->storeVideoWithMeta(
+                $request->file('video'),
+                'bubbles/posts'
+            );
+        }
+
         $bubble = Bubble::findOrFail($id);
         $bubble->communityPosts()->create([
-            'user_id'         => auth()->id(),
-            'content'         => $request->content,
-            'image'           => $imageUrl,
-            'image_public_id' => $imagePid,
+            'user_id'          => auth()->id(),
+            'content'          => $request->content,
+            'image'            => $imageUrl,
+            'image_public_id'  => $imagePid,
+            'video'            => $videoUrl,
+            'video_public_id'  => $videoPid,
         ]);
 
         return back();
@@ -203,6 +215,7 @@ class CommunityController extends Controller
     {
         Gate::authorize('delete', $post);
         $this->deleteCloudinaryImage($post->image_public_id);
+        $this->deleteCloudinaryVideo($post->video_public_id);
         $post->delete();
         return back();
     }

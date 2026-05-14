@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import PostCard from '@/Components/PostCard.vue'
@@ -26,6 +26,13 @@ const currentCursor = ref(props.nextCursor)
 const hasMore       = ref(props.hasMorePosts)
 const loadingMore   = ref(false)
 
+watch(() => props.posts, (newPosts) => {
+    if (loadingMore.value) return
+    localPosts.value    = [...newPosts]
+    currentCursor.value = props.nextCursor
+    hasMore.value       = props.hasMorePosts
+})
+
 function loadMore() {
     if (!hasMore.value || loadingMore.value) return
     loadingMore.value = true
@@ -45,41 +52,70 @@ function loadMore() {
 
 const authUser = computed(() => usePage().props.auth?.user)
 
-const postForm = useForm({ content: '', image: null })
+const postForm = useForm({ content: '', image: null, video: null })
 const charCount = computed(() => postForm.content.length)
-const imageInput = ref(null)
-const imagePreview = ref(null)
+const mediaInput      = ref(null)
+const mediaPreview    = ref(null)
+const isVideoMedia    = ref(false)
+const uploadProgress  = ref(0)
+const uploadingServer = ref(false)
 
-function onImageChange(e) {
+function onMediaChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
-    postForm.image = file
-    imagePreview.value = URL.createObjectURL(file)
+    if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value)
+    if (file.type.startsWith('video/')) {
+        postForm.image = null
+        postForm.video = file
+        isVideoMedia.value = true
+    } else {
+        postForm.video = null
+        postForm.image = file
+        isVideoMedia.value = false
+    }
+    mediaPreview.value = URL.createObjectURL(file)
 }
 
-function removeImage() {
-    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
+function removeMedia() {
+    if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value)
     postForm.image = null
-    imagePreview.value = null
-    if (imageInput.value) imageInput.value.value = ''
+    postForm.video = null
+    mediaPreview.value = null
+    isVideoMedia.value = false
+    if (mediaInput.value) mediaInput.value.value = ''
 }
 
 onUnmounted(() => {
-    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value)
+    if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value)
 })
 
 function submitPost() {
     if (!postForm.content.trim()) return
+    uploadProgress.value = 0
+    uploadingServer.value = false
     postForm.post(route('posts.store'), {
         forceFormData: true,
         preserveScroll: true,
+        onProgress: (p) => {
+            uploadProgress.value = p?.percentage ?? 0
+            if (uploadProgress.value >= 100) uploadingServer.value = true
+        },
         onSuccess: () => {
-            postForm.reset('content', 'image')
-            removeImage()
+            postForm.reset('content', 'image', 'video')
+            removeMedia()
+            uploadProgress.value = 0
+            uploadingServer.value = false
             toast('Publicação criada com sucesso.')
         },
-        onError: () => toast('Erro ao publicar. Tenta novamente.', 'error'),
+        onError: () => {
+            uploadProgress.value = 0
+            uploadingServer.value = false
+            toast('Erro ao publicar. Tenta novamente.', 'error')
+        },
+        onFinish: () => {
+            uploadProgress.value = 0
+            uploadingServer.value = false
+        },
     })
 }
 
@@ -431,11 +467,18 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                             @blur="$event.target.style.borderColor='#4ebcff33'"
                             @keydown.ctrl.enter="submitPost"
                         />
-                        <div v-if="imagePreview" style="margin-top: 10px; position: relative; display: inline-block;">
-                            <img :src="imagePreview" style="max-height: 160px; max-width: 100%; border-radius: 10px; object-fit: cover; border: 1px solid #4ebcff22;" />
+                        <div v-if="mediaPreview" style="margin-top: 10px; position: relative; display: inline-block;">
+                            <video
+                                v-if="isVideoMedia"
+                                :src="mediaPreview"
+                                style="max-height: 200px; max-width: 100%; border-radius: 10px; display: block; border: 1px solid #4ebcff22;"
+                                controls
+                                preload="metadata"
+                            />
+                            <img v-else :src="mediaPreview" style="max-height: 160px; max-width: 100%; border-radius: 10px; object-fit: cover; border: 1px solid #4ebcff22;" />
                             <button
                                 type="button"
-                                @click="removeImage"
+                                @click="removeMedia"
                                 style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.45); border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; color: white; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center;"
                             >×</button>
                         </div>
@@ -445,14 +488,14 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                                 <span style="font-size: 11px; color: #b0c0cc;">{{ charCount }}/1000 · Ctrl+Enter para publicar</span>
                                 <button
                                     type="button"
-                                    @click="imageInput.click()"
+                                    @click="mediaInput.click()"
                                     :style="{
                                         background: 'none', border: 'none', cursor: 'pointer',
-                                        color: postForm.image ? '#009ac7' : '#b0c0cc',
+                                        color: (postForm.image || postForm.video) ? '#009ac7' : '#b0c0cc',
                                         padding: '3px', borderRadius: '6px', transition: 'color .2s',
                                         display: 'flex', alignItems: 'center',
                                     }"
-                                    title="Adicionar imagem"
+                                    title="Adicionar imagem ou vídeo"
                                 >
                                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                         <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
@@ -460,17 +503,29 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
                                         <path d="M1.5 11l3.5-3 3 3 2-2 3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
                                 </button>
-                                <input ref="imageInput" type="file" accept="image/*" style="display:none;" @change="onImageChange" />
+                                <input ref="mediaInput" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" style="display:none;" @change="onMediaChange" />
                             </div>
                             <button
                                 @click="submitPost"
                                 :disabled="postForm.processing || !postForm.content.trim()"
                                 style="padding: 8px 20px; border-radius: 99px; background: #009ac7; border: none; color: white; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 12px #009ac730; transition: opacity .2s;"
                                 :style="{ opacity: postForm.processing || !postForm.content.trim() ? 0.5 : 1, cursor: !postForm.content.trim() ? 'not-allowed' : 'pointer' }"
-                            >{{ postForm.processing ? 'A publicar...' : 'Publicar' }}</button>
+                            >{{ postForm.processing ? (uploadingServer ? 'A processar...' : `A carregar... ${uploadProgress}%`) : 'Publicar' }}</button>
                         </div>
+
+                        <!-- Video upload progress bar -->
+                        <div v-if="postForm.processing && postForm.video" style="margin-top: 8px;">
+                            <div style="height: 4px; background: #e8f4fb; border-radius: 99px; overflow: hidden;">
+                                <div :style="{ width: uploadingServer ? '100%' : uploadProgress + '%', height: '100%', background: '#009ac7', borderRadius: '99px', transition: uploadingServer ? 'none' : 'width .3s ease' }" />
+                            </div>
+                            <p style="font-size: 10px; color: #8ba0b0; margin: 4px 0 0;">
+                                {{ uploadingServer ? 'A guardar no servidor... pode demorar alguns segundos.' : 'A enviar vídeo...' }}
+                            </p>
+                        </div>
+
                         <p v-if="postForm.errors.content" style="font-size: 11px; color: #e05555; margin: 6px 0 0;">{{ postForm.errors.content }}</p>
                         <p v-if="postForm.errors.image" style="font-size: 11px; color: #e05555; margin: 6px 0 0;">{{ postForm.errors.image }}</p>
+                        <p v-if="postForm.errors.video" style="font-size: 11px; color: #e05555; margin: 6px 0 0;">{{ postForm.errors.video }}</p>
                     </div>
                 </div>
             </div>

@@ -18,6 +18,8 @@ class PostController extends Controller
     {
         $imageUrl = null;
         $imagePid = null;
+        $videoUrl = null;
+        $videoPid = null;
 
         if ($request->hasFile('image')) {
             ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
@@ -27,10 +29,19 @@ class PostController extends Controller
             );
         }
 
+        if ($request->hasFile('video')) {
+            ['url' => $videoUrl, 'public_id' => $videoPid] = $this->storeVideoWithMeta(
+                $request->file('video'),
+                'bubbles/profile-posts'
+            );
+        }
+
         $request->user()->posts()->create([
             'content'          => $request->content,
             'image'            => $imageUrl,
             'image_public_id'  => $imagePid,
+            'video'            => $videoUrl,
+            'video_public_id'  => $videoPid,
         ]);
 
         return back();
@@ -51,6 +62,7 @@ class PostController extends Controller
         Gate::authorize('delete', $post);
 
         $this->deleteCloudinaryImage($post->image_public_id);
+        $this->deleteCloudinaryVideo($post->video_public_id);
 
         $post->delete();
 

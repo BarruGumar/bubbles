@@ -11,7 +11,7 @@ class CommunityPost extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['bubble_id', 'user_id', 'content', 'image', 'image_public_id'];
+    protected $fillable = ['bubble_id', 'user_id', 'content', 'image', 'image_public_id', 'video', 'video_public_id'];
 
     public function bubble(): BelongsTo
     {
