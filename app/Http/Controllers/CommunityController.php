@@ -8,6 +8,7 @@ use App\Models\Bubble;
 use App\Models\CommunityPost;
 use App\Models\User;
 use App\Support\StoresImages;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -49,8 +50,9 @@ class CommunityController extends Controller
             ],
             'isOwn'       => auth()->check() && auth()->id() === $p->user_id,
             'isCreator'   => $p->user_id === $bubble->user_id,
-            'likes_count' => $p->likes_count,
-            'is_liked'    => $p->likes->isNotEmpty(),
+            'likes_count'   => $p->likes_count,
+            'is_liked'      => $p->likes->isNotEmpty(),
+            'user_reaction' => $p->likes->first()?->type ?? null,
             'comments'    => $p->comments->map(fn ($c) => [
                 'id'         => $c->id,
                 'content'    => $c->content,
@@ -185,6 +187,16 @@ class CommunityController extends Controller
         ]);
 
         return back();
+    }
+
+    public function updatePost(Request $request, int $id, CommunityPost $post): JsonResponse
+    {
+        Gate::authorize('update', $post);
+
+        $data = $request->validate(['content' => 'required|string|min:1|max:1000']);
+        $post->update(['content' => $data['content']]);
+
+        return response()->json(['content' => $post->content]);
     }
 
     public function destroy(int $id, CommunityPost $post): RedirectResponse

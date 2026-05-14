@@ -2,44 +2,52 @@
 import { useToast } from '@/Composables/useToast'
 
 const { toasts, dismiss } = useToast()
+
+function bg(type) {
+    if (type === 'error')   return 'linear-gradient(135deg,#c74a6b,#e07b9a)'
+    if (type === 'warning') return 'linear-gradient(135deg,#d08a00,#e0b040)'
+    if (type === 'success') return 'linear-gradient(135deg,#1a9e6b,#2ec98a)'
+    return 'linear-gradient(135deg,#009ac7,#4ebcff)'
+}
+
+function icon(type) {
+    if (type === 'error')   return '✕'
+    if (type === 'warning') return '⚠'
+    return '✓'
+}
 </script>
 
 <template>
     <Teleport to="body">
-        <div style="
-            position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-            display: flex; flex-direction: column; gap: 10px;
-            pointer-events: none;
-        ">
+        <div
+            role="region"
+            aria-label="Notificações"
+            aria-live="polite"
+            style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"
+        >
             <TransitionGroup name="toast">
                 <div
                     v-for="toast in toasts"
                     :key="toast.id"
-                    style="
-                        pointer-events: all;
-                        display: flex; align-items: center; gap: 12px;
-                        padding: 12px 18px;
-                        border-radius: 14px;
-                        font-size: 13.5px; font-weight: 600;
-                        color: white;
-                        min-width: 220px; max-width: 360px;
-                        box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-                        cursor: pointer;
-                        backdrop-filter: blur(12px);
-                    "
+                    :role="toast.type === 'error' ? 'alert' : 'status'"
                     :style="{
-                        background: toast.type === 'error'
-                            ? 'linear-gradient(135deg,#c74a6b,#e07b9a)'
-                            : toast.type === 'warning'
-                                ? 'linear-gradient(135deg,#e0a040,#f0c060)'
-                                : 'linear-gradient(135deg,#009ac7,#4ebcff)',
+                        pointerEvents: 'all',
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '12px 18px',
+                        borderRadius: '14px',
+                        fontSize: '13.5px', fontWeight: '600',
+                        color: 'white',
+                        minWidth: '220px', maxWidth: '360px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+                        cursor: 'pointer',
+                        backdropFilter: 'blur(12px)',
+                        background: bg(toast.type),
                     }"
                     @click="dismiss(toast.id)"
                 >
-                    <span style="font-size: 16px; flex-shrink: 0;">
-                        {{ toast.type === 'error' ? '✕' : toast.type === 'warning' ? '⚠' : '✓' }}
-                    </span>
+                    <span style="font-size: 15px; flex-shrink: 0; font-weight: 900;">{{ icon(toast.type) }}</span>
                     <span style="flex: 1; line-height: 1.4;">{{ toast.message }}</span>
+                    <span style="font-size: 16px; opacity: .6; flex-shrink: 0; line-height: 1;">×</span>
                 </div>
             </TransitionGroup>
         </div>

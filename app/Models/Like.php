@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Like extends Model
 {
-    protected $fillable = ['user_id'];
+    protected $fillable = ['user_id', 'type'];
 
     public function likeable(): MorphTo
     {

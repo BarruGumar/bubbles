@@ -20,12 +20,15 @@ export function clImg(url, w = 0, h = 0, crop = 'fill', g = '') {
   const base = url.slice(0, idx + marker.length)
   const rest = url.slice(idx + marker.length)
 
+  // Detect GIFs by extension — f_auto can deliver static WebP, stripping animation
+  const isGif = /\.gif($|\?)/i.test(url)
+
   const parts = []
   if (w) parts.push(`w_${w}`)
   if (h) parts.push(`h_${h}`)
   parts.push(`c_${crop}`)
   if (g) parts.push(`g_${g}`)
-  parts.push('f_auto', 'q_auto')
+  parts.push(isGif ? 'f_gif' : 'f_auto', 'q_auto')
   const transform = parts.join(',')
 
   // Detect and skip existing transform segment (starts with letter(s) + underscore,

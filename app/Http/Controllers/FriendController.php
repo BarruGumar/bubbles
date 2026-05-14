@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Friend;
 use App\Models\User;
+use App\Notifications\FriendRequestAccepted;
+use App\Notifications\FriendRequestReceived;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -81,6 +83,7 @@ class FriendController extends Controller
                 'friend_id' => $target->id,
                 'status'    => 'pending',
             ]);
+            $target->notify(new FriendRequestReceived(auth()->user()));
         }
 
         return back();
@@ -92,6 +95,9 @@ class FriendController extends Controller
         abort_if($friend->status !== 'pending', 422);
 
         $friend->update(['status' => 'accepted']);
+
+        // Notify the original sender that their request was accepted
+        $friend->user->notify(new FriendRequestAccepted(auth()->user()));
 
         return back();
     }

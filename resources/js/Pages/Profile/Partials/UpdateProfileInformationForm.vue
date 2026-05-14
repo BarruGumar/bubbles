@@ -47,6 +47,16 @@ function onAvatarChange(e) {
 function onBannerChange(e) {
     const file = e.target.files[0]
     if (!file) return
+
+    // GIFs bypass the cropper — the cropper always outputs JPEG, which strips animation
+    if (file.type === 'image/gif') {
+        if (bannerPreview.value?.startsWith('blob:')) URL.revokeObjectURL(bannerPreview.value)
+        bannerForm.banner   = file
+        bannerPreview.value = URL.createObjectURL(file)
+        e.target.value      = ''
+        return
+    }
+
     cropperSrc.value  = URL.createObjectURL(file)
     cropperMode.value = 'banner'
     e.target.value    = ''
@@ -198,7 +208,7 @@ function submitBanner() {
 
             <div style="flex: 1;">
                 <p style="font-size: 11px; font-weight: 700; color: #5a7a8a; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 8px;">
-                    {{ avatarPreview ? 'Foto de perfil' : 'Cor do avatar' }}
+                    Cor do perfil
                 </p>
 
                 <!-- Upload button appears after file is selected -->
@@ -219,22 +229,35 @@ function submitBanner() {
                     </Transition>
                 </div>
 
-                <!-- Color swatches (shown when no photo uploaded yet) -->
-                <template v-if="!avatarPreview">
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                        <button
-                            v-for="c in COLORS" :key="c"
-                            type="button"
-                            @click="form.avatar_color = c"
-                            :style="{
-                                width:'24px',height:'24px',borderRadius:'50%',background:c,border:'none',cursor:'pointer',
-                                boxShadow: form.avatar_color===c ? `0 0 0 3px white, 0 0 0 5px ${c}` : 'none',
-                                transition:'box-shadow .2s',
-                            }"
-                        />
-                    </div>
-                    <p style="font-size:10px;color:#b0c0cc;margin:6px 0 0;">Ou clica na imagem acima para fazer upload de uma foto</p>
-                </template>
+                <!-- Color swatches + custom picker -->
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <button
+                        v-for="c in COLORS" :key="c"
+                        type="button"
+                        @click="form.avatar_color = c"
+                        :style="{
+                            width:'24px',height:'24px',borderRadius:'50%',background:c,border:'none',cursor:'pointer',
+                            boxShadow: form.avatar_color===c ? `0 0 0 3px white, 0 0 0 5px ${c}` : 'none',
+                            transition:'box-shadow .2s',
+                        }"
+                    />
+                    <!-- Custom color picker -->
+                    <label
+                        title="Cor personalizada"
+                        :style="{
+                            width:'24px',height:'24px',borderRadius:'50%',cursor:'pointer',
+                            background: COLORS.includes(form.avatar_color) ? '#f0f4f8' : form.avatar_color,
+                            border: '2px dashed #4ebcff88',
+                            display:'flex',alignItems:'center',justifyContent:'center',
+                            boxShadow: !COLORS.includes(form.avatar_color) ? `0 0 0 3px white, 0 0 0 5px ${form.avatar_color}` : 'none',
+                            transition:'box-shadow .2s',flexShrink:0,
+                        }"
+                    >
+                        <svg v-if="COLORS.includes(form.avatar_color)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#009ac7" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                        <input type="color" :value="form.avatar_color" @input="form.avatar_color = $event.target.value" style="opacity:0;position:absolute;width:0;height:0;" />
+                    </label>
+                </div>
+                <p v-if="!avatarPreview" style="font-size:10px;color:#b0c0cc;margin:6px 0 0;">Ou clica na imagem acima para fazer upload de uma foto</p>
             </div>
         </div>
 

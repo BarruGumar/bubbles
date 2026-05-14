@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePostRequest;
 use App\Models\Post;
 use App\Support\StoresImages;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class PostController extends Controller
@@ -32,6 +34,16 @@ class PostController extends Controller
         ]);
 
         return back();
+    }
+
+    public function update(Request $request, Post $post): JsonResponse
+    {
+        Gate::authorize('update', $post);
+
+        $data = $request->validate(['content' => 'required|string|min:1|max:1000']);
+        $post->update(['content' => $data['content']]);
+
+        return response()->json(['content' => $post->content]);
     }
 
     public function destroy(Post $post): RedirectResponse

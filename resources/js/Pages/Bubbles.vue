@@ -1,29 +1,87 @@
 <script setup>
-import { onMounted, onUnmounted, ref, computed } from 'vue'
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { Link, usePage, router } from '@inertiajs/vue3'
-import Bubble          from '@/Components/Bubble.vue'
-import ConnectionLines from '@/Components/ConnectionLines.vue'
+import axios from 'axios'
+import Bubble                from '@/Components/Bubble.vue'
+import ConnectionLines       from '@/Components/ConnectionLines.vue'
+import CreateCommunityModal  from '@/Components/CreateCommunityModal.vue'
+import PostCard              from '@/Components/PostCard.vue'
+import ToastContainer        from '@/Components/ToastContainer.vue'
+import { clImg }          from '@/Composables/useCloudinary'
 import { useBubbles }     from '@/Composables/useBubbles'
 import { useConnections } from '@/Composables/useConnections'
 import { usePhysics }     from '@/Composables/usePhysics'
 import { useDrag }        from '@/Composables/useDrag'
+import { useToast }       from '@/Composables/useToast'
+
+const props = defineProps({
+  feed:           { type: Array,   default: () => [] },
+  hasFriends:     { type: Boolean, default: false },
+  hasCommunities: { type: Boolean, default: false },
+})
 
 const { bubbles, hoveredId, connectSource, loading, load, add, toggleSelect } = useBubbles()
 const { connections, friendConnections, load: loadConnections, loadFriendConnections, connect } = useConnections()
 const { step } = usePhysics()
+const { show: toast } = useToast()
 
-const authUser        = computed(() => usePage().props.auth?.user)
-const pendingFriends  = computed(() => usePage().props.auth?.pending_friends_count ?? 0)
-const unreadMessages  = computed(() => usePage().props.auth?.unread_messages_count ?? 0)
+const page           = usePage()
+const authUser       = computed(() => page.props.auth?.user)
+const pendingFriends = computed(() => page.props.auth?.pending_friends_count ?? 0)
+const unreadMessages = computed(() => page.props.auth?.unread_messages_count ?? 0)
 
-const PALETTE  = ['#009ac7','#4ebcff','#2ea87e','#e07b4a','#9b6bdf','#c74a6b','#e0a040','#6b9bdf']
-const newLabel = ref('')
-const newTitle = ref('')
-const newDescription = ref('')
-const newTagline = ref('')
-const newGuidelines = ref('')
-const newColor = ref('#009ac7')
-const showAdd  = ref(false)
+const feedOpen = ref(false)
+
+watch(() => page.props.flash?.status, (msg) => { if (msg) toast(msg, 'success') })
+watch(() => page.props.flash?.error,  (msg) => { if (msg) toast(msg, 'error')   })
+
+const showAdd      = ref(false)
+const searchOpen   = ref(false)
+const searchQuery  = ref('')
+const searchResults = ref(null)
+const searchLoading = ref(false)
+let searchTimer = null
+
+const hasResults = computed(() =>
+  searchResults.value &&
+  (searchResults.value.users?.length || searchResults.value.communities?.length || searchResults.value.posts?.length)
+)
+
+watch(searchQuery, (q) => {
+  clearTimeout(searchTimer)
+  if (!q.trim()) { searchResults.value = null; searchLoading.value = false; return }
+  searchLoading.value = true
+  searchTimer = setTimeout(() => {
+    axios.get(route('search.api'), { params: { q } })
+      .then(r => { searchResults.value = r.data; searchLoading.value = false })
+      .catch(() => { searchLoading.value = false })
+  }, 320)
+})
+
+function openSearch() {
+  searchOpen.value = true
+  setTimeout(() => document.getElementById('bubble-search-input')?.focus(), 50)
+}
+
+function closeSearch() {
+  searchOpen.value   = false
+  searchQuery.value  = ''
+  searchResults.value = null
+  searchLoading.value = false
+}
+
+function goToResult(url) {
+  closeSearch()
+  router.visit(url)
+}
+
+function submitSearch(e) {
+  e.preventDefault()
+  const q = searchQuery.value.trim()
+  if (!q) return
+  closeSearch()
+  router.visit(route('search.index', { q }))
+}
 
 const { dragging, startDrag, startTouch, onMouseMove: moveDrag, onTouchMove: moveDragTouch, stopDrag } = useDrag(
   (id) => toggleSelect(id)
@@ -53,7 +111,14 @@ function clearSelection() {
 }
 
 function onKeyDown(e) {
-  if (e.key === 'Escape') clearSelection()
+  if (e.key === 'Escape') {
+    if (searchOpen.value) { searchOpen.value = false; return }
+    clearSelection()
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault()
+    openSearch()
+  }
 }
 
 let animId   = null
@@ -107,23 +172,16 @@ onUnmounted(() => {
   stopLoop()
 })
 
-async function createBubble() {
-  if (!newLabel.value.trim()) return
-  const newBubble = await add(newLabel.value, newColor.value, {
-    title:       newTitle.value.trim(),
-    description: newDescription.value.trim(),
-    tagline:     newTagline.value.trim(),
-    coverColor:  newColor.value,
-    guidelines:  newGuidelines.value.split('\n').map(g => g.trim()).filter(Boolean).slice(0, 5),
+async function handleCreate(data) {
+  const newBubble = await add(data.label, data.color, {
+    title:       data.title,
+    description: data.description,
+    tagline:     data.tagline,
+    coverColor:  data.color,
+    guidelines:  data.guidelines,
     userId:      authUser.value?.id ?? null,
   })
-  newLabel.value       = ''
-  newTitle.value       = ''
-  newDescription.value = ''
-  newTagline.value     = ''
-  newGuidelines.value  = ''
-  newColor.value       = '#009ac7'
-  showAdd.value        = false
+  showAdd.value = false
   if (newBubble?.persisted) {
     router.visit(route('community.show', newBubble.id))
   }
@@ -171,6 +229,41 @@ const trendsOpen = ref(window.innerWidth >= 640)
       <span style="font-weight: 900; font-size: 22px; color: #009ac7; letter-spacing: -1px; user-select: none;">bubbles</span>
 
       <div style="display: flex; align-items: center; gap: 4px;">
+
+        <!-- Pesquisa -->
+        <button
+          @click.stop="openSearch"
+          :style="{
+            width: '36px', height: '36px', borderRadius: '10px', border: 'none',
+            background: 'transparent', color: '#5a7a8a', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .15s',
+          }"
+          @mouseenter="$event.currentTarget.style.background='#009ac714'"
+          @mouseleave="$event.currentTarget.style.background='transparent'"
+          title="Pesquisar (Ctrl+K)"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+
+        <!-- Feed toggle -->
+        <button
+          @click.stop="feedOpen = !feedOpen"
+          :style="{
+            width: '36px', height: '36px', borderRadius: '10px', border: 'none',
+            background: feedOpen ? '#009ac714' : 'transparent',
+            color: feedOpen ? '#009ac7' : '#5a7a8a', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .15s, color .15s',
+          }"
+          @mouseenter="$event.currentTarget.style.background='#009ac714'"
+          @mouseleave="$event.currentTarget.style.background = feedOpen ? '#009ac714' : 'transparent'"
+          title="Feed"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6h16M4 10h16M4 14h12M4 18h8"/>
+          </svg>
+        </button>
 
         <!-- Hamburger → Nova bolha -->
         <button
@@ -323,103 +416,124 @@ const trendsOpen = ref(window.innerWidth >= 640)
       </div>
     </div>
 
-    <!-- MODAL: Nova bolha -->
-    <Transition name="pop">
+    <!-- SEARCH OVERLAY -->
+    <Transition name="overlay">
       <div
-        v-if="showAdd"
-        class="absolute z-50 rounded-2xl p-5 flex flex-col gap-3"
-        style="top: 68px; left: 50%; transform: translateX(-50%); background: white; box-shadow: 0 16px 56px #009ac72a; border: 1px solid #4ebcff33; min-width: 268px;"
-        @click.stop
+        v-if="searchOpen"
+        style="position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.28); backdrop-filter: blur(4px); display: flex; align-items: flex-start; justify-content: center; padding-top: 80px;"
+        @click="closeSearch"
       >
-        <p style="font-weight: 700; color: #1a3a4a; font-size: 14px; margin: 0;">Nova bolha</p>
+        <div @click.stop style="width: 100%; max-width: 560px; margin: 0 20px;">
 
-        <!-- Preview + label -->
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div :style="{
-            width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-            background: newColor, transition: 'background .2s, box-shadow .2s',
-            boxShadow: `0 3px 10px ${newColor}55`,
-          }" />
-          <input
-            v-model="newLabel"
-            placeholder="#hashtag"
-            style="flex: 1; background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit;"
-            @keydown.enter="createBubble"
-          />
-        </div>
-
-                <input
-          v-model="newTitle"
-          placeholder="Título da comunidade"
-          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit;"
-        />
-        <input
-          v-model="newTagline"
-          placeholder="Tagline curta"
-          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit;"
-        />
-        <textarea
-          v-model="newDescription"
-          placeholder="Descrição da comunidade"
-          rows="2"
-          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit; resize: vertical;"
-        />
-        <textarea
-          v-model="newGuidelines"
-          placeholder="Regras (uma por linha, máx 5)"
-          rows="3"
-          style="background: #f0f8ff; border: 1px solid #4ebcff44; border-radius: 10px; padding: 9px 12px; font-size: 12px; color: #1a3a4a; outline: none; font-family: inherit; resize: vertical;"
-        />
-
-        <!-- Seletor de cor -->
-        <div>
-          <p style="font-size: 10px; font-weight: 700; color: #8ba0b0; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 8px;">Cor</p>
-          <div style="display: flex; align-items: center; gap: 7px; flex-wrap: wrap;">
-            <button
-              v-for="c in PALETTE"
-              :key="c"
-              type="button"
-              @click="newColor = c"
-              :style="{
-                width: '22px', height: '22px', borderRadius: '50%', background: c,
-                border: 'none', cursor: 'pointer', flexShrink: 0,
-                boxShadow: newColor === c ? `0 0 0 2px white, 0 0 0 4px ${c}` : 'none',
-                transition: 'box-shadow .15s',
-              }"
+          <!-- Input -->
+          <form @submit.prevent="submitSearch" style="position: relative;">
+            <svg style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #8ba0b0; pointer-events: none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              id="bubble-search-input"
+              v-model="searchQuery"
+              type="text"
+              placeholder="Pesquisa pessoas, comunidades ou posts…"
+              style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.97); border: none; border-radius: 16px; padding: 16px 50px 16px 50px; font-size: 15px; color: #1a3a4a; outline: none; font-family: inherit; box-shadow: 0 16px 48px rgba(0,0,0,0.2);"
             />
-            <!-- Picker de cor livre -->
-            <label
-              :style="{
-                width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer',
-                border: '2px dashed #b0c8d8', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', flexShrink: 0, position: 'relative', overflow: 'hidden',
-                boxShadow: !PALETTE.includes(newColor) ? `0 0 0 2px white, 0 0 0 4px ${newColor}` : 'none',
-                background: !PALETTE.includes(newColor) ? newColor : 'transparent',
-              }"
-              title="Cor personalizada"
-            >
-              <input type="color" v-model="newColor" style="position: absolute; width: 200%; height: 200%; opacity: 0; cursor: pointer; border: none; padding: 0;" />
-              <span v-if="PALETTE.includes(newColor)" style="font-size: 12px; color: #8ba0b0; position: relative; pointer-events: none;">+</span>
-            </label>
-          </div>
-        </div>
+            <!-- Loading spinner ou Esc hint -->
+            <div style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%);">
+              <svg v-if="searchLoading" style="color: #009ac7; animation: spin 1s linear infinite;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              <kbd v-else style="font-size: 11px; color: #b0c0cc; background: #f0f4f8; border-radius: 6px; padding: 2px 7px; font-family: inherit;">Esc</kbd>
+            </div>
+          </form>
 
-        <div style="display: flex; gap: 8px; margin-top: 2px;">
-          <button
-            style="flex: 1; padding: 9px; border-radius: 10px; background: #f0f8ff; border: 1px solid #e0eef8; color: #8b8b8b; font-size: 12px; cursor: pointer;"
-            @click="showAdd = false"
-          >Cancelar</button>
-          <button
-            :style="{
-              flex: 1, padding: '9px', borderRadius: '10px', border: 'none',
-              background: newColor, color: 'white', fontSize: '12px', fontWeight: '700',
-              cursor: 'pointer', transition: 'background .2s',
-            }"
-            @click="createBubble"
-          >Criar</button>
+          <!-- Resultados inline -->
+          <div
+            v-if="searchQuery.trim() && (hasResults || searchResults)"
+            style="margin-top: 8px; background: rgba(255,255,255,0.97); border-radius: 16px; box-shadow: 0 16px 48px rgba(0,0,0,0.18); overflow: hidden; max-height: 420px; overflow-y: auto;"
+          >
+            <!-- Sem resultados -->
+            <div v-if="searchResults && !hasResults && !searchLoading" style="padding: 24px; text-align: center; color: #8ba0b0; font-size: 13px;">
+              Sem resultados para "{{ searchQuery }}"
+            </div>
+
+            <template v-if="hasResults">
+              <!-- Pessoas -->
+              <template v-if="searchResults.users?.length">
+                <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .1em; margin: 0; padding: 12px 16px 6px;">Pessoas</p>
+                <div
+                  v-for="u in searchResults.users.slice(0, 4)" :key="'u'+u.id"
+                  @click="goToResult(u.username ? route('profile.show', u.username) : '#')"
+                  style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; transition: background .12s;"
+                  @mouseenter="$event.currentTarget.style.background='#f0f8ff'"
+                  @mouseleave="$event.currentTarget.style.background='transparent'"
+                >
+                  <img v-if="u.avatar" :src="clImg(u.avatar, 72, 72, 'fill', 'face')" :style="{ width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:`2px solid ${u.avatar_color}`, flexShrink:'0' }" />
+                  <div v-else :style="{ width:'36px', height:'36px', borderRadius:'50%', background: u.avatar_color, flexShrink:'0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'800', color:'white' }">{{ (u.name ?? '?')[0].toUpperCase() }}</div>
+                  <div style="flex:1; min-width:0;">
+                    <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ u.name }}</p>
+                    <p v-if="u.username" style="font-size: 11px; color: #009ac7; margin: 0;">@{{ u.username }}</p>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Comunidades -->
+              <template v-if="searchResults.communities?.length">
+                <div style="height: 1px; background: #f0f4f8; margin: 4px 0;" />
+                <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .1em; margin: 0; padding: 8px 16px 6px;">Comunidades</p>
+                <div
+                  v-for="c in searchResults.communities.slice(0, 4)" :key="'c'+c.id"
+                  @click="goToResult(route('community.show', c.id))"
+                  style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; transition: background .12s;"
+                  @mouseenter="$event.currentTarget.style.background='#f0f8ff'"
+                  @mouseleave="$event.currentTarget.style.background='transparent'"
+                >
+                  <div :style="{ width:'36px', height:'36px', borderRadius:'50%', flexShrink:'0', background:`radial-gradient(circle at 38% 32%, ${c.color}ee 0%, ${c.color} 60%)`, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 3px 10px ${c.color}44` }">
+                    <span style="font-size: 9px; font-weight: 800; color: white;">{{ c.label?.slice(0,3) }}</span>
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ c.title }}</p>
+                    <p style="font-size: 11px; color: #8ba0b0; margin: 0;">{{ c.members }} membros</p>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Posts -->
+              <template v-if="searchResults.posts?.length">
+                <div style="height: 1px; background: #f0f4f8; margin: 4px 0;" />
+                <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .1em; margin: 0; padding: 8px 16px 6px;">Posts</p>
+                <div
+                  v-for="p in searchResults.posts.slice(0, 3)" :key="'p'+p.id"
+                  @click="goToResult(p.author.username ? route('profile.show', p.author.username) : '#')"
+                  style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px; cursor: pointer; transition: background .12s;"
+                  @mouseenter="$event.currentTarget.style.background='#f0f8ff'"
+                  @mouseleave="$event.currentTarget.style.background='transparent'"
+                >
+                  <img v-if="p.author.avatar" :src="clImg(p.author.avatar, 48, 48, 'fill', 'face')" :style="{ width:'28px', height:'28px', borderRadius:'50%', objectFit:'cover', border:`1.5px solid ${p.author.avatar_color}`, flexShrink:'0', marginTop:'1px' }" />
+                  <div v-else :style="{ width:'28px', height:'28px', borderRadius:'50%', background: p.author.avatar_color, flexShrink:'0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:'800', color:'white', marginTop:'1px' }">{{ (p.author.name ?? '?')[0].toUpperCase() }}</div>
+                  <div style="flex:1; min-width:0;">
+                    <p style="font-size: 12px; font-weight: 700; color: #1a3a4a; margin: 0 0 2px;">{{ p.author.name }}</p>
+                    <p style="font-size: 11px; color: #5a7a8a; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ p.content }}</p>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Ver todos -->
+              <div
+                @click="submitSearch({ preventDefault: () => {} })"
+                style="padding: 12px 16px; text-align: center; font-size: 12px; font-weight: 700; color: #009ac7; cursor: pointer; border-top: 1px solid #f0f4f8; transition: background .12s;"
+                @mouseenter="$event.currentTarget.style.background='#f0f8ff'"
+                @mouseleave="$event.currentTarget.style.background='transparent'"
+              >Ver todos os resultados →</div>
+            </template>
+          </div>
+
+          <p v-if="!searchQuery.trim()" style="font-size: 11px; color: rgba(255,255,255,0.7); margin: 10px 0 0; text-align: center;">Enter para pesquisar · Esc para fechar</p>
         </div>
       </div>
     </Transition>
+
+    <!-- MODAL: Nova bolha -->
+    <CreateCommunityModal
+      v-if="showAdd"
+      @create="handleCreate"
+      @cancel="showAdd = false"
+    />
 
     <!-- LOADING -->
     <div
@@ -621,6 +735,50 @@ const trendsOpen = ref(window.innerWidth >= 640)
       </div>
     </div>
 
+    <!-- FEED PANEL -->
+    <Transition name="slide-left">
+      <div
+        v-if="feedOpen"
+        style="position: absolute; left: 16px; top: 70px; z-index: 38; width: 330px; height: calc(100vh - 86px); background: rgba(255,255,255,0.88); backdrop-filter: blur(16px); border-radius: 18px; border: 1px solid #4ebcff22; box-shadow: 0 4px 20px #009ac70c; display: flex; flex-direction: column;"
+        @click.stop
+        @mousedown.stop
+      >
+        <!-- Header -->
+        <div style="padding: 14px 16px 10px; border-bottom: 1px solid #f0f4f8; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+          <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: .1em; margin: 0;">Feed</p>
+          <Link :href="route('feed.index')" style="font-size: 11px; font-weight: 700; color: #009ac7; text-decoration: none;">Ver tudo →</Link>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 10px 10px 20px; flex: 1; overflow-y: auto;">
+          <div v-if="props.feed.length === 0" style="text-align: center; padding: 40px 16px;">
+            <p style="font-size: 28px; margin: 0 0 10px;">🫧</p>
+            <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0 0 6px;">Feed vazio</p>
+            <p style="font-size: 11px; color: #8ba0b0; margin: 0; line-height: 1.5;">Junta-te a comunidades e adiciona amigos para ver posts aqui.</p>
+          </div>
+          <div v-else style="display: flex; flex-direction: column; gap: 8px;">
+            <PostCard
+              v-for="item in props.feed"
+              :key="`${item._type}-${item.id}`"
+              :post="item"
+              :author="item.author"
+              :auth-user="authUser"
+              :can-edit="item.can_edit"
+              :can-delete="item.can_delete"
+              :like-route="item.like_route"
+              :comment-route="item.comment_route"
+              :delete-route="item.delete_route"
+              :edit-route="item.can_edit ? item.edit_route : null"
+              :report-route="!item.can_edit && authUser ? (item._type === 'post' ? route('posts.report', item.id) : route('community-posts.report', item.id)) : null"
+              :community="item.community ?? null"
+            />
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <ToastContainer />
+
     <!-- FLOOR GRADIENT -->
     <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 100px; background: linear-gradient(to top, #9dcee8 0%, transparent 100%); pointer-events: none; z-index: 1;" />
 
@@ -647,12 +805,18 @@ const trendsOpen = ref(window.innerWidth >= 640)
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity .2s }
-.fade-enter-from,  .fade-leave-to      { opacity: 0 }
+.fade-enter-active, .fade-leave-active    { transition: opacity .2s }
+.fade-enter-from,  .fade-leave-to        { opacity: 0 }
+
+.slide-left-enter-active { transition: opacity .28s ease, transform .32s cubic-bezier(.2,.8,.2,1) }
+.slide-left-leave-active { transition: opacity .2s ease, transform .24s ease }
+.slide-left-enter-from   { opacity: 0; transform: translateX(-20px) }
+.slide-left-leave-to     { opacity: 0; transform: translateX(-20px) }
+
+.overlay-enter-active, .overlay-leave-active { transition: opacity .2s ease }
+.overlay-enter-from,   .overlay-leave-to     { opacity: 0 }
 @keyframes spin { to { transform: rotate(360deg) } }
 
-.pop-enter-active, .pop-leave-active   { transition: opacity .35s ease, transform .45s cubic-bezier(.2,.82,.2,1) }
-.pop-enter-from,   .pop-leave-to       { opacity: 0; transform: translateX(-50%) scale(.93) }
 
 .bubble-expand-enter-active { transition: opacity .3s ease, transform .45s cubic-bezier(.22,.78,.26,1); }
 .bubble-expand-leave-active { transition: opacity .22s ease, transform .32s cubic-bezier(.6,0,.4,1); }

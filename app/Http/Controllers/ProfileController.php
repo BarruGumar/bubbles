@@ -39,8 +39,9 @@ class ProfileController extends Controller
             'content'     => $p->content,
             'image'       => $p->image,
             'created_at'  => $p->created_at->diffForHumans(),
-            'likes_count' => $p->likes_count,
-            'is_liked'    => $p->likes->isNotEmpty(),
+            'likes_count'   => $p->likes_count,
+            'is_liked'      => $p->likes->isNotEmpty(),
+            'user_reaction' => $p->likes->first()?->type ?? null,
             'comments'    => $p->comments->map(fn ($c) => [
                 'id'         => $c->id,
                 'content'    => $c->content,

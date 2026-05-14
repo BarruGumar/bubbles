@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CommunityPost extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = ['bubble_id', 'user_id', 'content', 'image', 'image_public_id'];
 
     public function bubble(): BelongsTo

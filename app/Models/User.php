@@ -25,6 +25,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
         'username',
         'bio',
         'avatar_color',
@@ -33,6 +34,21 @@ class User extends Authenticatable
         'banner',
         'banner_public_id',
     ];
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isModerator(): bool
+    {
+        return in_array($this->role, ['admin', 'moderator']);
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->role === 'suspended';
+    }
 
     /**
      * The attributes that should be hidden for serialization.

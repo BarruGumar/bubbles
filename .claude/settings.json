@@ -7,7 +7,15 @@
       "Bash(dir \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\routes\")",
       "Bash(powershell -Command \"grep -r 'community\\\\.show' routes/ --include='*.php' | head -20\")",
       "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\app\\\\Http\\\\Controllers\" -File)",
-      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\resources\\\\js\\\\Pages\" -File)"
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\\\\resources\\\\js\\\\Pages\" -File)",
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\dashboard\\\\bubbles\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(dir database\\\\migrations)",
+      "Bash(findstr notif *)",
+      "Bash(awk '{print $1}')",
+      "Bash(xargs -I{} php artisan migrate:fake {})"
     ]
   }
 }

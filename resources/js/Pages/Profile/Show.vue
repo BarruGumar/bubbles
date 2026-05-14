@@ -2,11 +2,10 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import PostCard from '@/Components/PostCard.vue'
 import PostCardSkeleton from '@/Components/PostCardSkeleton.vue'
 import { clImg } from '@/Composables/useCloudinary'
 import { useToast } from '@/Composables/useToast'
-import { useLikes } from '@/Composables/useLikes'
-import { useComments } from '@/Composables/useComments'
 
 const { show: toast } = useToast()
 
@@ -84,21 +83,6 @@ function submitPost() {
     })
 }
 
-const confirmDeleteId = ref(null)
-
-function askDeletePost(id) {
-    confirmDeleteId.value = id
-}
-
-function cancelDeletePost() {
-    confirmDeleteId.value = null
-}
-
-function deletePost(id) {
-    confirmDeleteId.value = null
-    router.delete(route('posts.destroy', id), { preserveScroll: true })
-}
-
 function formatInitial(name) {
     return (name ?? '?')[0].toUpperCase()
 }
@@ -118,16 +102,6 @@ function removeFriend() {
 function startConversation() {
     router.post(route('conversations.store'), { recipient_id: props.profileUser.id })
 }
-
-// ── Likes & comments ──────────────────────────────────────────────
-const { localLikes, likeCount, isLiked, toggleLike } = useLikes(
-    localPosts,
-    (id) => route('posts.like', id),
-    authUser,
-)
-const { expandedComments, commentTexts, toggleComments, submitComment, deleteComment } = useComments(
-    (id) => route('posts.comments.store', id),
-)
 
 // ── Community network layout ───────────────────────────────────────
 // All coordinates live in a 580×auto virtual canvas (matches card inner width).
@@ -508,175 +482,20 @@ const netH   = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) 
             </div>
 
             <div v-else style="display: flex; flex-direction: column; gap: 12px;">
-                <div
+                <PostCard
                     v-for="post in localPosts"
                     :key="post.id"
-                    style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid #4ebcff1a; box-shadow: 0 2px 12px #009ac708; padding: 20px;"
-                >
-                    <div style="display: flex; gap: 14px; align-items: flex-start;">
-                        <!-- Avatar -->
-                        <img
-                            v-if="profileUser.avatar"
-                            :src="clImg(profileUser.avatar, 80, 80, 'fill', 'face')"
-                            loading="lazy"
-                            :style="{
-                                width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
-                                objectFit: 'cover', border: `2px solid ${profileUser.avatar_color}`,
-                            }"
-                        />
-                        <div v-else :style="{
-                            width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
-                            background: profileUser.avatar_color,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '15px', fontWeight: '800', color: 'white',
-                        }">{{ formatInitial(profileUser.name) }}</div>
-
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                                <div>
-                                    <span style="font-size: 13px; font-weight: 700; color: #1a3a4a;">{{ profileUser.name }}</span>
-                                    <span style="font-size: 11px; color: #8ba0b0; margin-left: 8px;">{{ post.created_at }}</span>
-                                </div>
-                                <div v-if="isOwn && confirmDeleteId === post.id" style="display: flex; align-items: center; gap: 6px;">
-                                    <span style="font-size: 11px; color: #e05555; font-weight: 600; white-space: nowrap;">Tens a certeza?</span>
-                                    <button
-                                        @click="cancelDeletePost"
-                                        style="padding: 3px 9px; border-radius: 6px; border: 1px solid #dde8f0; background: #f0f8ff; color: #5a7a8a; font-size: 11px; font-weight: 600; cursor: pointer; transition: background .15s;"
-                                        @mouseenter="$event.currentTarget.style.background='#e0eef8'"
-                                        @mouseleave="$event.currentTarget.style.background='#f0f8ff'"
-                                    >Não</button>
-                                    <button
-                                        @click="deletePost(post.id)"
-                                        style="padding: 3px 9px; border-radius: 6px; border: none; background: #e05555; color: white; font-size: 11px; font-weight: 700; cursor: pointer; transition: opacity .15s;"
-                                        @mouseenter="$event.currentTarget.style.opacity='.8'"
-                                        @mouseleave="$event.currentTarget.style.opacity='1'"
-                                    >Apagar</button>
-                                </div>
-                                <button
-                                    v-else-if="isOwn"
-                                    @click="askDeletePost(post.id)"
-                                    style="background: none; border: none; cursor: pointer; color: #c0c8d0; font-size: 16px; padding: 2px 4px; border-radius: 6px; line-height: 1; transition: color .2s;"
-                                    @mouseenter="$event.target.style.color='#e05555'"
-                                    @mouseleave="$event.target.style.color='#c0c8d0'"
-                                    title="Apagar post"
-                                >×</button>
-                            </div>
-                            <p style="font-size: 14px; color: #2a4a5a; line-height: 1.65; margin: 0; white-space: pre-wrap;">{{ post.content }}</p>
-                            <img
-                                v-if="post.image"
-                                :src="clImg(post.image, 800, 0, 'limit')"
-                                loading="lazy"
-                                style="margin-top: 12px; max-width: 100%; border-radius: 12px; object-fit: cover; max-height: 400px; display: block; border: 1px solid #4ebcff1a;"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Reaction bar -->
-                    <div style="display: flex; margin-top: 12px; border-top: 1px solid rgba(0,154,199,0.08); padding-top: 2px;">
-                        <button
-                            @click="toggleLike(post)"
-                            :style="{
-                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                                padding: '8px 0', background: 'none', border: 'none',
-                                cursor: authUser ? 'pointer' : 'default',
-                                fontSize: '13px', fontWeight: '600', borderRadius: '8px', transition: 'all .2s',
-                                color: isLiked(post) ? '#e05f7a' : '#8ba0b0',
-                            }"
-                            @mouseenter="authUser && ($event.currentTarget.style.background = 'rgba(224,95,122,0.07)')"
-                            @mouseleave="$event.currentTarget.style.background = 'transparent'"
-                        >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                                <path
-                                    :fill="isLiked(post) ? '#e05f7a' : 'none'"
-                                    :stroke="isLiked(post) ? '#e05f7a' : 'currentColor'"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                                />
-                            </svg>
-                            {{ likeCount(post) }} {{ likeCount(post) === 1 ? 'Curtida' : 'Curtidas' }}
-                        </button>
-                        <div style="width: 1px; background: rgba(0,154,199,0.08); margin: 6px 0;" />
-                        <button
-                            @click="toggleComments(post.id)"
-                            :style="{
-                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                                padding: '8px 0', background: 'none', border: 'none', cursor: 'pointer',
-                                fontSize: '13px', fontWeight: '600', borderRadius: '8px', transition: 'all .2s',
-                                color: expandedComments.has(post.id) ? '#009ac7' : '#8ba0b0',
-                            }"
-                            @mouseenter="$event.currentTarget.style.background = 'rgba(0,154,199,0.07)'"
-                            @mouseleave="$event.currentTarget.style.background = 'transparent'"
-                        >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                            </svg>
-                            {{ post.comments.length }} {{ post.comments.length === 1 ? 'Comentário' : 'Comentários' }}
-                        </button>
-                    </div>
-
-                    <!-- Comments section -->
-                    <div v-if="expandedComments.has(post.id)" style="margin-top: 12px; border-top: 1px solid rgba(0,154,199,0.06); padding-top: 12px;">
-                        <div v-for="c in post.comments" :key="c.id" style="display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-start;">
-                            <img
-                                v-if="c.author.avatar"
-                                :src="c.author.avatar"
-                                :style="{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: `1.5px solid ${c.author.avatar_color}`, flexShrink: 0 }"
-                            />
-                            <div v-else :style="{
-                                width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-                                background: c.author.avatar_color,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '11px', fontWeight: '800', color: 'white',
-                            }">{{ formatInitial(c.author.name) }}</div>
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="background: rgba(240,248,255,0.8); border-radius: 12px; padding: 8px 12px;">
-                                    <Link :href="route('profile.show', c.author.username)" style="font-size: 12px; font-weight: 700; color: #1a3a4a; text-decoration: none;">{{ c.author.name }}</Link>
-                                    <p style="font-size: 13px; color: #2a4a5a; margin: 2px 0 0; line-height: 1.5; white-space: pre-wrap;">{{ c.content }}</p>
-                                </div>
-                                <div style="display: flex; gap: 10px; align-items: center; margin-top: 3px; padding-left: 10px;">
-                                    <span style="font-size: 11px; color: #b0c0cc;">{{ c.created_at }}</span>
-                                    <button
-                                        v-if="c.is_own"
-                                        @click="deleteComment(c.id)"
-                                        style="font-size: 11px; color: #c0c8d0; background: none; border: none; cursor: pointer; padding: 0; transition: color .2s;"
-                                        @mouseenter="$event.target.style.color='#e05555'"
-                                        @mouseleave="$event.target.style.color='#c0c8d0'"
-                                    >Apagar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <p v-if="post.comments.length === 0" style="font-size: 12px; color: #b0c0cc; text-align: center; padding: 2px 0 10px; font-style: italic;">Sê o primeiro a comentar!</p>
-                        <div v-if="authUser" style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
-                            <img
-                                v-if="authUser.avatar"
-                                :src="authUser.avatar"
-                                :style="{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: `1.5px solid ${authUser.avatar_color ?? '#009ac7'}`, flexShrink: 0 }"
-                            />
-                            <div v-else :style="{
-                                width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-                                background: authUser.avatar_color ?? '#009ac7',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '11px', fontWeight: '800', color: 'white',
-                            }">{{ formatInitial(authUser.name) }}</div>
-                            <div style="flex: 1; display: flex; gap: 6px;">
-                                <input
-                                    v-model="commentTexts[post.id]"
-                                    @keydown.enter.prevent="submitComment(post)"
-                                    placeholder="Escreve um comentário..."
-                                    style="flex: 1; min-width: 0; background: rgba(240,248,255,0.8); border: 1.5px solid rgba(0,154,199,0.15); border-radius: 20px; padding: 7px 14px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit; transition: border-color .2s;"
-                                    @focus="$event.target.style.borderColor = '#009ac7'"
-                                    @blur="$event.target.style.borderColor = 'rgba(0,154,199,0.15)'"
-                                />
-                                <button
-                                    @click="submitComment(post)"
-                                    style="padding: 7px 14px; background: #009ac7; color: white; border: none; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: opacity .2s;"
-                                    @mouseenter="$event.target.style.opacity='.8'"
-                                    @mouseleave="$event.target.style.opacity='1'"
-                                >Enviar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    :post="post"
+                    :author="{ name: profileUser.name, username: profileUser.username, avatar: profileUser.avatar, avatar_color: profileUser.avatar_color }"
+                    :auth-user="authUser"
+                    :can-edit="isOwn"
+                    :can-delete="isOwn"
+                    :like-route="route('posts.like', post.id)"
+                    :comment-route="route('posts.comments.store', post.id)"
+                    :delete-route="route('posts.destroy', post.id)"
+                    :edit-route="route('posts.update', post.id)"
+                    :report-route="!isOwn && authUser ? route('posts.report', post.id) : null"
+                />
             </div>
 
             <!-- Skeleton cards enquanto carrega mais -->
