@@ -11,4 +11,14 @@ class BubblePolicy
     {
         return $user->id === $bubble->user_id;
     }
+
+    public function update(User $user, Bubble $bubble): bool
+    {
+        return $user->id === $bubble->user_id;
+    }
+
+    public function delete(User $user, Bubble $bubble): bool
+    {
+        return $user->id === $bubble->user_id;
+    }
 }

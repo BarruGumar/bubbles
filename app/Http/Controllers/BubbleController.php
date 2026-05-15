@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,7 +46,6 @@ class BubbleController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'user_id'                => ['nullable', 'exists:users,id'],
             'label'                  => ['required', 'string', 'max:120'],
             'color'                  => ['nullable', 'string', 'max:40'],
             'x'                      => ['required', 'numeric'],
@@ -59,17 +59,18 @@ class BubbleController extends Controller
             'community_guidelines.*' => ['string', 'max:180'],
         ]);
 
-        $bubble = Bubble::create($data);
+        $data['user_id'] = auth()->id();
 
-        if (auth()->check()) {
-            $bubble->memberships()->attach(auth()->id());
-        }
+        $bubble = Bubble::create($data);
+        $bubble->memberships()->attach(auth()->id());
 
         return response()->json(['id' => $bubble->id], 201);
     }
 
     public function update(Request $request, Bubble $bubble): JsonResponse
     {
+        Gate::authorize('update', $bubble);
+
         $data = $request->validate([
             'label' => ['sometimes', 'required', 'string', 'max:120'],
             'color' => ['sometimes', 'nullable', 'string', 'max:40'],
@@ -96,6 +97,8 @@ class BubbleController extends Controller
 
     public function destroy(Bubble $bubble): JsonResponse
     {
+        Gate::authorize('delete', $bubble);
+
         $bubble->delete();
 
         return response()->json(status: 204);
@@ -127,27 +130,32 @@ class BubbleController extends Controller
             ->get(['user_id', 'community_id'])
             ->groupBy('user_id');
 
+        // Each friend contributes exactly ONE pair (their two lowest community IDs).
+        // Pairs from different friends merge if they share the same two communities.
+        // Hard cap: 8 pairs total to keep the canvas readable.
         $pairs = collect();
 
         foreach ($friendCommunities as $friendId => $memberships) {
-            $communityIds = $memberships->pluck('community_id')->toArray();
+            $communityIds = $memberships->pluck('community_id')->sort()->values()->toArray();
             if (count($communityIds) < 2) {
                 continue;
             }
 
-            for ($i = 0; $i < count($communityIds); $i++) {
-                for ($j = $i + 1; $j < count($communityIds); $j++) {
-                    $from  = min($communityIds[$i], $communityIds[$j]);
-                    $to    = max($communityIds[$i], $communityIds[$j]);
-                    $key   = "{$from}-{$to}";
-                    $entry = $pairs->get($key, ['from' => $from, 'to' => $to, 'friendIds' => []]);
+            $from = $communityIds[0];
+            $to   = $communityIds[1];
+            $key  = "{$from}-{$to}";
 
-                    if (! in_array((int) $friendId, $entry['friendIds'])) {
-                        $entry['friendIds'][] = (int) $friendId;
-                    }
-
+            if ($pairs->has($key)) {
+                $entry = $pairs->get($key);
+                if (! in_array((int) $friendId, $entry['friendIds'])) {
+                    $entry['friendIds'][] = (int) $friendId;
                     $pairs->put($key, $entry);
                 }
+            } else {
+                if ($pairs->count() >= 8) {
+                    continue;
+                }
+                $pairs->put($key, ['from' => $from, 'to' => $to, 'friendIds' => [(int) $friendId]]);
             }
         }
 
@@ -155,18 +163,32 @@ class BubbleController extends Controller
             return response()->json([]);
         }
 
-        $allFriendIds = $pairs->flatMap(fn ($p) => $p['friendIds'])->unique()->values();
-        $nameMap      = User::whereIn('id', $allFriendIds)->get(['id', 'name'])->keyBy('id');
+        $allFriendIds = $pairs->flatMap(fn ($p) => $p['friendIds'])->unique()->values()->toArray();
 
-        $result = $pairs->values()->map(fn ($pair) => [
-            'from'        => $pair['from'],
-            'to'          => $pair['to'],
-            'friendNames' => collect($pair['friendIds'])
-                ->map(fn ($id) => $nameMap->get($id)?->name)
-                ->filter()
-                ->values()
-                ->toArray(),
-        ]);
+        // Plain PHP array keyed by int ID — avoids Collection key-type issues.
+        $userMap = [];
+        foreach (User::whereIn('id', $allFriendIds)->get(['id', 'name', 'avatar', 'avatar_color']) as $u) {
+            $userMap[(int) $u->id] = $u;
+        }
+
+        $result = $pairs->values()->map(function ($pair) use ($userMap) {
+            $friends = [];
+            foreach ($pair['friendIds'] as $id) {
+                $u = $userMap[(int) $id] ?? null;
+                if ($u) {
+                    $friends[] = [
+                        'name'         => $u->name,
+                        'avatar'       => $u->avatar,
+                        'avatar_color' => $u->avatar_color ?? '#9b6bdf',
+                    ];
+                }
+            }
+            return [
+                'from'    => $pair['from'],
+                'to'      => $pair['to'],
+                'friends' => $friends,
+            ];
+        });
 
         return response()->json($result);
     }

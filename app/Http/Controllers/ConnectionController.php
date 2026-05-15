@@ -35,6 +35,12 @@ class ConnectionController extends Controller
 
     public function destroy(Connection $connection): JsonResponse
     {
+        $userId   = auth()->id();
+        $ownsFrom = $connection->fromBubble?->user_id === $userId;
+        $ownsTo   = $connection->toBubble?->user_id   === $userId;
+
+        abort_unless($ownsFrom || $ownsTo, 403);
+
         $connection->delete();
 
         return response()->json(status: 204);

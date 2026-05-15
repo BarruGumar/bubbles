@@ -129,7 +129,6 @@ export function useBubbles() {
         x,
         y,
         size:                   sizeFromMembers(1),
-        user_id:                template.userId      ?? null,
         community_title:        template.title       || lbl,
         community_description:  template.description || null,
         community_tagline:      template.tagline     || null,

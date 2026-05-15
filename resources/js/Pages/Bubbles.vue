@@ -188,7 +188,6 @@ async function handleCreate(data) {
     tagline:     data.tagline,
     coverColor:  data.color,
     guidelines:  data.guidelines,
-    userId:      authUser.value?.id ?? null,
   })
   showAdd.value = false
   if (newBubble?.persisted) {

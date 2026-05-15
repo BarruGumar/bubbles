@@ -26,9 +26,9 @@ function midpoint(fromId, toId) {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
 }
 
-function badgeLabel(friendNames) {
-  if (!friendNames?.length) return '?'
-  return friendNames.length === 1 ? friendNames[0][0].toUpperCase() : friendNames.length
+function badgeLabel(friends) {
+  if (!friends?.length) return '?'
+  return friends.length === 1 ? friends[0].name[0].toUpperCase() : friends.length
 }
 
 function avatarPos(bubble, angle) {
@@ -86,19 +86,19 @@ function balloonTextX(angle, msg) {
         opacity="0.4"
         class="friend-line"
       />
-      <!-- Midpoint badge — pointer-events: auto overrides the parent SVG's none -->
+      <!-- Midpoint badge -->
       <g
         :transform="`translate(${midpoint(c.from, c.to).x}, ${midpoint(c.from, c.to).y})`"
         style="pointer-events: auto; cursor: default;"
       >
-        <title v-if="c.friendNames?.length">{{ c.friendNames.join(', ') }}</title>
+        <title v-if="c.friends?.length">{{ c.friends.map(f => f.name).join(', ') }}</title>
         <circle r="12" fill="white" stroke="#9b6bdf" stroke-width="1.4" opacity="0.95" />
         <text
           text-anchor="middle" dominant-baseline="central"
           font-size="9" font-weight="800"
           font-family="Segoe UI, system-ui, sans-serif"
           fill="#9b6bdf"
-        >{{ badgeLabel(c.friendNames) }}</text>
+        >{{ badgeLabel(c.friends) }}</text>
       </g>
     </g>
 
