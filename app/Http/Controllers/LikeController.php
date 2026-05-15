@@ -39,7 +39,7 @@ class LikeController extends Controller
     private function toggle($model): bool
     {
         $allowed = ['like', 'love', 'laugh', 'wow', 'sad'];
-        $type    = in_array(request()->input('type', 'like'), $allowed)
+        $type = in_array(request()->input('type', 'like'), $allowed)
             ? request()->input('type', 'like')
             : 'like';
 
@@ -48,13 +48,16 @@ class LikeController extends Controller
         if ($like) {
             if ($like->type === $type) {
                 $like->delete();
+
                 return false;
             }
             $like->update(['type' => $type]);
+
             return true;
         }
 
         $model->likes()->create(['user_id' => auth()->id(), 'type' => $type]);
+
         return true;
     }
 }

@@ -21,8 +21,8 @@ class BubbleApiTest extends TestCase
         return array_merge([
             'label' => '#test',
             'color' => '#009ac7',
-            'x'     => 200,
-            'y'     => 300,
+            'x' => 200,
+            'y' => 300,
         ], $overrides);
     }
 
@@ -47,16 +47,16 @@ class BubbleApiTest extends TestCase
         $response->assertStatus(201)->assertJsonStructure(['id']);
 
         $this->assertDatabaseHas('bubbles', [
-            'id'      => $response->json('id'),
+            'id' => $response->json('id'),
             'user_id' => $user->id,
-            'label'   => '#test',
+            'label' => '#test',
         ]);
     }
 
     public function test_authenticated_user_cannot_force_another_user_id_on_bubble(): void
     {
-        $owner     = User::factory()->create();
-        $attacker  = User::factory()->create();
+        $owner = User::factory()->create();
+        $attacker = User::factory()->create();
 
         $payload = $this->bubblePayload(['user_id' => $owner->id]);
 
@@ -66,11 +66,11 @@ class BubbleApiTest extends TestCase
 
         // Bubble must belong to the attacker, not the target user
         $this->assertDatabaseHas('bubbles', [
-            'id'      => $response->json('id'),
+            'id' => $response->json('id'),
             'user_id' => $attacker->id,
         ]);
         $this->assertDatabaseMissing('bubbles', [
-            'id'      => $response->json('id'),
+            'id' => $response->json('id'),
             'user_id' => $owner->id,
         ]);
     }
@@ -86,7 +86,7 @@ class BubbleApiTest extends TestCase
 
         $this->assertDatabaseHas('community_user', [
             'community_id' => $bubbleId,
-            'user_id'      => $user->id,
+            'user_id' => $user->id,
         ]);
     }
 
@@ -104,7 +104,7 @@ class BubbleApiTest extends TestCase
 
     public function test_owner_can_update_own_bubble(): void
     {
-        $user   = User::factory()->create();
+        $user = User::factory()->create();
         $bubble = Bubble::factory()->for($user)->create();
 
         $this->actingAs($user)
@@ -116,9 +116,9 @@ class BubbleApiTest extends TestCase
 
     public function test_non_owner_cannot_update_bubble(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
-        $bubble   = Bubble::factory()->for($owner)->create(['label' => '#original']);
+        $bubble = Bubble::factory()->for($owner)->create(['label' => '#original']);
 
         $this->actingAs($attacker)
             ->patchJson("/api/bubbles/{$bubble->id}", ['label' => '#hacked'])
@@ -141,7 +141,7 @@ class BubbleApiTest extends TestCase
 
     public function test_owner_can_delete_own_bubble(): void
     {
-        $user   = User::factory()->create();
+        $user = User::factory()->create();
         $bubble = Bubble::factory()->for($user)->create();
 
         $this->actingAs($user)
@@ -153,9 +153,9 @@ class BubbleApiTest extends TestCase
 
     public function test_non_owner_cannot_delete_bubble(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
-        $bubble   = Bubble::factory()->for($owner)->create();
+        $bubble = Bubble::factory()->for($owner)->create();
 
         $this->actingAs($attacker)
             ->deleteJson("/api/bubbles/{$bubble->id}")
@@ -175,24 +175,24 @@ class BubbleApiTest extends TestCase
 
         $this->postJson('/api/connections', [
             'from_bubble_id' => $a->id,
-            'to_bubble_id'   => $b->id,
+            'to_bubble_id' => $b->id,
         ])->assertStatus(401);
     }
 
     public function test_authenticated_user_can_create_connection(): void
     {
         $user = User::factory()->create();
-        $a    = Bubble::factory()->create();
-        $b    = Bubble::factory()->create();
+        $a = Bubble::factory()->create();
+        $b = Bubble::factory()->create();
 
         $this->actingAs($user)->postJson('/api/connections', [
             'from_bubble_id' => $a->id,
-            'to_bubble_id'   => $b->id,
+            'to_bubble_id' => $b->id,
         ])->assertStatus(201);
 
         $this->assertDatabaseHas('connections', [
             'from_bubble_id' => $a->id,
-            'to_bubble_id'   => $b->id,
+            'to_bubble_id' => $b->id,
         ]);
     }
 
@@ -203,9 +203,9 @@ class BubbleApiTest extends TestCase
     public function test_unauthenticated_user_cannot_delete_connection(): void
     {
         $owner = User::factory()->create();
-        $a     = Bubble::factory()->for($owner)->create();
-        $b     = Bubble::factory()->create();
-        $conn  = Connection::create(['from_bubble_id' => $a->id, 'to_bubble_id' => $b->id]);
+        $a = Bubble::factory()->for($owner)->create();
+        $b = Bubble::factory()->create();
+        $conn = Connection::create(['from_bubble_id' => $a->id, 'to_bubble_id' => $b->id]);
 
         $this->deleteJson("/api/connections/{$conn->id}")->assertStatus(401);
         $this->assertDatabaseHas('connections', ['id' => $conn->id]);
@@ -214,9 +214,9 @@ class BubbleApiTest extends TestCase
     public function test_owner_of_from_bubble_can_delete_connection(): void
     {
         $owner = User::factory()->create();
-        $a     = Bubble::factory()->for($owner)->create();
-        $b     = Bubble::factory()->create();
-        $conn  = Connection::create(['from_bubble_id' => $a->id, 'to_bubble_id' => $b->id]);
+        $a = Bubble::factory()->for($owner)->create();
+        $b = Bubble::factory()->create();
+        $conn = Connection::create(['from_bubble_id' => $a->id, 'to_bubble_id' => $b->id]);
 
         $this->actingAs($owner)
             ->deleteJson("/api/connections/{$conn->id}")
@@ -227,11 +227,11 @@ class BubbleApiTest extends TestCase
 
     public function test_non_owner_cannot_delete_connection(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
-        $a        = Bubble::factory()->for($owner)->create();
-        $b        = Bubble::factory()->for($owner)->create();
-        $conn     = Connection::create(['from_bubble_id' => $a->id, 'to_bubble_id' => $b->id]);
+        $a = Bubble::factory()->for($owner)->create();
+        $b = Bubble::factory()->for($owner)->create();
+        $conn = Connection::create(['from_bubble_id' => $a->id, 'to_bubble_id' => $b->id]);
 
         $this->actingAs($attacker)
             ->deleteJson("/api/connections/{$conn->id}")

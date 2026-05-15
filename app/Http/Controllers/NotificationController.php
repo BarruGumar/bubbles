@@ -16,13 +16,13 @@ class NotificationController extends Controller
             ->limit(60)
             ->get()
             ->map(fn ($n) => [
-                'id'         => $n->id,
-                'type'       => $n->data['type'] ?? 'generic',
-                'message'    => $n->data['message'] ?? '',
-                'data'       => $n->data,
-                'read'       => ! is_null($n->read_at),
+                'id' => $n->id,
+                'type' => $n->data['type'] ?? 'generic',
+                'message' => $n->data['message'] ?? '',
+                'data' => $n->data,
+                'read' => ! is_null($n->read_at),
                 'created_at' => $n->created_at->diffForHumans(),
-                'url'        => $n->data['url'] ?? null,
+                'url' => $n->data['url'] ?? null,
             ]);
 
         return Inertia::render('Notifications/Index', [

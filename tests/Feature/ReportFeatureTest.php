@@ -19,7 +19,7 @@ class ReportFeatureTest extends TestCase
     public function test_guest_cannot_report_post(): void
     {
         $owner = User::factory()->create();
-        $post  = $this->makePost($owner);
+        $post = $this->makePost($owner);
 
         $this->post("/posts/{$post->id}/report", ['reason' => 'Spam content'])
             ->assertRedirect('/login');
@@ -29,9 +29,9 @@ class ReportFeatureTest extends TestCase
 
     public function test_user_can_report_post(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $reporter = User::factory()->create();
-        $post     = $this->makePost($owner);
+        $post = $this->makePost($owner);
 
         $this->actingAs($reporter)
             ->postJson("/posts/{$post->id}/report", ['reason' => 'This is spam content'])
@@ -39,10 +39,10 @@ class ReportFeatureTest extends TestCase
             ->assertJson(['message' => 'Denúncia enviada.']);
 
         $this->assertDatabaseHas('reports', [
-            'reporter_id'     => $reporter->id,
+            'reporter_id' => $reporter->id,
             'reportable_type' => Post::class,
-            'reportable_id'   => $post->id,
-            'status'          => 'pending',
+            'reportable_id' => $post->id,
+            'status' => 'pending',
         ]);
     }
 
@@ -85,8 +85,8 @@ class ReportFeatureTest extends TestCase
     public function test_reporting_same_post_twice_updates_the_reason(): void
     {
         $reporter = User::factory()->create();
-        $owner    = User::factory()->create();
-        $post     = $this->makePost($owner);
+        $owner = User::factory()->create();
+        $post = $this->makePost($owner);
 
         $this->actingAs($reporter)->postJson("/posts/{$post->id}/report", ['reason' => 'First reason here']);
         $this->actingAs($reporter)->postJson("/posts/{$post->id}/report", ['reason' => 'Updated reason here']);

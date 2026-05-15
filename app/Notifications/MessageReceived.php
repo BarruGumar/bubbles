@@ -12,9 +12,9 @@ class MessageReceived extends Notification
     use Queueable;
 
     public function __construct(
-        private User         $sender,
+        private User $sender,
         private Conversation $conversation,
-        private string       $excerpt,
+        private string $excerpt,
     ) {}
 
     public function via(object $notifiable): array
@@ -25,16 +25,16 @@ class MessageReceived extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'type'            => 'message_received',
-            'message'         => "{$this->sender->name} enviou-te uma mensagem.",
-            'sender_id'       => $this->sender->id,
-            'sender_name'     => $this->sender->name,
+            'type' => 'message_received',
+            'message' => "{$this->sender->name} enviou-te uma mensagem.",
+            'sender_id' => $this->sender->id,
+            'sender_name' => $this->sender->name,
             'sender_username' => $this->sender->username,
-            'sender_avatar'   => $this->sender->avatar,
-            'sender_color'    => $this->sender->avatar_color ?? '#009ac7',
+            'sender_avatar' => $this->sender->avatar,
+            'sender_color' => $this->sender->avatar_color ?? '#009ac7',
             'conversation_id' => $this->conversation->id,
-            'excerpt'         => mb_strimwidth($this->excerpt, 0, 60, '…'),
-            'url'             => "/conversations/{$this->conversation->id}",
+            'excerpt' => mb_strimwidth($this->excerpt, 0, 60, '…'),
+            'url' => "/conversations/{$this->conversation->id}",
         ];
     }
 }

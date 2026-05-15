@@ -60,6 +60,7 @@ class CommentController extends Controller
     {
         abort_unless($comment->user_id === auth()->id(), 403);
         $comment->delete();
+
         return $this->postResponse();
     }
 }

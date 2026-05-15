@@ -7,7 +7,6 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -81,14 +80,14 @@ class User extends Authenticatable
     public function communities(): BelongsToMany
     {
         return $this->belongsToMany(Bubble::class, 'community_user', 'user_id', 'community_id')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 
     public function conversations(): BelongsToMany
     {
         return $this->belongsToMany(Conversation::class, 'conversation_user')
-                    ->withPivot('last_read_at')
-                    ->withTimestamps();
+            ->withPivot('last_read_at')
+            ->withTimestamps();
     }
 
     public function sentFriendRequests(): HasMany

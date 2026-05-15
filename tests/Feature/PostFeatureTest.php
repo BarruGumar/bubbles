@@ -75,9 +75,9 @@ class PostFeatureTest extends TestCase
 
     public function test_non_owner_cannot_update_post(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
-        $post     = $this->makePost($owner, ['content' => 'Original']);
+        $post = $this->makePost($owner, ['content' => 'Original']);
 
         $this->actingAs($attacker)
             ->patchJson("/posts/{$post->id}", ['content' => 'Hacked'])
@@ -112,9 +112,9 @@ class PostFeatureTest extends TestCase
 
     public function test_non_owner_cannot_delete_post(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
-        $post     = $this->makePost($owner);
+        $post = $this->makePost($owner);
 
         $this->actingAs($attacker)->delete("/posts/{$post->id}")->assertForbidden();
 
@@ -123,9 +123,9 @@ class PostFeatureTest extends TestCase
 
     public function test_moderator_can_delete_any_post(): void
     {
-        $owner     = User::factory()->create();
+        $owner = User::factory()->create();
         $moderator = User::factory()->create(['role' => 'moderator']);
-        $post      = $this->makePost($owner);
+        $post = $this->makePost($owner);
 
         $this->actingAs($moderator)->delete("/posts/{$post->id}")->assertRedirect();
 

@@ -19,7 +19,7 @@ class SearchController extends Controller
         $q = trim($request->query('q', ''));
 
         return Inertia::render('Search/Index', [
-            'query'   => $q,
+            'query' => $q,
             'results' => $q !== '' ? $this->search($q) : null,
         ]);
     }
@@ -37,19 +37,19 @@ class SearchController extends Controller
 
     private function search(string $q): array
     {
-        $like = '%' . $q . '%';
+        $like = '%'.$q.'%';
 
         $users = User::where('name', 'like', $like)
             ->orWhere('username', 'like', $like)
             ->limit(self::LIMIT)
             ->get()
             ->map(fn ($u) => [
-                'id'           => $u->id,
-                'name'         => $u->name,
-                'username'     => $u->username,
-                'avatar'       => $u->avatar,
+                'id' => $u->id,
+                'name' => $u->name,
+                'username' => $u->username,
+                'avatar' => $u->avatar,
                 'avatar_color' => $u->avatar_color ?? '#009ac7',
-                'bio'          => $u->bio,
+                'bio' => $u->bio,
             ])->values();
 
         $communities = Bubble::where('label', 'like', $like)
@@ -58,13 +58,13 @@ class SearchController extends Controller
             ->limit(self::LIMIT)
             ->get()
             ->map(fn ($b) => [
-                'id'          => $b->id,
-                'label'       => $b->label,
-                'title'       => $b->community_title ?: $b->label,
+                'id' => $b->id,
+                'label' => $b->label,
+                'title' => $b->community_title ?: $b->label,
                 'description' => $b->community_description,
-                'color'       => $b->color ?? '#009ac7',
-                'image'       => $b->community_image,
-                'members'     => $b->members ?? 0,
+                'color' => $b->color ?? '#009ac7',
+                'image' => $b->community_image,
+                'members' => $b->members ?? 0,
             ])->values();
 
         $posts = Post::where('content', 'like', $like)
@@ -73,23 +73,23 @@ class SearchController extends Controller
             ->limit(self::LIMIT)
             ->get()
             ->map(fn ($p) => [
-                'id'         => $p->id,
-                'content'    => $p->content,
-                'image'      => $p->image,
+                'id' => $p->id,
+                'content' => $p->content,
+                'image' => $p->image,
                 'created_at' => $p->created_at->diffForHumans(),
-                'author'     => [
-                    'id'           => $p->user->id,
-                    'name'         => $p->user->name,
-                    'username'     => $p->user->username,
-                    'avatar'       => $p->user->avatar,
+                'author' => [
+                    'id' => $p->user->id,
+                    'name' => $p->user->name,
+                    'username' => $p->user->username,
+                    'avatar' => $p->user->avatar,
                     'avatar_color' => $p->user->avatar_color ?? '#009ac7',
                 ],
             ])->values();
 
         return [
-            'users'       => $users,
+            'users' => $users,
             'communities' => $communities,
-            'posts'       => $posts,
+            'posts' => $posts,
         ];
     }
 }

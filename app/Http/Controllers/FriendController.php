@@ -23,12 +23,13 @@ class FriendController extends Controller
             ->get()
             ->map(function ($f) use ($userId) {
                 $other = $f->user_id === $userId ? $f->friend : $f->user;
+
                 return [
-                    'friendId'     => $f->id,
-                    'id'           => $other->id,
-                    'name'         => $other->name,
-                    'username'     => $other->username,
-                    'avatar'       => $other->avatar,
+                    'friendId' => $f->id,
+                    'id' => $other->id,
+                    'name' => $other->name,
+                    'username' => $other->username,
+                    'avatar' => $other->avatar,
                     'avatar_color' => $other->avatar_color ?? '#009ac7',
                 ];
             });
@@ -38,11 +39,11 @@ class FriendController extends Controller
             ->with('user')
             ->get()
             ->map(fn ($f) => [
-                'friendId'     => $f->id,
-                'id'           => $f->user->id,
-                'name'         => $f->user->name,
-                'username'     => $f->user->username,
-                'avatar'       => $f->user->avatar,
+                'friendId' => $f->id,
+                'id' => $f->user->id,
+                'name' => $f->user->name,
+                'username' => $f->user->username,
+                'avatar' => $f->user->avatar,
                 'avatar_color' => $f->user->avatar_color ?? '#009ac7',
             ]);
 
@@ -51,18 +52,18 @@ class FriendController extends Controller
             ->with('friend')
             ->get()
             ->map(fn ($f) => [
-                'friendId'     => $f->id,
-                'id'           => $f->friend->id,
-                'name'         => $f->friend->name,
-                'username'     => $f->friend->username,
-                'avatar'       => $f->friend->avatar,
+                'friendId' => $f->id,
+                'id' => $f->friend->id,
+                'name' => $f->friend->name,
+                'username' => $f->friend->username,
+                'avatar' => $f->friend->avatar,
                 'avatar_color' => $f->friend->avatar_color ?? '#009ac7',
             ]);
 
         return Inertia::render('Friends/Index', [
-            'friends'  => $friends->values(),
+            'friends' => $friends->values(),
             'received' => $received->values(),
-            'sent'     => $sent->values(),
+            'sent' => $sent->values(),
         ]);
     }
 
@@ -79,9 +80,9 @@ class FriendController extends Controller
 
         if (! $exists) {
             Friend::create([
-                'user_id'   => auth()->id(),
+                'user_id' => auth()->id(),
                 'friend_id' => $target->id,
-                'status'    => 'pending',
+                'status' => 'pending',
             ]);
             $target->notify(new FriendRequestReceived(auth()->user()));
         }

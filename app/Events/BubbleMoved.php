@@ -11,7 +11,5 @@ class BubbleMoved
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public Bubble $bubble)
-    {
-    }
+    public function __construct(public Bubble $bubble) {}
 }

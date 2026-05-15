@@ -29,7 +29,7 @@ trait StoresImages
             ));
 
             return [
-                'url'       => $response['secure_url'],
+                'url' => $response['secure_url'],
                 'public_id' => $response['public_id'],
             ];
         }
@@ -37,7 +37,7 @@ trait StoresImages
         $path = $file->store($folder, 'public');
 
         return [
-            'url'       => '/storage/' . $path,
+            'url' => '/storage/'.$path,
             'public_id' => null,
         ];
     }
@@ -49,12 +49,12 @@ trait StoresImages
     {
         if ($this->cloudinaryIsConfigured()) {
             $response = Cloudinary::uploadApi()->upload($file->getRealPath(), [
-                'folder'        => $folder,
+                'folder' => $folder,
                 'resource_type' => 'video',
             ]);
 
             return [
-                'url'       => $response['secure_url'],
+                'url' => $response['secure_url'],
                 'public_id' => $response['public_id'],
             ];
         }
@@ -62,7 +62,7 @@ trait StoresImages
         $path = $file->store($folder, 'public');
 
         return [
-            'url'       => '/storage/' . $path,
+            'url' => '/storage/'.$path,
             'public_id' => null,
         ];
     }
@@ -81,7 +81,7 @@ trait StoresImages
         } catch (\Throwable $e) {
             Log::warning('Cloudinary video delete failed', [
                 'public_id' => $publicId,
-                'error'     => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -102,7 +102,7 @@ trait StoresImages
         } catch (\Throwable $e) {
             Log::warning('Cloudinary delete failed', [
                 'public_id' => $publicId,
-                'error'     => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -110,7 +110,7 @@ trait StoresImages
     private function cloudinaryIsConfigured(): bool
     {
         $disk = config('filesystems.disks.cloudinary', []);
-        $url  = $disk['url'] ?? null;
+        $url = $disk['url'] ?? null;
 
         if (is_string($url) && $this->hasRealCloudinaryValue($url)) {
             return true;

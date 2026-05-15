@@ -47,7 +47,7 @@ return [
             'report' => false,
         ],
 
-                'cloudinary' => [
+        'cloudinary' => [
             'driver' => 'cloudinary',
             'key' => env('CLOUDINARY_KEY', env('CLOUDINARY_API_KEY')),
             'secret' => env('CLOUDINARY_SECRET', env('CLOUDINARY_API_SECRET')),
@@ -56,7 +56,6 @@ return [
             'secure' => env('CLOUDINARY_SECURE', true),
             'prefix' => env('CLOUDINARY_PREFIX'),
         ],
-
 
         's3' => [
             'driver' => 's3',

@@ -20,14 +20,14 @@ class FriendRequestAccepted extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'type'             => 'friend_request_accepted',
-            'message'          => "{$this->accepter->name} aceitou o teu pedido de amizade.",
-            'sender_id'        => $this->accepter->id,
-            'sender_name'      => $this->accepter->name,
-            'sender_username'  => $this->accepter->username,
-            'sender_avatar'    => $this->accepter->avatar,
-            'sender_color'     => $this->accepter->avatar_color ?? '#009ac7',
-            'url'              => "/u/{$this->accepter->username}",
+            'type' => 'friend_request_accepted',
+            'message' => "{$this->accepter->name} aceitou o teu pedido de amizade.",
+            'sender_id' => $this->accepter->id,
+            'sender_name' => $this->accepter->name,
+            'sender_username' => $this->accepter->username,
+            'sender_avatar' => $this->accepter->avatar,
+            'sender_color' => $this->accepter->avatar_color ?? '#009ac7',
+            'url' => "/u/{$this->accepter->username}",
         ];
     }
 }

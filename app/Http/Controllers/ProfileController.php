@@ -21,45 +21,45 @@ class ProfileController extends Controller
     public function show(string $username): Response
     {
         $profileUser = User::where('username', $username)->firstOrFail();
-        $isOwn       = auth()->check() && auth()->id() === $profileUser->id;
+        $isOwn = auth()->check() && auth()->id() === $profileUser->id;
 
         $userId = auth()->id();
 
         $paginated = $profileUser->posts()
             ->withCount('likes')
             ->with([
-                'likes'    => fn ($q) => $q->where('user_id', $userId ?? 0),
+                'likes' => fn ($q) => $q->where('user_id', $userId ?? 0),
                 'comments' => fn ($q) => $q->with('user')->orderBy('created_at'),
             ])
             ->latest()
             ->cursorPaginate(12);
 
         $posts = $paginated->getCollection()->map(fn ($p) => [
-            'id'          => $p->id,
-            'content'     => $p->content,
-            'image'       => $p->image,
-            'video'       => $p->video,
-            'created_at'  => $p->created_at->diffForHumans(),
-            'likes_count'   => $p->likes_count,
-            'is_liked'      => $p->likes->isNotEmpty(),
+            'id' => $p->id,
+            'content' => $p->content,
+            'image' => $p->image,
+            'video' => $p->video,
+            'created_at' => $p->created_at->diffForHumans(),
+            'likes_count' => $p->likes_count,
+            'is_liked' => $p->likes->isNotEmpty(),
             'user_reaction' => $p->likes->first()?->type ?? null,
-            'comments'    => $p->comments->map(fn ($c) => [
-                'id'         => $c->id,
-                'content'    => $c->content,
+            'comments' => $p->comments->map(fn ($c) => [
+                'id' => $c->id,
+                'content' => $c->content,
                 'created_at' => $c->created_at->diffForHumans(),
-                'is_own'     => $userId && $c->user_id === $userId,
-                'author'     => [
-                    'id'           => $c->user->id,
-                    'name'         => $c->user->name,
-                    'username'     => $c->user->username,
-                    'avatar'       => $c->user->avatar,
+                'is_own' => $userId && $c->user_id === $userId,
+                'author' => [
+                    'id' => $c->user->id,
+                    'name' => $c->user->name,
+                    'username' => $c->user->username,
+                    'avatar' => $c->user->avatar,
                     'avatar_color' => $c->user->avatar_color ?? '#009ac7',
                 ],
             ])->values(),
         ])->values();
 
         $friendStatus = null;
-        $friendId     = null;
+        $friendId = null;
 
         if (auth()->check() && ! $isOwn) {
             $record = Friend::where(function ($q) use ($profileUser) {
@@ -72,18 +72,18 @@ class ProfileController extends Controller
                 $friendStatus = 'none';
             } elseif ($record->status === 'pending' && $record->user_id === auth()->id()) {
                 $friendStatus = 'pending_sent';
-                $friendId     = $record->id;
+                $friendId = $record->id;
             } elseif ($record->status === 'pending') {
                 $friendStatus = 'pending_received';
-                $friendId     = $record->id;
+                $friendId = $record->id;
             } else {
                 $friendStatus = 'accepted';
-                $friendId     = $record->id;
+                $friendId = $record->id;
             }
         }
 
         $communities = $profileUser->communities()->get()->map(fn ($b) => [
-            'id'    => $b->id,
+            'id' => $b->id,
             'label' => $b->label,
             'title' => $b->community_title ?: $b->label,
             'color' => $b->color ?? '#009ac7',
@@ -93,42 +93,43 @@ class ProfileController extends Controller
         $friendRecords = Friend::where('status', 'accepted')
             ->where(function ($q) use ($profileUser) {
                 $q->where('user_id', $profileUser->id)
-                  ->orWhere('friend_id', $profileUser->id);
+                    ->orWhere('friend_id', $profileUser->id);
             })
             ->with(['user', 'friend'])
             ->get();
 
         $profileFriends = $friendRecords->map(function ($f) use ($profileUser) {
             $u = $f->user_id === $profileUser->id ? $f->friend : $f->user;
+
             return [
-                'id'           => $u->id,
-                'name'         => $u->name,
-                'username'     => $u->username,
-                'avatar'       => $u->avatar,
+                'id' => $u->id,
+                'name' => $u->name,
+                'username' => $u->username,
+                'avatar' => $u->avatar,
                 'avatar_color' => $u->avatar_color ?? '#009ac7',
             ];
         })->values();
 
         return Inertia::render('Profile/Show', [
             'profileUser' => [
-                'id'           => $profileUser->id,
-                'name'         => $profileUser->name,
-                'username'     => $profileUser->username,
-                'bio'          => $profileUser->bio,
+                'id' => $profileUser->id,
+                'name' => $profileUser->name,
+                'username' => $profileUser->username,
+                'bio' => $profileUser->bio,
                 'avatar_color' => $profileUser->avatar_color ?? '#009ac7',
-                'avatar'       => $profileUser->avatar,
-                'banner'       => $profileUser->banner,
-                'created_at'   => $profileUser->created_at->format('M Y'),
-                'posts_count'  => $profileUser->posts()->count(),
+                'avatar' => $profileUser->avatar,
+                'banner' => $profileUser->banner,
+                'created_at' => $profileUser->created_at->format('M Y'),
+                'posts_count' => $profileUser->posts()->count(),
             ],
-            'posts'          => $posts,
-            'nextCursor'     => $paginated->nextCursor()?->encode(),
-            'hasMorePosts'   => $paginated->hasMorePages(),
-            'communities'    => $communities,
+            'posts' => $posts,
+            'nextCursor' => $paginated->nextCursor()?->encode(),
+            'hasMorePosts' => $paginated->hasMorePages(),
+            'communities' => $communities,
             'profileFriends' => $profileFriends,
-            'isOwn'          => $isOwn,
-            'friendStatus'   => $friendStatus,
-            'friendId'       => $friendId,
+            'isOwn' => $isOwn,
+            'friendStatus' => $friendStatus,
+            'friendId' => $friendId,
         ]);
     }
 
@@ -136,7 +137,7 @@ class ProfileController extends Controller
     {
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status'          => session('status'),
+            'status' => session('status'),
         ]);
     }
 
@@ -164,9 +165,9 @@ class ProfileController extends Controller
         $this->deleteCloudinaryImage($user->avatar_public_id);
 
         ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('avatar'), 'bubbles/avatars', [
-            'public_id'      => 'user_' . $user->id,
-            'overwrite'      => true,
-            'transformation' => ['width'=>300,'height'=>300,'crop'=>'fill','gravity'=>'face','fetch_format'=>'auto','quality'=>'auto'],
+            'public_id' => 'user_'.$user->id,
+            'overwrite' => true,
+            'transformation' => ['width' => 300, 'height' => 300, 'crop' => 'fill', 'gravity' => 'face', 'fetch_format' => 'auto', 'quality' => 'auto'],
         ]);
 
         $user->update(['avatar' => $url, 'avatar_public_id' => $pid]);
@@ -184,9 +185,9 @@ class ProfileController extends Controller
         $this->deleteCloudinaryImage($user->banner_public_id);
 
         ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('banner'), 'bubbles/banners', [
-            'public_id'      => 'banner_' . $user->id,
-            'overwrite'      => true,
-            'transformation' => ['width'=>1200,'height'=>400,'crop'=>'fill','fetch_format'=>'auto','quality'=>'auto'],
+            'public_id' => 'banner_'.$user->id,
+            'overwrite' => true,
+            'transformation' => ['width' => 1200, 'height' => 400, 'crop' => 'fill', 'fetch_format' => 'auto', 'quality' => 'auto'],
         ]);
 
         $user->update(['banner' => $url, 'banner_public_id' => $pid]);

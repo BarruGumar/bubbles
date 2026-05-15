@@ -15,7 +15,7 @@ use Inertia\Response;
 
 class BubbleController extends Controller
 {
-        public function showPage(Bubble $bubble): Response
+    public function showPage(Bubble $bubble): Response
     {
         return Inertia::render('Community/Show', [
             'bubble' => $bubble,
@@ -29,14 +29,14 @@ class BubbleController extends Controller
             : [];
 
         $bubbles = Bubble::withCount('memberships')->latest('id')->get()->map(fn ($b) => [
-            'id'              => $b->id,
-            'label'           => $b->label,
-            'color'           => $b->color,
-            'x'               => $b->x,
-            'y'               => $b->y,
-            'size'            => $b->size,
-            'members'         => $b->memberships_count,
-            'is_member'       => in_array($b->id, $memberIds),
+            'id' => $b->id,
+            'label' => $b->label,
+            'color' => $b->color,
+            'x' => $b->x,
+            'y' => $b->y,
+            'size' => $b->size,
+            'members' => $b->memberships_count,
+            'is_member' => in_array($b->id, $memberIds),
             'community_image' => $b->community_image,
         ]);
 
@@ -46,16 +46,16 @@ class BubbleController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'label'                  => ['required', 'string', 'max:120'],
-            'color'                  => ['nullable', 'string', 'max:40'],
-            'x'                      => ['required', 'numeric'],
-            'y'                      => ['required', 'numeric'],
-            'size'                   => ['nullable', 'integer', 'min:40', 'max:220'],
-            'community_title'        => ['nullable', 'string', 'max:120'],
-            'community_description'  => ['nullable', 'string', 'max:1000'],
-            'community_cover_color'  => ['nullable', 'string', 'max:40'],
-            'community_tagline'      => ['nullable', 'string', 'max:160'],
-            'community_guidelines'   => ['nullable', 'array', 'max:5'],
+            'label' => ['required', 'string', 'max:120'],
+            'color' => ['nullable', 'string', 'max:40'],
+            'x' => ['required', 'numeric'],
+            'y' => ['required', 'numeric'],
+            'size' => ['nullable', 'integer', 'min:40', 'max:220'],
+            'community_title' => ['nullable', 'string', 'max:120'],
+            'community_description' => ['nullable', 'string', 'max:1000'],
+            'community_cover_color' => ['nullable', 'string', 'max:40'],
+            'community_tagline' => ['nullable', 'string', 'max:160'],
+            'community_guidelines' => ['nullable', 'array', 'max:5'],
             'community_guidelines.*' => ['string', 'max:180'],
         ]);
 
@@ -142,8 +142,8 @@ class BubbleController extends Controller
             }
 
             $from = $communityIds[0];
-            $to   = $communityIds[1];
-            $key  = "{$from}-{$to}";
+            $to = $communityIds[1];
+            $key = "{$from}-{$to}";
 
             if ($pairs->has($key)) {
                 $entry = $pairs->get($key);
@@ -177,15 +177,16 @@ class BubbleController extends Controller
                 $u = $userMap[(int) $id] ?? null;
                 if ($u) {
                     $friends[] = [
-                        'name'         => $u->name,
-                        'avatar'       => $u->avatar,
+                        'name' => $u->name,
+                        'avatar' => $u->avatar,
                         'avatar_color' => $u->avatar_color ?? '#9b6bdf',
                     ];
                 }
             }
+
             return [
-                'from'    => $pair['from'],
-                'to'      => $pair['to'],
+                'from' => $pair['from'],
+                'to' => $pair['to'],
                 'friends' => $friends,
             ];
         });

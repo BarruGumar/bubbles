@@ -22,11 +22,11 @@ class AdminFeatureTest extends TestCase
         $post = Post::create(['user_id' => $reporter->id, 'content' => 'Reported post']);
 
         return Report::create([
-            'reporter_id'     => $reporter->id,
+            'reporter_id' => $reporter->id,
             'reportable_type' => Post::class,
-            'reportable_id'   => $post->id,
-            'reason'          => 'Violates rules',
-            'status'          => 'pending',
+            'reportable_id' => $post->id,
+            'reason' => 'Violates rules',
+            'status' => 'pending',
         ]);
     }
 
@@ -68,7 +68,7 @@ class AdminFeatureTest extends TestCase
 
     public function test_admin_can_view_reports(): void
     {
-        $admin    = $this->admin();
+        $admin = $this->admin();
         $reporter = User::factory()->create();
         $this->makeReport($reporter);
 
@@ -81,9 +81,9 @@ class AdminFeatureTest extends TestCase
 
     public function test_admin_can_resolve_report(): void
     {
-        $admin    = $this->admin();
+        $admin = $this->admin();
         $reporter = User::factory()->create();
-        $report   = $this->makeReport($reporter);
+        $report = $this->makeReport($reporter);
 
         $this->actingAs($admin)
             ->patch("/admin/reports/{$report->id}/resolve", ['admin_note' => 'Reviewed'])
@@ -94,9 +94,9 @@ class AdminFeatureTest extends TestCase
 
     public function test_admin_can_dismiss_report(): void
     {
-        $admin    = $this->admin();
+        $admin = $this->admin();
         $reporter = User::factory()->create();
-        $report   = $this->makeReport($reporter);
+        $report = $this->makeReport($reporter);
 
         $this->actingAs($admin)
             ->patch("/admin/reports/{$report->id}/dismiss", [])
@@ -111,7 +111,7 @@ class AdminFeatureTest extends TestCase
 
     public function test_admin_can_change_another_users_role(): void
     {
-        $admin  = $this->admin();
+        $admin = $this->admin();
         $target = User::factory()->create(['role' => 'user']);
 
         $this->actingAs($admin)
@@ -135,7 +135,7 @@ class AdminFeatureTest extends TestCase
 
     public function test_admin_can_delete_another_user(): void
     {
-        $admin  = $this->admin();
+        $admin = $this->admin();
         $target = User::factory()->create();
 
         $this->actingAs($admin)
@@ -152,8 +152,8 @@ class AdminFeatureTest extends TestCase
     public function test_admin_can_force_delete_post(): void
     {
         $admin = $this->admin();
-        $user  = User::factory()->create();
-        $post  = Post::create(['user_id' => $user->id, 'content' => 'Bad post']);
+        $user = User::factory()->create();
+        $post = Post::create(['user_id' => $user->id, 'content' => 'Bad post']);
 
         $this->actingAs($admin)
             ->delete("/admin/posts/{$post->id}/force")
@@ -165,8 +165,8 @@ class AdminFeatureTest extends TestCase
     public function test_admin_can_restore_soft_deleted_post(): void
     {
         $admin = $this->admin();
-        $user  = User::factory()->create();
-        $post  = Post::create(['user_id' => $user->id, 'content' => 'Deleted post']);
+        $user = User::factory()->create();
+        $post = Post::create(['user_id' => $user->id, 'content' => 'Deleted post']);
         $post->delete();
 
         $this->assertSoftDeleted('posts', ['id' => $post->id]);

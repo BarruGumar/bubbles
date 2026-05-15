@@ -37,11 +37,11 @@ class PostController extends Controller
         }
 
         $request->user()->posts()->create([
-            'content'          => $request->content,
-            'image'            => $imageUrl,
-            'image_public_id'  => $imagePid,
-            'video'            => $videoUrl,
-            'video_public_id'  => $videoPid,
+            'content' => $request->content,
+            'image' => $imageUrl,
+            'image_public_id' => $imagePid,
+            'video' => $videoUrl,
+            'video_public_id' => $videoPid,
         ]);
 
         return back();

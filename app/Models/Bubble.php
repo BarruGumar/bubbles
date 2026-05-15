@@ -32,9 +32,9 @@ class Bubble extends Model
     ];
 
     protected $casts = [
-        'x'       => 'float',
-        'y'       => 'float',
-        'size'    => 'integer',
+        'x' => 'float',
+        'y' => 'float',
+        'size' => 'integer',
         'members' => 'integer',
         'community_guidelines' => 'array',
     ];
@@ -62,6 +62,6 @@ class Bubble extends Model
     public function memberships(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'community_user', 'community_id', 'user_id')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 }

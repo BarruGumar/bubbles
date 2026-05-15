@@ -19,10 +19,9 @@ class CommunityController extends Controller
 {
     use StoresImages;
 
-
     public function show(int $id): Response
     {
-        $bubble  = Bubble::withCount('memberships')->findOrFail($id);
+        $bubble = Bubble::withCount('memberships')->findOrFail($id);
         $creator = User::find($bubble->user_id);
 
         $userId = auth()->id();
@@ -31,39 +30,39 @@ class CommunityController extends Controller
             ->withCount('likes')
             ->with([
                 'user',
-                'likes'    => fn ($q) => $q->where('user_id', $userId ?? 0),
+                'likes' => fn ($q) => $q->where('user_id', $userId ?? 0),
                 'comments' => fn ($q) => $q->with('user')->orderBy('created_at'),
             ])
             ->latest()
             ->cursorPaginate(12);
 
         $posts = $paginated->getCollection()->map(fn ($p) => [
-            'id'          => $p->id,
-            'content'     => $p->content,
-            'image'       => $p->image,
-            'video'       => $p->video,
-            'created_at'  => $p->created_at->diffForHumans(),
-            'author'      => [
-                'name'         => $p->user->name,
-                'username'     => $p->user->username,
+            'id' => $p->id,
+            'content' => $p->content,
+            'image' => $p->image,
+            'video' => $p->video,
+            'created_at' => $p->created_at->diffForHumans(),
+            'author' => [
+                'name' => $p->user->name,
+                'username' => $p->user->username,
                 'avatar_color' => $p->user->avatar_color ?? '#009ac7',
-                'avatar'       => $p->user->avatar,
+                'avatar' => $p->user->avatar,
             ],
-            'isOwn'       => auth()->check() && auth()->id() === $p->user_id,
-            'isCreator'   => $p->user_id === $bubble->user_id,
-            'likes_count'   => $p->likes_count,
-            'is_liked'      => $p->likes->isNotEmpty(),
+            'isOwn' => auth()->check() && auth()->id() === $p->user_id,
+            'isCreator' => $p->user_id === $bubble->user_id,
+            'likes_count' => $p->likes_count,
+            'is_liked' => $p->likes->isNotEmpty(),
             'user_reaction' => $p->likes->first()?->type ?? null,
-            'comments'    => $p->comments->map(fn ($c) => [
-                'id'         => $c->id,
-                'content'    => $c->content,
+            'comments' => $p->comments->map(fn ($c) => [
+                'id' => $c->id,
+                'content' => $c->content,
                 'created_at' => $c->created_at->diffForHumans(),
-                'is_own'     => $userId && $c->user_id === $userId,
-                'author'     => [
-                    'id'           => $c->user->id,
-                    'name'         => $c->user->name,
-                    'username'     => $c->user->username,
-                    'avatar'       => $c->user->avatar,
+                'is_own' => $userId && $c->user_id === $userId,
+                'author' => [
+                    'id' => $c->user->id,
+                    'name' => $c->user->name,
+                    'username' => $c->user->username,
+                    'avatar' => $c->user->avatar,
                     'avatar_color' => $c->user->avatar_color ?? '#009ac7',
                 ],
             ])->values(),
@@ -74,9 +73,9 @@ class CommunityController extends Controller
             ->take(6)
             ->get()
             ->map(fn ($u) => [
-                'name'         => $u->name,
-                'username'     => $u->username,
-                'avatar'       => $u->avatar,
+                'name' => $u->name,
+                'username' => $u->username,
+                'avatar' => $u->avatar,
                 'avatar_color' => $u->avatar_color ?? '#009ac7',
             ])
             ->values()
@@ -85,36 +84,36 @@ class CommunityController extends Controller
         $isOwn = auth()->check() && auth()->id() === $bubble->user_id;
 
         return Inertia::render('Community/Show', [
-            'isOwn'    => $isOwn,
+            'isOwn' => $isOwn,
             'isMember' => $isOwn || (auth()->check() && $bubble->memberships()->where('user_id', auth()->id())->exists()),
             'community' => [
-                'id'             => $bubble->id,
-                'label'          => $bubble->label,
-                'title'          => $bubble->community_title ?: $bubble->label,
-                'description'    => $bubble->community_description ?: 'Comunidade criada no bubbles.',
-                'tagline'        => $bubble->community_tagline ?: 'Conecta, partilha e participa.',
-                'color'          => $bubble->color ?? '#009ac7',
-                'cover_color'    => $bubble->community_cover_color ?: ($bubble->color ?? '#009ac7'),
-                'image'          => $bubble->community_image,
-                'banner'         => $bubble->community_banner,
-                'guidelines'     => $bubble->community_guidelines ?: [
+                'id' => $bubble->id,
+                'label' => $bubble->label,
+                'title' => $bubble->community_title ?: $bubble->label,
+                'description' => $bubble->community_description ?: 'Comunidade criada no bubbles.',
+                'tagline' => $bubble->community_tagline ?: 'Conecta, partilha e participa.',
+                'color' => $bubble->color ?? '#009ac7',
+                'cover_color' => $bubble->community_cover_color ?: ($bubble->color ?? '#009ac7'),
+                'image' => $bubble->community_image,
+                'banner' => $bubble->community_banner,
+                'guidelines' => $bubble->community_guidelines ?: [
                     'Respeita os outros membros.',
                     'Evita spam e conteúdos repetidos.',
                     'Partilha conteúdo relevante para o tema.',
                 ],
-                'members'        => $bubble->memberships_count,
-                'posts_count'    => $bubble->communityPosts()->count(),
+                'members' => $bubble->memberships_count,
+                'posts_count' => $bubble->communityPosts()->count(),
                 'member_avatars' => $memberAvatars,
-                'creator'        => $creator ? [
-                    'id'           => $creator->id,
-                    'name'         => $creator->name,
-                    'username'     => $creator->username,
-                    'avatar'       => $creator->avatar,
+                'creator' => $creator ? [
+                    'id' => $creator->id,
+                    'name' => $creator->name,
+                    'username' => $creator->username,
+                    'avatar' => $creator->avatar,
                     'avatar_color' => $creator->avatar_color ?? '#009ac7',
                 ] : null,
             ],
-            'posts'        => $posts,
-            'nextCursor'   => $paginated->nextCursor()?->encode(),
+            'posts' => $posts,
+            'nextCursor' => $paginated->nextCursor()?->encode(),
             'hasMorePosts' => $paginated->hasMorePages(),
         ]);
     }
@@ -177,7 +176,7 @@ class CommunityController extends Controller
             ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
                 $request->file('image'),
                 'bubbles/posts',
-                ['transformation' => ['width'=>1200,'height'=>800,'crop'=>'limit','fetch_format'=>'auto','quality'=>'auto']]
+                ['transformation' => ['width' => 1200, 'height' => 800, 'crop' => 'limit', 'fetch_format' => 'auto', 'quality' => 'auto']]
             );
         }
 
@@ -190,12 +189,12 @@ class CommunityController extends Controller
 
         $bubble = Bubble::findOrFail($id);
         $bubble->communityPosts()->create([
-            'user_id'          => auth()->id(),
-            'content'          => $request->content,
-            'image'            => $imageUrl,
-            'image_public_id'  => $imagePid,
-            'video'            => $videoUrl,
-            'video_public_id'  => $videoPid,
+            'user_id' => auth()->id(),
+            'content' => $request->content,
+            'image' => $imageUrl,
+            'image_public_id' => $imagePid,
+            'video' => $videoUrl,
+            'video_public_id' => $videoPid,
         ]);
 
         return back();
@@ -217,6 +216,7 @@ class CommunityController extends Controller
         $this->deleteCloudinaryImage($post->image_public_id);
         $this->deleteCloudinaryVideo($post->video_public_id);
         $post->delete();
+
         return back();
     }
 
@@ -229,12 +229,13 @@ class CommunityController extends Controller
         $this->deleteCloudinaryImage($bubble->community_image_public_id);
 
         ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('image'), 'bubbles/communities', [
-            'public_id'      => 'community_img_' . $id,
-            'overwrite'      => true,
-            'transformation' => ['width'=>300,'height'=>300,'crop'=>'fill','fetch_format'=>'auto','quality'=>'auto'],
+            'public_id' => 'community_img_'.$id,
+            'overwrite' => true,
+            'transformation' => ['width' => 300, 'height' => 300, 'crop' => 'fill', 'fetch_format' => 'auto', 'quality' => 'auto'],
         ]);
 
         $bubble->update(['community_image' => $url, 'community_image_public_id' => $pid]);
+
         return back();
     }
 
@@ -247,12 +248,13 @@ class CommunityController extends Controller
         $this->deleteCloudinaryImage($bubble->community_banner_public_id);
 
         ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('banner'), 'bubbles/communities', [
-            'public_id'      => 'community_banner_' . $id,
-            'overwrite'      => true,
-            'transformation' => ['width'=>1400,'height'=>500,'crop'=>'fill','fetch_format'=>'auto','quality'=>'auto'],
+            'public_id' => 'community_banner_'.$id,
+            'overwrite' => true,
+            'transformation' => ['width' => 1400, 'height' => 500, 'crop' => 'fill', 'fetch_format' => 'auto', 'quality' => 'auto'],
         ]);
 
         $bubble->update(['community_banner' => $url, 'community_banner_public_id' => $pid]);
+
         return back();
     }
 }

@@ -17,6 +17,7 @@ class CommunityFeatureTest extends TestCase
         $bubble = Bubble::factory()->for($owner)->create($attrs);
         // Creator is automatically a member (mirrors BubbleController::store)
         $bubble->memberships()->attach($owner->id);
+
         return $bubble;
     }
 
@@ -26,7 +27,7 @@ class CommunityFeatureTest extends TestCase
 
     public function test_user_can_join_community(): void
     {
-        $owner  = User::factory()->create();
+        $owner = User::factory()->create();
         $member = User::factory()->create();
         $bubble = $this->makeCommunity($owner);
 
@@ -34,13 +35,13 @@ class CommunityFeatureTest extends TestCase
 
         $this->assertDatabaseHas('community_user', [
             'community_id' => $bubble->id,
-            'user_id'      => $member->id,
+            'user_id' => $member->id,
         ]);
     }
 
     public function test_user_can_leave_community(): void
     {
-        $owner  = User::factory()->create();
+        $owner = User::factory()->create();
         $member = User::factory()->create();
         $bubble = $this->makeCommunity($owner);
         $bubble->memberships()->attach($member->id);
@@ -49,13 +50,13 @@ class CommunityFeatureTest extends TestCase
 
         $this->assertDatabaseMissing('community_user', [
             'community_id' => $bubble->id,
-            'user_id'      => $member->id,
+            'user_id' => $member->id,
         ]);
     }
 
     public function test_creator_cannot_leave_own_community(): void
     {
-        $owner  = User::factory()->create();
+        $owner = User::factory()->create();
         $bubble = $this->makeCommunity($owner);
 
         $this->actingAs($owner)->delete("/c/{$bubble->id}/leave")->assertRedirect();
@@ -63,7 +64,7 @@ class CommunityFeatureTest extends TestCase
         // Membership must still exist
         $this->assertDatabaseHas('community_user', [
             'community_id' => $bubble->id,
-            'user_id'      => $owner->id,
+            'user_id' => $owner->id,
         ]);
     }
 
@@ -73,7 +74,7 @@ class CommunityFeatureTest extends TestCase
 
     public function test_guest_cannot_create_community_post(): void
     {
-        $owner  = User::factory()->create();
+        $owner = User::factory()->create();
         $bubble = $this->makeCommunity($owner);
 
         $this->post("/c/{$bubble->id}/posts", ['content' => 'Hello'])->assertRedirect('/login');
@@ -83,7 +84,7 @@ class CommunityFeatureTest extends TestCase
 
     public function test_member_can_create_community_post(): void
     {
-        $owner  = User::factory()->create();
+        $owner = User::factory()->create();
         $member = User::factory()->create();
         $bubble = $this->makeCommunity($owner);
         $bubble->memberships()->attach($member->id);
@@ -94,16 +95,16 @@ class CommunityFeatureTest extends TestCase
 
         $this->assertDatabaseHas('community_posts', [
             'bubble_id' => $bubble->id,
-            'user_id'   => $member->id,
-            'content'   => 'Hello community',
+            'user_id' => $member->id,
+            'content' => 'Hello community',
         ]);
     }
 
     public function test_non_member_cannot_create_community_post(): void
     {
-        $owner   = User::factory()->create();
+        $owner = User::factory()->create();
         $visitor = User::factory()->create();
-        $bubble  = $this->makeCommunity($owner);
+        $bubble = $this->makeCommunity($owner);
 
         $this->actingAs($visitor)
             ->post("/c/{$bubble->id}/posts", ['content' => 'Intruder post'])
@@ -118,12 +119,12 @@ class CommunityFeatureTest extends TestCase
 
     public function test_owner_can_update_own_community_post(): void
     {
-        $owner  = User::factory()->create();
+        $owner = User::factory()->create();
         $bubble = $this->makeCommunity($owner);
-        $post   = CommunityPost::create([
+        $post = CommunityPost::create([
             'bubble_id' => $bubble->id,
-            'user_id'   => $owner->id,
-            'content'   => 'Original',
+            'user_id' => $owner->id,
+            'content' => 'Original',
         ]);
 
         $this->actingAs($owner)
@@ -136,14 +137,14 @@ class CommunityFeatureTest extends TestCase
 
     public function test_non_owner_cannot_update_community_post(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
-        $bubble   = $this->makeCommunity($owner);
+        $bubble = $this->makeCommunity($owner);
         $bubble->memberships()->attach($attacker->id);
         $post = CommunityPost::create([
             'bubble_id' => $bubble->id,
-            'user_id'   => $owner->id,
-            'content'   => 'Original',
+            'user_id' => $owner->id,
+            'content' => 'Original',
         ]);
 
         $this->actingAs($attacker)
@@ -159,7 +160,7 @@ class CommunityFeatureTest extends TestCase
 
     public function test_community_owner_can_update_settings(): void
     {
-        $owner  = User::factory()->create();
+        $owner = User::factory()->create();
         $bubble = $this->makeCommunity($owner, ['label' => '#original']);
 
         $this->actingAs($owner)->put("/c/{$bubble->id}/settings", [
@@ -171,9 +172,9 @@ class CommunityFeatureTest extends TestCase
 
     public function test_non_owner_cannot_update_community_settings(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
-        $bubble   = $this->makeCommunity($owner, ['label' => '#original']);
+        $bubble = $this->makeCommunity($owner, ['label' => '#original']);
 
         $this->actingAs($attacker)->put("/c/{$bubble->id}/settings", [
             'label' => '#hacked',
@@ -188,7 +189,7 @@ class CommunityFeatureTest extends TestCase
 
     public function test_owner_can_delete_community(): void
     {
-        $owner  = User::factory()->create();
+        $owner = User::factory()->create();
         $bubble = $this->makeCommunity($owner);
 
         $this->actingAs($owner)->delete("/c/{$bubble->id}")->assertRedirect();
@@ -198,9 +199,9 @@ class CommunityFeatureTest extends TestCase
 
     public function test_non_owner_cannot_delete_community(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
-        $bubble   = $this->makeCommunity($owner);
+        $bubble = $this->makeCommunity($owner);
 
         $this->actingAs($attacker)->delete("/c/{$bubble->id}")->assertForbidden();
 

@@ -12,6 +12,7 @@ trait FormatsPostResponse
         if (request()->wantsJson()) {
             return response()->json(['message' => $message]);
         }
+
         return back();
     }
 }

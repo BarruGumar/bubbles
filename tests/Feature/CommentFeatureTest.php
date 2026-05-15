@@ -29,7 +29,7 @@ class CommentFeatureTest extends TestCase
     public function test_guest_cannot_comment_on_post(): void
     {
         $owner = User::factory()->create();
-        $post  = $this->makePost($owner);
+        $post = $this->makePost($owner);
 
         $this->post("/posts/{$post->id}/comments", ['content' => 'Hello'])->assertRedirect('/login');
 
@@ -38,9 +38,9 @@ class CommentFeatureTest extends TestCase
 
     public function test_user_can_comment_on_post(): void
     {
-        $owner     = User::factory()->create();
+        $owner = User::factory()->create();
         $commenter = User::factory()->create();
-        $post      = $this->makePost($owner);
+        $post = $this->makePost($owner);
 
         $this->actingAs($commenter)
             ->post("/posts/{$post->id}/comments", ['content' => 'Great post!'])
@@ -48,9 +48,9 @@ class CommentFeatureTest extends TestCase
 
         $this->assertDatabaseHas('comments', [
             'commentable_type' => Post::class,
-            'commentable_id'   => $post->id,
-            'user_id'          => $commenter->id,
-            'content'          => 'Great post!',
+            'commentable_id' => $post->id,
+            'user_id' => $commenter->id,
+            'content' => 'Great post!',
         ]);
     }
 
@@ -84,8 +84,8 @@ class CommentFeatureTest extends TestCase
 
     public function test_user_can_delete_own_comment(): void
     {
-        $user    = User::factory()->create();
-        $post    = $this->makePost($user);
+        $user = User::factory()->create();
+        $post = $this->makePost($user);
         $comment = $this->makeComment($post, $user);
 
         $this->actingAs($user)->delete("/comments/{$comment->id}")->assertRedirect();
@@ -95,10 +95,10 @@ class CommentFeatureTest extends TestCase
 
     public function test_non_owner_cannot_delete_comment(): void
     {
-        $owner    = User::factory()->create();
+        $owner = User::factory()->create();
         $attacker = User::factory()->create();
-        $post     = $this->makePost($owner);
-        $comment  = $this->makeComment($post, $owner);
+        $post = $this->makePost($owner);
+        $comment = $this->makeComment($post, $owner);
 
         $this->actingAs($attacker)->delete("/comments/{$comment->id}")->assertForbidden();
 

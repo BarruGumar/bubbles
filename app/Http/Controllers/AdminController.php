@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bubble;
-use App\Models\CommunityPost;
 use App\Models\Post;
 use App\Models\Report;
 use App\Models\User;
@@ -18,10 +17,10 @@ class AdminController extends Controller
     {
         return Inertia::render('Admin/Dashboard', [
             'stats' => [
-                'users'       => User::count(),
-                'posts'       => Post::withTrashed()->count(),
+                'users' => User::count(),
+                'posts' => Post::withTrashed()->count(),
                 'communities' => Bubble::count(),
-                'reports'     => Report::where('status', 'pending')->count(),
+                'reports' => Report::where('status', 'pending')->count(),
             ],
             'recentReports' => Report::with('reporter')
                 ->where('status', 'pending')
@@ -29,11 +28,11 @@ class AdminController extends Controller
                 ->take(5)
                 ->get()
                 ->map(fn ($r) => [
-                    'id'            => $r->id,
-                    'reason'        => $r->reason,
-                    'type'          => class_basename($r->reportable_type),
+                    'id' => $r->id,
+                    'reason' => $r->reason,
+                    'type' => class_basename($r->reportable_type),
                     'reporter_name' => $r->reporter->name ?? '?',
-                    'created_at'    => $r->created_at->diffForHumans(),
+                    'created_at' => $r->created_at->diffForHumans(),
                 ]),
         ]);
     }
@@ -46,12 +45,12 @@ class AdminController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->through(fn ($u) => [
-                'id'         => $u->id,
-                'name'       => $u->name,
-                'username'   => $u->username,
-                'email'      => $u->email,
-                'role'       => $u->role,
-                'avatar'     => $u->avatar,
+                'id' => $u->id,
+                'name' => $u->name,
+                'username' => $u->username,
+                'email' => $u->email,
+                'role' => $u->role,
+                'avatar' => $u->avatar,
                 'avatar_color' => $u->avatar_color ?? '#009ac7',
                 'posts_count' => $u->posts()->withTrashed()->count(),
                 'created_at' => $u->created_at->format('d/m/Y'),
@@ -99,10 +98,10 @@ class AdminController extends Controller
             ->latest()
             ->paginate(20)
             ->through(fn ($p) => [
-                'id'         => $p->id,
-                'content'    => mb_substr($p->content, 0, 120) . (mb_strlen($p->content) > 120 ? '…' : ''),
-                'deleted'    => (bool) $p->deleted_at,
-                'author'     => $p->user ? ['name' => $p->user->name, 'username' => $p->user->username] : null,
+                'id' => $p->id,
+                'content' => mb_substr($p->content, 0, 120).(mb_strlen($p->content) > 120 ? '…' : ''),
+                'deleted' => (bool) $p->deleted_at,
+                'author' => $p->user ? ['name' => $p->user->name, 'username' => $p->user->username] : null,
                 'created_at' => $p->created_at->format('d/m/Y H:i'),
                 'deleted_at' => $p->deleted_at?->diffForHumans(),
             ]);
@@ -136,18 +135,18 @@ class AdminController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->through(fn ($b) => [
-                'id'          => $b->id,
-                'label'       => $b->label,
-                'title'       => $b->community_title ?: $b->label,
-                'color'       => $b->color ?? '#009ac7',
-                'members'     => $b->memberships_count,
+                'id' => $b->id,
+                'label' => $b->label,
+                'title' => $b->community_title ?: $b->label,
+                'color' => $b->color ?? '#009ac7',
+                'members' => $b->memberships_count,
                 'posts_count' => $b->communityPosts()->count(),
-                'created_at'  => $b->created_at->format('d/m/Y'),
+                'created_at' => $b->created_at->format('d/m/Y'),
             ]);
 
         return Inertia::render('Admin/Communities', [
             'communities' => $communities,
-            'query'       => $q,
+            'query' => $q,
         ]);
     }
 
@@ -167,19 +166,19 @@ class AdminController extends Controller
             ->latest()
             ->paginate(20)
             ->through(fn ($r) => [
-                'id'                => $r->id,
-                'reason'            => $r->reason,
-                'status'            => $r->status,
-                'admin_note'        => $r->admin_note,
-                'type'              => class_basename($r->reportable_type),
-                'reporter_name'     => $r->reporter?->name ?? '–',
-                'reportable_content'=> $r->reportable?->content ?? null,
+                'id' => $r->id,
+                'reason' => $r->reason,
+                'status' => $r->status,
+                'admin_note' => $r->admin_note,
+                'type' => class_basename($r->reportable_type),
+                'reporter_name' => $r->reporter?->name ?? '–',
+                'reportable_content' => $r->reportable?->content ?? null,
                 'reportable_author' => $r->reportable?->user?->name ?? null,
-                'created_at'        => $r->created_at->diffForHumans(),
+                'created_at' => $r->created_at->diffForHumans(),
             ]);
 
         return Inertia::render('Admin/Reports', [
-            'reports'      => $reports,
+            'reports' => $reports,
             'statusFilter' => $status,
         ]);
     }

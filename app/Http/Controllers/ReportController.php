@@ -16,9 +16,9 @@ class ReportController extends Controller
 
         Report::updateOrCreate(
             [
-                'reporter_id'      => auth()->id(),
-                'reportable_type'  => Post::class,
-                'reportable_id'    => $post->id,
+                'reporter_id' => auth()->id(),
+                'reportable_type' => Post::class,
+                'reportable_id' => $post->id,
             ],
             ['reason' => $data['reason'], 'status' => 'pending']
         );
@@ -32,9 +32,9 @@ class ReportController extends Controller
 
         Report::updateOrCreate(
             [
-                'reporter_id'      => auth()->id(),
-                'reportable_type'  => CommunityPost::class,
-                'reportable_id'    => $post->id,
+                'reporter_id' => auth()->id(),
+                'reportable_type' => CommunityPost::class,
+                'reportable_id' => $post->id,
             ],
             ['reason' => $data['reason'], 'status' => 'pending']
         );

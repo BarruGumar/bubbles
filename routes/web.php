@@ -23,7 +23,7 @@ Route::get('/', function () {
     }
 
     return Inertia::render('Welcome', [
-        'canLogin'    => Route::has('login'),
+        'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
     ]);
 });
@@ -120,4 +120,4 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/reports/{report}/dismiss', [AdminController::class, 'dismissReport'])->name('reports.dismiss');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

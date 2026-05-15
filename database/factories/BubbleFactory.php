@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Bubble;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<\App\Models\Bubble>
+ * @extends Factory<Bubble>
  */
 class BubbleFactory extends Factory
 {
@@ -14,11 +15,11 @@ class BubbleFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'label'   => '#' . fake()->word(),
-            'color'   => fake()->hexColor(),
-            'x'       => fake()->randomFloat(2, 50, 1200),
-            'y'       => fake()->randomFloat(2, 50, 800),
-            'size'    => fake()->numberBetween(60, 180),
+            'label' => '#'.fake()->word(),
+            'color' => fake()->hexColor(),
+            'x' => fake()->randomFloat(2, 50, 1200),
+            'y' => fake()->randomFloat(2, 50, 800),
+            'size' => fake()->numberBetween(60, 180),
         ];
     }
 }
