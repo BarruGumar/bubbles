@@ -15,7 +15,7 @@ use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/bubbles', [FeedController::class, 'home'])->middleware(['auth'])->name('bubbles');
+Route::get('/bubbles', [FeedController::class, 'home'])->middleware(['auth', 'verified'])->name('bubbles');
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -30,7 +30,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth'])->name('dashboard');
 
 // Public profile — accessible without login
 Route::get('/u/{username}', [ProfileController::class, 'show'])->name('profile.show');
@@ -42,7 +42,7 @@ Route::get('/c/{id}', [CommunityController::class, 'show'])->name('community.sho
 Route::get('/search', [SearchController::class, 'index'])->name('search.index');
 Route::get('/api/search', [SearchController::class, 'api'])->name('search.api');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

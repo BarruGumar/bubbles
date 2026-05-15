@@ -7,6 +7,8 @@ import { useToast } from '@/Composables/useToast';
 import PostImageLightbox from '@/Components/PostImageLightbox.vue';
 import PostReactionBar from '@/Components/PostReactionBar.vue';
 import PostComments from '@/Components/PostComments.vue';
+import PostEditForm from '@/Components/PostEditForm.vue';
+import PostReportForm from '@/Components/PostReportForm.vue';
 
 const props = defineProps({
     post: { type: Object, required: true },
@@ -93,6 +95,11 @@ async function submitReport() {
     } finally {
         reportSending.value = false;
     }
+}
+
+function handleReportCancel() {
+    showReport.value = false;
+    reportText.value = '';
 }
 
 // ── Comments expanded ─────────────────────────────────────────────
@@ -353,66 +360,14 @@ function formatInitial(name) {
                     </div>
                 </div>
 
-                <!-- Edit textarea -->
-                <div v-if="editMode" style="margin-bottom: 10px">
-                    <textarea
-                        v-model="editContent"
-                        maxlength="1000"
-                        rows="4"
-                        style="
-                            width: 100%;
-                            background: #f0f8ff;
-                            border: 1.5px solid #009ac744;
-                            border-radius: 10px;
-                            padding: 10px 12px;
-                            font-size: 14px;
-                            color: #1a3a4a;
-                            outline: none;
-                            font-family: inherit;
-                            resize: vertical;
-                            box-sizing: border-box;
-                            transition: border-color 0.2s;
-                        "
-                        @focus="$event.target.style.borderColor = '#009ac7'"
-                        @blur="$event.target.style.borderColor = '#009ac744'"
-                        @keydown.ctrl.enter="saveEdit"
-                        @keydown.esc="cancelEdit"
-                    />
-                    <div style="display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end">
-                        <button
-                            @click="cancelEdit"
-                            style="
-                                padding: 6px 14px;
-                                border-radius: 99px;
-                                border: 1.5px solid #e0eef8;
-                                background: #f0f8ff;
-                                color: #8ba0b0;
-                                font-size: 12px;
-                                font-weight: 600;
-                                cursor: pointer;
-                            "
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            @click="saveEdit"
-                            :disabled="editLoading || !editContent.trim()"
-                            :style="{
-                                padding: '6px 16px',
-                                borderRadius: '99px',
-                                border: 'none',
-                                background: '#009ac7',
-                                color: 'white',
-                                fontSize: '12px',
-                                fontWeight: '700',
-                                cursor: editLoading ? 'not-allowed' : 'pointer',
-                                opacity: editLoading ? 0.6 : 1,
-                            }"
-                        >
-                            {{ editLoading ? 'A guardar...' : 'Guardar' }}
-                        </button>
-                    </div>
-                </div>
+                <!-- Edit form -->
+                <PostEditForm
+                    v-if="editMode"
+                    v-model:content="editContent"
+                    :loading="editLoading"
+                    @save="saveEdit"
+                    @cancel="cancelEdit"
+                />
 
                 <!-- Post content -->
                 <p v-else style="font-size: 14px; color: #2a4a5a; line-height: 1.65; margin: 0; white-space: pre-wrap">
@@ -457,73 +412,13 @@ function formatInitial(name) {
                 />
 
                 <!-- Report form -->
-                <div
+                <PostReportForm
                     v-if="showReport"
-                    style="
-                        margin-top: 12px;
-                        background: #fff8f8;
-                        border: 1px solid #e0555522;
-                        border-radius: 10px;
-                        padding: 12px;
-                    "
-                >
-                    <p style="font-size: 12px; font-weight: 700; color: #e05555; margin: 0 0 8px">Denunciar post</p>
-                    <textarea
-                        v-model="reportText"
-                        placeholder="Descreve o motivo da denúncia..."
-                        rows="2"
-                        maxlength="500"
-                        style="
-                            width: 100%;
-                            background: white;
-                            border: 1px solid #e0555533;
-                            border-radius: 8px;
-                            padding: 8px 10px;
-                            font-size: 12px;
-                            color: #1a3a4a;
-                            outline: none;
-                            font-family: inherit;
-                            resize: none;
-                            box-sizing: border-box;
-                        "
-                    />
-                    <div style="display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end">
-                        <button
-                            @click="
-                                showReport = false;
-                                reportText = '';
-                            "
-                            style="
-                                padding: 5px 12px;
-                                border-radius: 99px;
-                                border: 1px solid #e0eef8;
-                                background: #f0f8ff;
-                                color: #8ba0b0;
-                                font-size: 11px;
-                                cursor: pointer;
-                            "
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            @click="submitReport"
-                            :disabled="!reportText.trim() || reportSending"
-                            style="
-                                padding: 5px 14px;
-                                border-radius: 99px;
-                                border: none;
-                                background: #e05555;
-                                color: white;
-                                font-size: 11px;
-                                font-weight: 700;
-                                cursor: pointer;
-                            "
-                            :style="{ opacity: !reportText.trim() || reportSending ? 0.5 : 1 }"
-                        >
-                            {{ reportSending ? 'A enviar...' : 'Enviar' }}
-                        </button>
-                    </div>
-                </div>
+                    v-model:text="reportText"
+                    :sending="reportSending"
+                    @submit="submitReport"
+                    @cancel="handleReportCancel"
+                />
             </div>
         </div>
 

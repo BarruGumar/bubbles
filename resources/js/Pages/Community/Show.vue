@@ -1,15 +1,16 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { useForm } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ImageCropper from '@/Components/ImageCropper.vue';
 import PostCard from '@/Components/PostCard.vue';
 import PostCardSkeleton from '@/Components/PostCardSkeleton.vue';
 import CommunityHeader from '@/Components/CommunityHeader.vue';
+import CommunityMemberAvatars from '@/Components/CommunityMemberAvatars.vue';
+import CommunityGuidelines from '@/Components/CommunityGuidelines.vue';
 import CommunityPostComposer from '@/Components/CommunityPostComposer.vue';
 import CommunitySettingsModal from '@/Components/CommunitySettingsModal.vue';
-import { clImg } from '@/Composables/useCloudinary';
 
 const props = defineProps({
     community: Object,
@@ -118,10 +119,6 @@ onUnmounted(() => {
 
 // ── Settings modal ────────────────────────────────────────────────
 const showEdit = ref(false);
-
-function formatInitial(name) {
-    return (name ?? '?')[0].toUpperCase();
-}
 </script>
 
 <template>
@@ -140,128 +137,16 @@ function formatInitial(name) {
             />
 
             <!-- Member avatars -->
-            <div
+            <CommunityMemberAvatars
                 v-if="community.member_avatars && community.member_avatars.length"
-                style="
-                    background: rgba(255, 255, 255, 0.88);
-                    backdrop-filter: blur(20px);
-                    border-radius: 16px;
-                    border: 1px solid #4ebcff1a;
-                    box-shadow: 0 2px 12px #009ac708;
-                    padding: 16px 22px;
-                    margin-bottom: 16px;
-                "
-            >
-                <p
-                    style="
-                        font-size: 10px;
-                        font-weight: 800;
-                        color: #8ba0b0;
-                        text-transform: uppercase;
-                        letter-spacing: 0.1em;
-                        margin: 0 0 12px;
-                    "
-                >
-                    Membros
-                </p>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap">
-                    <component
-                        :is="member.username ? Link : 'div'"
-                        v-for="member in community.member_avatars"
-                        :key="member.username ?? member.name"
-                        :href="member.username ? route('profile.show', member.username) : undefined"
-                        style="
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            gap: 5px;
-                            text-decoration: none;
-                        "
-                        :title="member.name"
-                    >
-                        <img
-                            v-if="member.avatar"
-                            :src="clImg(member.avatar, 80, 80, 'fill', 'face')"
-                            loading="lazy"
-                            :style="{
-                                width: '38px',
-                                height: '38px',
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                                border: `2px solid ${member.avatar_color}`,
-                                boxShadow: `0 2px 8px ${member.avatar_color}44`,
-                                transition: 'transform .2s',
-                            }"
-                            @mouseenter="$event.target.style.transform = 'scale(1.08)'"
-                            @mouseleave="$event.target.style.transform = 'scale(1)'"
-                        />
-                        <div
-                            v-else
-                            :style="{
-                                width: '38px',
-                                height: '38px',
-                                borderRadius: '50%',
-                                background: member.avatar_color,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '15px',
-                                fontWeight: '800',
-                                color: 'white',
-                                boxShadow: `0 2px 8px ${member.avatar_color}44`,
-                                transition: 'transform .2s',
-                            }"
-                            @mouseenter="$event.currentTarget.style.transform = 'scale(1.08)'"
-                            @mouseleave="$event.currentTarget.style.transform = 'scale(1)'"
-                        >
-                            {{ formatInitial(member.name) }}
-                        </div>
-                        <span
-                            style="
-                                font-size: 10px;
-                                color: #8ba0b0;
-                                font-weight: 600;
-                                max-width: 48px;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
-                                white-space: nowrap;
-                            "
-                        >
-                            {{ member.username ? '@' + member.username : member.name }}
-                        </span>
-                    </component>
-                </div>
-            </div>
+                :members="community.member_avatars"
+            />
 
             <!-- Community guidelines -->
-            <div
+            <CommunityGuidelines
                 v-if="community.guidelines && community.guidelines.length"
-                style="
-                    background: rgba(255, 255, 255, 0.88);
-                    backdrop-filter: blur(20px);
-                    border-radius: 16px;
-                    border: 1px solid #4ebcff1a;
-                    box-shadow: 0 2px 12px #009ac708;
-                    padding: 18px 22px;
-                    margin-bottom: 16px;
-                "
-            >
-                <p
-                    style="
-                        font-size: 10px;
-                        font-weight: 800;
-                        color: #8ba0b0;
-                        text-transform: uppercase;
-                        letter-spacing: 0.1em;
-                        margin: 0 0 10px;
-                    "
-                >
-                    Regras
-                </p>
-                <ol style="margin: 0; padding-left: 18px; color: #2a4a5a; font-size: 13px; line-height: 1.8">
-                    <li v-for="(rule, i) in community.guidelines" :key="i">{{ rule }}</li>
-                </ol>
-            </div>
+                :guidelines="community.guidelines"
+            />
 
             <!-- Post composer -->
             <CommunityPostComposer v-if="authUser" :auth-user="authUser" :community="community" />
@@ -344,19 +229,3 @@ function formatInitial(name) {
         />
     </Teleport>
 </template>
-
-<style scoped>
-/* Badge "Criador" nos posts */
-.creator-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 1px 7px;
-    border-radius: 99px;
-    border: 1px solid;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    vertical-align: middle;
-}
-</style>
