@@ -30,7 +30,7 @@ class LikeController extends Controller
         $liked = $this->toggle($post);
 
         if ($liked && $post->user_id !== auth()->id()) {
-            $post->user->notify(new PostLiked(auth()->user(), $post->id, 'community_post'));
+            $post->user->notify(new PostLiked(auth()->user(), $post->id, 'community_post', $post->bubble_id));
         }
 
         return $this->postResponse();

@@ -50,8 +50,21 @@ function handleGlobalKey(e) {
     }
 }
 
-onMounted(() => window.addEventListener('keydown', handleGlobalKey))
-onUnmounted(() => window.removeEventListener('keydown', handleGlobalKey))
+let pollTimer = null
+
+onMounted(() => {
+    window.addEventListener('keydown', handleGlobalKey)
+    if (page.props.auth?.user) {
+        pollTimer = setInterval(() => {
+            router.reload({ only: ['auth'], preserveScroll: true, preserveState: true })
+        }, 30000)
+    }
+})
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleGlobalKey)
+    clearInterval(pollTimer)
+})
 </script>
 
 <template>

@@ -14,6 +14,7 @@ class PostLiked extends Notification
         private User   $liker,
         private int    $postId,
         private string $postType = 'post',
+        private ?int   $bubbleId = null,
     ) {}
 
     public function via(object $notifiable): array
@@ -33,7 +34,9 @@ class PostLiked extends Notification
             'liker_color'     => $this->liker->avatar_color ?? '#009ac7',
             'post_id'         => $this->postId,
             'post_type'       => $this->postType,
-            'url'             => "/u/{$notifiable->username}",
+            'url'             => $this->postType === 'community_post' && $this->bubbleId
+                ? "/c/{$this->bubbleId}"
+                : "/u/{$notifiable->username}",
         ];
     }
 }

@@ -15,6 +15,7 @@ class PostCommented extends Notification
         private int    $postId,
         private string $excerpt,
         private string $postType = 'post',
+        private ?int   $bubbleId = null,
     ) {}
 
     public function via(object $notifiable): array
@@ -35,7 +36,9 @@ class PostCommented extends Notification
             'post_id'              => $this->postId,
             'post_type'            => $this->postType,
             'comment_excerpt'      => mb_strimwidth($this->excerpt, 0, 80, '…'),
-            'url'                  => "/u/{$notifiable->username}",
+            'url'                  => $this->postType === 'community_post' && $this->bubbleId
+                ? "/c/{$this->bubbleId}"
+                : "/u/{$notifiable->username}",
         ];
     }
 }

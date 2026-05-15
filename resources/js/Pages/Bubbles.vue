@@ -27,8 +27,9 @@ const { show: toast } = useToast()
 
 const page           = usePage()
 const authUser       = computed(() => page.props.auth?.user)
-const pendingFriends = computed(() => page.props.auth?.pending_friends_count ?? 0)
-const unreadMessages = computed(() => page.props.auth?.unread_messages_count ?? 0)
+const pendingFriends      = computed(() => page.props.auth?.pending_friends_count      ?? 0)
+const unreadMessages      = computed(() => page.props.auth?.unread_messages_count      ?? 0)
+const unreadNotifications = computed(() => page.props.auth?.unread_notifications_count ?? 0)
 
 const feedOpen = ref(false)
 
@@ -149,6 +150,8 @@ function onVisibilityChange() {
   document.hidden ? stopLoop() : startLoop()
 }
 
+let pollTimer = null
+
 onMounted(() => {
   load()
   loadConnections()
@@ -160,6 +163,11 @@ onMounted(() => {
   window.addEventListener('touchend',     onWindowTouchEnd)
   document.addEventListener('visibilitychange', onVisibilityChange)
   startLoop()
+  if (authUser.value) {
+    pollTimer = setInterval(() => {
+      router.reload({ only: ['auth'], preserveScroll: true, preserveState: true })
+    }, 30000)
+  }
 })
 
 onUnmounted(() => {
@@ -170,6 +178,7 @@ onUnmounted(() => {
   window.removeEventListener('touchend',     onWindowTouchEnd)
   document.removeEventListener('visibilitychange', onVisibilityChange)
   stopLoop()
+  clearInterval(pollTimer)
 })
 
 async function handleCreate(data) {
@@ -310,12 +319,15 @@ const trendsOpen = ref(window.innerWidth >= 640)
         </Link>
 
         <!-- Notificações -->
-        <button
+        <Link
+          v-if="authUser"
+          :href="route('notifications.index')"
           :style="{
-            width: '36px', height: '36px', borderRadius: '10px', border: 'none',
-            background: 'transparent', color: '#5a7a8a', cursor: 'pointer',
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'transparent', color: '#5a7a8a',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background .15s',
+            transition: 'background .15s', textDecoration: 'none',
+            position: 'relative',
           }"
           @mouseenter="$event.currentTarget.style.background='#009ac714'"
           @mouseleave="$event.currentTarget.style.background='transparent'"
@@ -325,7 +337,11 @@ const trendsOpen = ref(window.innerWidth >= 640)
             <path d="M9 1.5A4.5 4.5 0 004.5 6v3.5L3 11.5h12l-1.5-2V6A4.5 4.5 0 009 1.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M7.5 12a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
           </svg>
-        </button>
+          <span
+            v-if="unreadNotifications > 0"
+            style="position: absolute; top: 4px; right: 4px; min-width: 14px; height: 14px; padding: 0 3px; background: #c74a6b; color: white; border-radius: 99px; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; line-height: 1;"
+          >{{ unreadNotifications > 9 ? '9+' : unreadNotifications }}</span>
+        </Link>
 
 
         <!-- Amigos -->

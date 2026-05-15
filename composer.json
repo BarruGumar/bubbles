@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "bubbles/app",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Bubbles — a community-driven social platform built with Laravel, Inertia.js, and Vue 3.",
+    "keywords": ["social", "community", "bubbles", "laravel", "inertia", "vue"],
     "license": "MIT",
     "require": {
         "php": "^8.2",

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreMessageRequest;
 use App\Models\Conversation;
 use App\Models\Friend;
+use App\Models\Message;
 use App\Notifications\MessageReceived;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
@@ -173,6 +174,26 @@ class ConversationController extends Controller
         return response()->json(['messages' => $messages]);
     }
 
+    public function updateMessage(Request $request, Message $message): JsonResponse
+    {
+        abort_unless($message->user_id === auth()->id(), 403);
+        $request->validate(['content' => 'required|string|max:2000']);
+        $message->update(['content' => $request->input('content')]);
+        return response()->json($this->formatMessage($message->fresh()->load('user')));
+    }
+
+    public function destroyMessage(Message $message): JsonResponse
+    {
+        abort_unless($message->user_id === auth()->id(), 403);
+        $conv = $message->conversation;
+        $isLast = $conv->last_message_id === $message->id;
+        $message->delete();
+        if ($isLast) {
+            $conv->update(['last_message_id' => $conv->messages()->latest()->value('id')]);
+        }
+        return response()->json(['ok' => true]);
+    }
+
     private function formatMessage($m): array
     {
         return [
@@ -180,6 +201,7 @@ class ConversationController extends Controller
             'content'    => $m->content,
             'image_url'  => $m->image_url,
             'created_at' => $m->created_at->toISOString(),
+            'is_edited'  => $m->updated_at->gt($m->created_at->addSecond()),
             'is_own'     => $m->user_id === auth()->id(),
             'author'     => [
                 'id'           => $m->user->id,

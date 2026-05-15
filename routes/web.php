@@ -84,6 +84,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::post('/conversations', [ConversationController::class, 'store'])->name('conversations.store');
     Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'storeMessage'])->middleware('throttle:messages')->name('messages.store');
+    Route::patch('/messages/{message}', [ConversationController::class, 'updateMessage'])->name('messages.update');
+    Route::delete('/messages/{message}', [ConversationController::class, 'destroyMessage'])->name('messages.destroy');
     Route::get('/conversations/{conversation}/poll', [ConversationController::class, 'poll'])->name('conversations.poll');
 
     // Friends

@@ -48,7 +48,8 @@ class CommentController extends Controller
                 auth()->user(),
                 $post->id,
                 $request->input('content'),
-                'community_post'
+                'community_post',
+                $post->bubble_id
             ));
         }
 

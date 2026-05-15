@@ -226,6 +226,56 @@ function handleKeydown(e) {
     }
 }
 
+// ── Edit & delete ─────────────────────────────────────────────
+const editingId       = ref(null)
+const editContent     = ref('')
+const confirmDeleteId = ref(null)
+const actionLoading   = ref(false)
+
+function startEdit(msg) {
+    editingId.value       = msg.id
+    editContent.value     = msg.content ?? ''
+    confirmDeleteId.value = null
+    nextTick(() => document.getElementById(`edit-${msg.id}`)?.focus())
+}
+
+function cancelEdit() {
+    editingId.value   = null
+    editContent.value = ''
+}
+
+async function saveEdit(msg) {
+    if (!editContent.value.trim() || actionLoading.value) return
+    actionLoading.value = true
+    try {
+        const res = await axios.patch(route('messages.update', msg.id), { content: editContent.value.trim() })
+        localMessages.value = localMessages.value.map(m =>
+            m.id === msg.id ? { ...m, content: res.data.content, is_edited: res.data.is_edited } : m
+        )
+        cancelEdit()
+    } catch { /* silent */ }
+    finally { actionLoading.value = false }
+}
+
+function startDelete(id) {
+    confirmDeleteId.value = id
+    editingId.value       = null
+    editContent.value     = ''
+}
+
+function cancelDelete() { confirmDeleteId.value = null }
+
+async function confirmDelete(id) {
+    if (actionLoading.value) return
+    actionLoading.value = true
+    try {
+        await axios.delete(route('messages.destroy', id))
+        localMessages.value   = localMessages.value.filter(m => m.id !== id)
+        confirmDeleteId.value = null
+    } catch { /* silent */ }
+    finally { actionLoading.value = false }
+}
+
 // ── Sidebar / compose ─────────────────────────────────────────
 const totalUnread = computed(() =>
     props.conversations.reduce((s, c) => s + (c.unread_count ?? 0), 0)
@@ -459,32 +509,100 @@ watch(() => props.messages, (msgs) => {
                                 <div style="flex: 1; height: 1px; background: linear-gradient(to left, transparent, #009ac714);"></div>
                             </div>
 
-                            <div v-else style="display: flex; flex-direction: column;" :style="{ alignItems: item.is_own ? 'flex-end' : 'flex-start' }">
+                            <div
+                                v-else
+                                class="msg-group"
+                                style="display: flex; flex-direction: column;"
+                                :style="{ alignItems: item.is_own ? 'flex-end' : 'flex-start' }"
+                            >
+                                <!-- Action buttons (own messages, shown on hover) -->
                                 <div
-                                    style="max-width: 68%; border-radius: 18px; font-size: 13.5px; line-height: 1.5; word-break: break-word; transition: transform .1s;"
-                                    :style="item.is_own
-                                        ? {
-                                            background: item.image_url && !item.content ? 'transparent' : `linear-gradient(135deg, ${authUser?.avatar_color ?? '#009ac7'}, ${authUser?.avatar_color ?? '#009ac7'}cc)`,
-                                            color: 'white',
-                                            borderBottomRightRadius: '5px',
-                                            boxShadow: item.image_url && !item.content ? 'none' : `0 4px 16px ${authUser?.avatar_color ?? '#009ac7'}44`,
-                                            padding: item.image_url ? '0' : '10px 14px',
-                                          }
-                                        : {
-                                            background: item.image_url && !item.content ? 'transparent' : 'rgba(255,255,255,0.78)',
-                                            backdropFilter: item.image_url && !item.content ? 'none' : 'blur(12px)',
-                                            color: '#1a3a4a',
-                                            borderBottomLeftRadius: '5px',
-                                            border: item.image_url && !item.content ? 'none' : '1px solid #009ac714',
-                                            boxShadow: item.image_url && !item.content ? 'none' : '0 2px 8px #009ac70a',
-                                            padding: item.image_url ? '0' : '10px 14px',
-                                          }
+                                    v-if="item.is_own && confirmDeleteId !== item.id && editingId !== item.id"
+                                    class="msg-actions"
+                                    style="display: flex; gap: 4px; margin-bottom: 3px;"
+                                >
+                                    <button
+                                        v-if="item.content"
+                                        @click.stop="startEdit(item)"
+                                        style="width: 24px; height: 24px; border-radius: 6px; border: none; background: rgba(255,255,255,0.85); color: #8ba0b0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; backdrop-filter: blur(8px); box-shadow: 0 1px 4px #0002;"
+                                        @mouseenter="$event.currentTarget.style.background='rgba(0,154,199,0.12)'; $event.currentTarget.style.color='#009ac7'"
+                                        @mouseleave="$event.currentTarget.style.background='rgba(255,255,255,0.85)'; $event.currentTarget.style.color='#8ba0b0'"
+                                        title="Editar"
+                                    >
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </button>
+                                    <button
+                                        @click.stop="startDelete(item.id)"
+                                        style="width: 24px; height: 24px; border-radius: 6px; border: none; background: rgba(255,255,255,0.85); color: #8ba0b0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; backdrop-filter: blur(8px); box-shadow: 0 1px 4px #0002;"
+                                        @mouseenter="$event.currentTarget.style.background='rgba(224,85,85,0.10)'; $event.currentTarget.style.color='#e05555'"
+                                        @mouseleave="$event.currentTarget.style.background='rgba(255,255,255,0.85)'; $event.currentTarget.style.color='#8ba0b0'"
+                                        title="Eliminar"
+                                    >
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                    </button>
+                                </div>
+
+                                <!-- Delete confirmation -->
+                                <div
+                                    v-if="confirmDeleteId === item.id"
+                                    style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; background: rgba(255,255,255,0.95); border: 1px solid #e0555533; border-radius: 10px; padding: 6px 10px; backdrop-filter: blur(8px); box-shadow: 0 2px 10px #e055550a;"
+                                >
+                                    <span style="font-size: 11px; color: #5a7a8a; font-weight: 600;">Eliminar mensagem?</span>
+                                    <button @click="confirmDelete(item.id)" :disabled="actionLoading" style="padding: 3px 10px; border-radius: 99px; border: none; background: #e05555; color: white; font-size: 11px; font-weight: 700; cursor: pointer;" :style="{ opacity: actionLoading ? 0.6 : 1 }">Sim</button>
+                                    <button @click="cancelDelete" style="padding: 3px 10px; border-radius: 99px; border: 1.5px solid #009ac744; background: transparent; color: #009ac7; font-size: 11px; font-weight: 700; cursor: pointer;">Não</button>
+                                </div>
+
+                                <!-- Message bubble -->
+                                <div
+                                    style="max-width: 68%; border-radius: 18px; font-size: 13.5px; line-height: 1.5; word-break: break-word;"
+                                    :style="editingId === item.id
+                                        ? { background: 'rgba(255,255,255,0.97)', border: '1.5px solid #009ac744', backdropFilter: 'blur(12px)', boxShadow: '0 4px 20px #009ac71a', padding: '2px', minWidth: '220px' }
+                                        : item.is_own
+                                            ? {
+                                                background: item.image_url && !item.content ? 'transparent' : `linear-gradient(135deg, ${authUser?.avatar_color ?? '#009ac7'}, ${authUser?.avatar_color ?? '#009ac7'}cc)`,
+                                                color: 'white',
+                                                borderBottomRightRadius: '5px',
+                                                boxShadow: item.image_url && !item.content ? 'none' : `0 4px 16px ${authUser?.avatar_color ?? '#009ac7'}44`,
+                                                padding: item.image_url ? '0' : '10px 14px',
+                                              }
+                                            : {
+                                                background: item.image_url && !item.content ? 'transparent' : 'rgba(255,255,255,0.78)',
+                                                backdropFilter: item.image_url && !item.content ? 'none' : 'blur(12px)',
+                                                color: '#1a3a4a',
+                                                borderBottomLeftRadius: '5px',
+                                                border: item.image_url && !item.content ? 'none' : '1px solid #009ac714',
+                                                boxShadow: item.image_url && !item.content ? 'none' : '0 2px 8px #009ac70a',
+                                                padding: item.image_url ? '0' : '10px 14px',
+                                              }
                                     "
                                 >
-                                    <img v-if="item.image_url" :src="clImg(item.image_url, 520, 0, 'limit')" loading="lazy" style="display: block; max-width: 260px; max-height: 320px; border-radius: 14px; width: 100%;" />
-                                    <span v-if="item.content" :style="item.image_url ? { display: 'block', padding: '8px 14px 10px' } : {}">{{ item.content }}</span>
+                                    <!-- Edit mode -->
+                                    <template v-if="editingId === item.id">
+                                        <textarea
+                                            :id="`edit-${item.id}`"
+                                            v-model="editContent"
+                                            rows="1"
+                                            @keydown.enter.exact.prevent="saveEdit(item)"
+                                            @keydown.esc="cancelEdit"
+                                            @input="$event.target.style.height='auto'; $event.target.style.height=Math.min($event.target.scrollHeight, 120)+'px'"
+                                            style="width: 100%; resize: none; border: none; border-radius: 14px; padding: 10px 14px; font-size: 13.5px; font-family: inherit; background: transparent; color: #1a3a4a; outline: none; line-height: 1.5; box-sizing: border-box; display: block;"
+                                        />
+                                        <div style="display: flex; gap: 6px; justify-content: flex-end; padding: 0 6px 6px;">
+                                            <button @click="cancelEdit" style="padding: 4px 12px; border-radius: 99px; border: 1.5px solid #009ac744; background: transparent; color: #009ac7; font-size: 11px; font-weight: 700; cursor: pointer;">Cancelar</button>
+                                            <button @click="saveEdit(item)" :disabled="!editContent.trim() || actionLoading" style="padding: 4px 12px; border-radius: 99px; border: none; background: #009ac7; color: white; font-size: 11px; font-weight: 700; cursor: pointer;" :style="{ opacity: (!editContent.trim() || actionLoading) ? 0.6 : 1 }">Guardar</button>
+                                        </div>
+                                    </template>
+                                    <!-- Normal display -->
+                                    <template v-else>
+                                        <img v-if="item.image_url" :src="clImg(item.image_url, 520, 0, 'limit')" loading="lazy" style="display: block; max-width: 260px; max-height: 320px; border-radius: 14px; width: 100%;" />
+                                        <span v-if="item.content" :style="item.image_url ? { display: 'block', padding: '8px 14px 10px' } : {}">{{ item.content }}</span>
+                                    </template>
                                 </div>
-                                <span style="font-size: 10px; color: #b0c0cc; margin-top: 3px; padding: 0 3px;">{{ formatTime(item.created_at) }}</span>
+
+                                <span style="font-size: 10px; color: #b0c0cc; margin-top: 3px; padding: 0 3px;">
+                                    {{ formatTime(item.created_at) }}
+                                    <span v-if="item.is_edited" style="font-style: italic; opacity: .7;">· editado</span>
+                                </span>
                             </div>
                         </template>
                     </div>
@@ -581,4 +699,7 @@ div[style*="overflow-y: auto"]::-webkit-scrollbar-thumb { background: #009ac722;
 .fade-enter-from, .fade-leave-to       { opacity: 0 }
 
 @keyframes spin { to { transform: rotate(360deg) } }
+
+.msg-group .msg-actions { opacity: 0; transition: opacity .15s; }
+.msg-group:hover .msg-actions { opacity: 1; }
 </style>

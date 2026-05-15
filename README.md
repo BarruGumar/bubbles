@@ -1,59 +1,241 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Bubbles
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A community-driven social platform where users create and join **bubbles** (communities), share posts, react with likes and comments, chat privately, and manage their profiles — all in a modern, real-time-capable web app.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Feed** — chronological post feed from followed communities and friends
+- **Bubbles (Communities)** — create, join, and manage topic-based communities with custom images and banners
+- **Posts** — create text + image/video posts on profiles or inside communities; edit and delete your own
+- **Likes & Comments** — like and comment on profile posts and community posts
+- **Notifications** — in-app notification badge with real-time polling; notifications for likes, comments, and messages
+- **Private Messaging** — one-to-one conversations with message send, edit, and delete
+- **Friends** — send, accept, and reject friend requests
+- **Search** — search users and communities
+- **Profiles** — public user profiles with avatar, banner, and post history
+- **Reports** — report posts for admin review
+- **Admin Panel** — manage users, posts, communities, and reports
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Stack
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+| Layer | Technology |
+|---|---|
+| Backend | Laravel 12 (PHP 8.2+) |
+| Frontend | Vue 3 (Composition API) |
+| Bridge | Inertia.js v2 |
+| Styling | Tailwind CSS v3 |
+| Build | Vite 7 |
+| Image/Video CDN | Cloudinary |
+| Database | MySQL |
+| Queue | Laravel Database Queue |
+| Auth | Laravel Breeze (session) |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Prerequisites
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- PHP 8.2 or higher (with extensions: `pdo_mysql`, `mbstring`, `xml`, `curl`, `gd`)
+- Composer 2
+- Node.js 18+ and npm
+- MySQL 8 (or MariaDB 10.6+)
+- A free [Cloudinary](https://cloudinary.com) account (for image and video uploads)
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Local Installation
 
-## Contributing
+### 1. Clone the repository
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+git clone <repo-url> bubbles
+cd bubbles
+```
 
-## Code of Conduct
+### 2. Install PHP dependencies
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer install
+```
 
-## Security Vulnerabilities
+### 3. Install Node dependencies
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+npm install
+```
+
+### 4. Set up environment
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+Then fill in the required `.env` values (see section below).
+
+### 5. Create the database
+
+Create a MySQL database named `bubbles` (or whatever you set in `DB_DATABASE`):
+
+```sql
+CREATE DATABASE bubbles CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+### 6. Run migrations
+
+```bash
+php artisan migrate
+```
+
+### 7. Build frontend assets
+
+```bash
+npm run build
+```
+
+### 8. Start the dev server
+
+```bash
+composer run dev
+```
+
+This runs Laravel, the queue worker, the log viewer (Pail), and Vite concurrently.
+
+---
+
+## Environment Configuration
+
+Copy `.env.example` to `.env` and set at minimum:
+
+```env
+APP_NAME=Bubbles
+APP_URL=http://localhost
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=bubbles
+DB_USERNAME=root
+DB_PASSWORD=
+
+QUEUE_CONNECTION=database
+
+# Cloudinary — required for image and video uploads
+CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
+CLOUDINARY_CLOUD_NAME=<cloud_name>
+CLOUDINARY_API_KEY=<api_key>
+CLOUDINARY_API_SECRET=<api_secret>
+```
+
+All other variables (mail, Redis, AWS) are optional for local development and default to safe no-op values.
+
+---
+
+## Running the Application
+
+### Development (all services at once)
+
+```bash
+composer run dev
+```
+
+Starts:
+- `php artisan serve` — Laravel HTTP server
+- `php artisan queue:listen` — processes queued jobs (notifications, etc.)
+- `php artisan pail` — real-time log viewer
+- `npm run dev` — Vite HMR dev server
+
+### Individual services
+
+```bash
+# Backend only
+php artisan serve
+
+# Queue worker
+php artisan queue:listen --tries=1 --timeout=0
+
+# Real-time logs
+php artisan pail --timeout=0
+
+# Vite dev server
+npm run dev
+```
+
+---
+
+## Running Tests
+
+```bash
+composer run test
+```
+
+Or directly:
+
+```bash
+php artisan test
+```
+
+---
+
+## Production Build
+
+Build and optimise all frontend assets:
+
+```bash
+npm run build
+```
+
+Optimise Laravel for production:
+
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan optimize
+```
+
+Make sure `APP_ENV=production` and `APP_DEBUG=false` are set in `.env`.
+
+---
+
+## Cloudinary Notes
+
+Bubbles uses Cloudinary for all media uploads (avatars, banners, post images, and videos). Without valid Cloudinary credentials, image and video uploads will fail silently or throw errors.
+
+1. Create a free account at [cloudinary.com](https://cloudinary.com).
+2. Copy your **Cloud Name**, **API Key**, and **API Secret** from the Cloudinary dashboard.
+3. Paste them into the four `CLOUDINARY_*` variables in `.env`.
+
+The integration uses the [`cloudinary-labs/cloudinary-laravel`](https://github.com/cloudinary-labs/cloudinary-laravel) package.
+
+---
+
+## Quick Setup Script
+
+The `composer setup` script performs a full bootstrap from scratch:
+
+```bash
+composer run setup
+```
+
+This runs: `composer install` → copy `.env` → `key:generate` → `migrate` → `npm install` → `npm run build`.
+
+---
+
+## Roadmap
+
+- [ ] WebSocket-based real-time messaging (replace polling)
+- [ ] Post scheduling
+- [ ] Hashtags and tag-based discovery
+- [ ] Email notifications
+- [ ] Mobile-responsive improvements
+- [ ] Story / ephemeral posts
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT
