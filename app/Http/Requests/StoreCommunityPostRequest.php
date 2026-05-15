@@ -8,7 +8,13 @@ class StoreCommunityPostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check();
+        if (! auth()->check()) {
+            return false;
+        }
+
+        $bubble = \App\Models\Bubble::find($this->route('id'));
+
+        return $bubble && $bubble->memberships()->where('user_id', auth()->id())->exists();
     }
 
     public function rules(): array

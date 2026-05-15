@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { clImg } from '@/Composables/useCloudinary'
 
 const props = defineProps({
   connections:       { type: Array, required: true },
@@ -92,13 +93,35 @@ function balloonTextX(angle, msg) {
         style="pointer-events: auto; cursor: default;"
       >
         <title v-if="c.friends?.length">{{ c.friends.map(f => f.name).join(', ') }}</title>
-        <circle r="12" fill="white" stroke="#9b6bdf" stroke-width="1.4" opacity="0.95" />
+        <!-- Borda branca -->
+        <circle r="13" fill="white" stroke="#9b6bdf" stroke-width="1.6" opacity="0.97" />
+        <!-- Inicial colorida como base (fallback sempre visível) -->
+        <circle r="12" :fill="c.friends?.[0]?.avatar_color ?? '#9b6bdf'" />
         <text
           text-anchor="middle" dominant-baseline="central"
           font-size="9" font-weight="800"
           font-family="Segoe UI, system-ui, sans-serif"
-          fill="#9b6bdf"
+          fill="white"
         >{{ badgeLabel(c.friends) }}</text>
+        <!-- Foto por cima via foreignObject -->
+        <foreignObject v-if="c.friends?.[0]?.avatar" x="-12" y="-12" width="24" height="24">
+          <img
+            xmlns="http://www.w3.org/1999/xhtml"
+            :src="clImg(c.friends[0].avatar, 48, 48, 'fill', 'face')"
+            style="width:24px;height:24px;border-radius:50%;object-fit:cover;display:block;"
+            @error="$event.target.style.display='none'"
+          />
+        </foreignObject>
+        <!-- Badge de contagem se houver mais de 1 amigo -->
+        <g v-if="c.friends?.length > 1" transform="translate(8, -8)">
+          <circle r="6" fill="#9b6bdf" stroke="white" stroke-width="1.2" />
+          <text
+            text-anchor="middle" dominant-baseline="central"
+            font-size="7" font-weight="800"
+            font-family="Segoe UI, system-ui, sans-serif"
+            fill="white"
+          >+{{ c.friends.length - 1 }}</text>
+        </g>
       </g>
     </g>
 
