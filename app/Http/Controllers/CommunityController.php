@@ -31,7 +31,7 @@ class CommunityController extends Controller
             ->with([
                 'user',
                 'likes' => fn ($q) => $q->where('user_id', $userId ?? 0),
-                'comments' => fn ($q) => $q->with('user')->orderBy('created_at'),
+                'comments' => fn ($q) => $q->with('user')->orderBy('created_at')->limit(5),
             ])
             ->latest()
             ->cursorPaginate(12);
@@ -103,6 +103,7 @@ class CommunityController extends Controller
                 ],
                 'members' => $bubble->memberships_count,
                 'posts_count' => $bubble->communityPosts()->count(),
+                'recent_posts_count' => $bubble->communityPosts()->where('created_at', '>=', now()->subDays(7))->count(),
                 'member_avatars' => $memberAvatars,
                 'creator' => $creator ? [
                     'id' => $creator->id,

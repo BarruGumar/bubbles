@@ -197,8 +197,6 @@ function onVisibilityChange() {
     document.hidden ? stopLoop() : startLoop();
 }
 
-let pollTimer = null;
-
 onMounted(() => {
     load();
     loadConnections();
@@ -210,11 +208,7 @@ onMounted(() => {
     window.addEventListener('touchend', onWindowTouchEnd);
     document.addEventListener('visibilitychange', onVisibilityChange);
     startLoop();
-    if (authUser.value) {
-        pollTimer = setInterval(() => {
-            router.reload({ only: ['auth'], preserveScroll: true, preserveState: true });
-        }, 30000);
-    }
+    // auth polling handled by AuthenticatedLayout
 });
 
 onUnmounted(() => {
@@ -225,7 +219,6 @@ onUnmounted(() => {
     window.removeEventListener('touchend', onWindowTouchEnd);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     stopLoop();
-    clearInterval(pollTimer);
 });
 
 async function handleCreate(data) {

@@ -13,7 +13,13 @@ const props = defineProps({
 });
 const emit = defineEmits(['open-edit']);
 
-const activityPct = computed(() => Math.min(100, Math.round((props.community.posts_count / 20) * 100)));
+const activityLevel = computed(() => {
+    const n = props.community.recent_posts_count ?? 0;
+    if (n === 0) return { pct: 0,  label: 'Inativa',        color: '#b0c0cc' };
+    if (n <= 2)  return { pct: 33, label: 'Com atividade',  color: props.community.color };
+    if (n <= 5)  return { pct: 66, label: 'Ativa',          color: props.community.color };
+    return             { pct: 100, label: 'Muito ativa',    color: props.community.color };
+});
 
 function joinCommunity() {
     router.post(route('community.join', props.community.id), {}, { preserveScroll: true });
@@ -300,7 +306,7 @@ function leaveCommunity() {
 
             <!-- Activity bar -->
             <div style="margin-top: 18px">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px">
                     <span
                         style="
                             font-size: 10px;
@@ -309,18 +315,25 @@ function leaveCommunity() {
                             text-transform: uppercase;
                             letter-spacing: 0.08em;
                         "
-                        >Atividade</span
+                        >Atividade esta semana</span
                     >
-                    <span style="font-size: 10px; color: #b0c0cc">{{ activityPct }}%</span>
+                    <span
+                        :style="{
+                            fontSize: '10px',
+                            fontWeight: '700',
+                            color: activityLevel.color,
+                        }"
+                        >{{ activityLevel.label }}</span
+                    >
                 </div>
                 <div style="height: 4px; background: #e8f4fb; border-radius: 99px; overflow: hidden">
                     <div
                         :style="{
                             height: '100%',
                             borderRadius: '99px',
-                            background: community.color,
-                            width: `${Math.max(activityPct, community.posts_count ? 4 : 0)}%`,
-                            transition: 'width .5s ease',
+                            background: activityLevel.color,
+                            width: activityLevel.pct > 0 ? `${activityLevel.pct}%` : '0%',
+                            transition: 'width .6s ease',
                         }"
                     />
                 </div>

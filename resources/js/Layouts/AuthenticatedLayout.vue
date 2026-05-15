@@ -65,7 +65,7 @@ onMounted(() => {
     if (page.props.auth?.user) {
         pollTimer = setInterval(() => {
             router.reload({ only: ['auth'], preserveScroll: true, preserveState: true });
-        }, 30000);
+        }, 60000);
     }
 });
 

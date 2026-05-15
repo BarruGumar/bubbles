@@ -162,7 +162,7 @@ async function poll() {
 
 function startPolling() {
     if (pollInterval) return;
-    pollInterval = setInterval(poll, 12_000);
+    pollInterval = setInterval(poll, 20_000);
 }
 
 function stopPolling() {

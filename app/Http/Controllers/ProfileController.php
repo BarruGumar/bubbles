@@ -29,7 +29,7 @@ class ProfileController extends Controller
             ->withCount('likes')
             ->with([
                 'likes' => fn ($q) => $q->where('user_id', $userId ?? 0),
-                'comments' => fn ($q) => $q->with('user')->orderBy('created_at'),
+                'comments' => fn ($q) => $q->with('user')->orderBy('created_at')->limit(5),
             ])
             ->latest()
             ->cursorPaginate(12);

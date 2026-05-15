@@ -27,11 +27,12 @@ class FeedController extends Controller
         $user = $request->user();
         $authId = $user->id;
 
-        $friendIds = Friend::where(function ($q) use ($authId) {
-            $q->where('user_id', $authId)->orWhere('friend_id', $authId);
-        })->where('status', 'accepted')->get()->map(
-            fn ($f) => $f->user_id === $authId ? $f->friend_id : $f->user_id
-        )->toArray();
+        $friendIds = Friend::where('status', 'accepted')
+            ->where(fn ($q) => $q->where('user_id', $authId)->orWhere('friend_id', $authId))
+            ->select(['user_id', 'friend_id'])
+            ->get()
+            ->map(fn ($f) => $f->user_id === $authId ? $f->friend_id : $f->user_id)
+            ->toArray();
 
         $communityIds = $user->communities()->pluck('bubbles.id')
             ->merge(Bubble::where('user_id', $authId)->pluck('id'))
@@ -40,7 +41,9 @@ class FeedController extends Controller
 
         $withLikes = fn ($q) => $q->where('user_id', $authId);
 
-        $friendPosts = Post::with(['user', 'likes' => $withLikes, 'comments' => fn ($q) => $q->with('user')->orderBy('created_at')])
+        $withComments = fn ($q) => $q->with('user')->orderBy('created_at')->limit(5);
+
+        $friendPosts = Post::with(['user', 'likes' => $withLikes, 'comments' => $withComments])
             ->withCount('likes')
             ->whereIn('user_id', $friendIds)
             ->latest()
@@ -48,7 +51,7 @@ class FeedController extends Controller
             ->get()
             ->map(fn ($p) => $this->mapPost($p, $authId));
 
-        $communityPosts = CommunityPost::with(['user', 'bubble', 'likes' => $withLikes, 'comments' => fn ($q) => $q->with('user')->orderBy('created_at')])
+        $communityPosts = CommunityPost::with(['user', 'bubble', 'likes' => $withLikes, 'comments' => $withComments])
             ->withCount('likes')
             ->whereIn('bubble_id', $communityIds)
             ->latest()
@@ -58,7 +61,7 @@ class FeedController extends Controller
 
         $recentPosts = collect([]);
         if ($friendPosts->isEmpty() && $communityPosts->isEmpty()) {
-            $recentPosts = Post::with(['user', 'likes' => $withLikes, 'comments' => fn ($q) => $q->with('user')->orderBy('created_at')])
+            $recentPosts = Post::with(['user', 'likes' => $withLikes, 'comments' => $withComments])
                 ->withCount('likes')
                 ->latest()
                 ->limit(10)
