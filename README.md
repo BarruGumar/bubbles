@@ -92,6 +92,10 @@ php artisan migrate
 
 ### 7. Build frontend assets
 
+> **Important:** `npm run build` depends on Ziggy, which is installed by Composer into `vendor/`.
+> Always run `composer install` (step 2) **before** `npm run build`, or the build will fail with a
+> module-not-found error.
+
 ```bash
 npm run build
 ```
