@@ -4,10 +4,10 @@ import axios from 'axios'
 const COLORS = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b']
 let _localId = -1
 
-// Tamanho dinâmico baseado no número de membros
-// 0 membros → 60px | 1 → ~67 | 25 → ~95 | 100 → ~130 | 400+ → 180 (máximo)
+// Tamanho dinâmico baseado no número de membros; reduzido em ecrãs pequenos
 function sizeFromMembers(n) {
-    return Math.round(Math.min(70 + Math.sqrt(n ?? 0) * 9, 220))
+    const base = Math.min(70 + Math.sqrt(n ?? 0) * 9, 220)
+    return Math.round(window.innerWidth < 640 ? base * 0.72 : base)
 }
 
 function makeLocal(raw) {

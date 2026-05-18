@@ -197,7 +197,9 @@ function onVisibilityChange() {
     document.hidden ? stopLoop() : startLoop();
 }
 
-onMounted(() => {
+onMounted(async () => {
+    // Refresh CSRF token before any authenticated API calls (Sanctum SPA requirement)
+    try { await axios.get('/sanctum/csrf-cookie'); } catch { /* non-fatal */ }
     load();
     loadConnections();
     loadFriendConnections();
@@ -232,6 +234,8 @@ async function handleCreate(data) {
     showAdd.value = false;
     if (newBubble?.persisted) {
         router.visit(route('community.show', newBubble.id));
+    } else if (newBubble === null) {
+        toast('Não foi possível criar a bolha. Tenta novamente.', 'error');
     }
 }
 
@@ -240,6 +244,7 @@ const selectedBubble = computed(() => bubbles.value.find((b) => b.selected) ?? n
 const trends = computed(() => [...bubbles.value].sort((a, b) => b.members - a.members).slice(0, 6));
 
 const trendsOpen = ref(window.innerWidth >= 640);
+const isMobile = window.innerWidth < 640;
 </script>
 
 <template>
@@ -298,19 +303,20 @@ const trendsOpen = ref(window.innerWidth >= 640);
 
         <!-- TOP BAR -->
         <div
-            class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6"
-            style="
-                background: rgba(255, 255, 255, 0.72);
-                backdrop-filter: blur(16px);
-                border-bottom: 1px solid #009ac71a;
-                height: 58px;
-            "
+            class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between"
+            :style="{
+                background: 'rgba(255,255,255,0.72)',
+                backdropFilter: 'blur(16px)',
+                borderBottom: '1px solid #009ac71a',
+                height: '58px',
+                padding: isMobile ? '0 10px' : '0 24px',
+            }"
         >
             <span style="font-weight: 900; font-size: 22px; color: #009ac7; letter-spacing: -1px; user-select: none"
                 >bubbles</span
             >
 
-            <div style="display: flex; align-items: center; gap: 4px">
+            <div :style="{ display: 'flex', alignItems: 'center', gap: isMobile ? '1px' : '4px' }">
                 <!-- Pesquisa -->
                 <button
                     @click.stop="openSearch"
@@ -579,7 +585,7 @@ const trendsOpen = ref(window.innerWidth >= 640);
 
                 <!-- Perfil -->
                 <Link
-                    v-if="authUser"
+                    v-if="authUser && !isMobile"
                     :href="authUser.username ? route('profile.show', authUser.username) : route('profile.edit')"
                     :style="{
                         width: '36px',
@@ -609,7 +615,7 @@ const trendsOpen = ref(window.innerWidth >= 640);
                 </Link>
 
                 <!-- Divisor -->
-                <div style="width: 1px; height: 20px; background: #009ac71a; margin: 0 6px" />
+                <div v-if="!isMobile" style="width: 1px; height: 20px; background: #009ac71a; margin: 0 6px" />
 
                 <!-- Avatar do utilizador → perfil -->
                 <Link
@@ -1128,10 +1134,14 @@ const trendsOpen = ref(window.innerWidth >= 640);
                 :style="{
                     position: 'absolute',
                     zIndex: 36,
-                    left: `${selectedBubble.x + selectedBubble.size / 2 - 150}px`,
-                    top: `${selectedBubble.y + selectedBubble.size / 2 - 150}px`,
-                    width: '300px',
-                    height: '300px',
+                    left: isMobile
+                        ? `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`
+                        : `${selectedBubble.x + selectedBubble.size / 2 - 150}px`,
+                    top: isMobile
+                        ? `${window.innerHeight / 2 - 140}px`
+                        : `${selectedBubble.y + selectedBubble.size / 2 - 150}px`,
+                    width: isMobile ? '260px' : '300px',
+                    height: isMobile ? '260px' : '300px',
                     borderRadius: '50%',
                     backgroundImage: selectedBubble.image
                         ? `radial-gradient(circle at 38% 32%, ${selectedBubble.color}55 0%, ${selectedBubble.color}99 100%), url(${selectedBubble.image})`
@@ -1169,8 +1179,8 @@ const trendsOpen = ref(window.innerWidth >= 640);
                     @click.stop="clearSelection"
                     :style="{
                         position: 'absolute',
-                        top: '54px',
-                        right: '54px',
+                        top: isMobile ? '44px' : '54px',
+                        right: isMobile ? '44px' : '54px',
                         background: 'rgba(255,255,255,0.22)',
                         border: 'none',
                         borderRadius: '50%',
@@ -1327,22 +1337,23 @@ const trendsOpen = ref(window.innerWidth >= 640);
 
         <!-- GLOBAL TRENDS SIDEBAR -->
         <div
-            style="
-                position: absolute;
-                right: 16px;
-                top: 70px;
-                z-index: 38;
-                width: 192px;
-                background: rgba(255, 255, 255, 0.82);
-                backdrop-filter: blur(16px);
-                border-radius: 18px;
-                border: 1px solid #4ebcff22;
-                box-shadow: 0 4px 20px #009ac70c;
-                padding: 14px 12px;
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            "
+            :style="{
+                position: 'absolute',
+                right: isMobile ? '8px' : '16px',
+                top: isMobile ? 'auto' : '70px',
+                bottom: isMobile ? '80px' : 'auto',
+                zIndex: 38,
+                width: isMobile ? '158px' : '192px',
+                background: 'rgba(255,255,255,0.88)',
+                backdropFilter: 'blur(16px)',
+                borderRadius: '18px',
+                border: '1px solid #4ebcff22',
+                boxShadow: '0 4px 20px #009ac70c',
+                padding: isMobile ? '10px 10px' : '14px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
+            }"
             @click.stop
         >
             <!-- Header — clicável em mobile para abrir/fechar -->
@@ -1464,21 +1475,21 @@ const trendsOpen = ref(window.innerWidth >= 640);
         <Transition name="slide-left">
             <div
                 v-if="feedOpen"
-                style="
-                    position: absolute;
-                    left: 16px;
-                    top: 70px;
-                    z-index: 38;
-                    width: 330px;
-                    height: calc(100vh - 86px);
-                    background: rgba(255, 255, 255, 0.88);
-                    backdrop-filter: blur(16px);
-                    border-radius: 18px;
-                    border: 1px solid #4ebcff22;
-                    box-shadow: 0 4px 20px #009ac70c;
-                    display: flex;
-                    flex-direction: column;
-                "
+                :style="{
+                    position: 'absolute',
+                    left: isMobile ? '8px' : '16px',
+                    top: '70px',
+                    zIndex: 38,
+                    width: isMobile ? 'calc(100vw - 16px)' : '330px',
+                    height: 'calc(100vh - 86px)',
+                    background: 'rgba(255,255,255,0.94)',
+                    backdropFilter: 'blur(16px)',
+                    borderRadius: '18px',
+                    border: '1px solid #4ebcff22',
+                    boxShadow: '0 4px 20px #009ac70c',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }"
                 @click.stop
                 @mousedown.stop
             >
@@ -1585,7 +1596,7 @@ const trendsOpen = ref(window.innerWidth >= 640);
                     backdrop-filter: blur(8px);
                 "
             >
-                Segura para arrastar · Clica para expandir · Esc para fechar
+                {{ isMobile ? 'Toca para expandir · Arrasta para mover' : 'Segura para arrastar · Clica para expandir · Esc para fechar' }}
             </span>
         </div>
 

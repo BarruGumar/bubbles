@@ -68,8 +68,9 @@ export function usePhysics() {
             b1.vy = (b1.vy + fy) * DAMPING
             b1.vx = Math.max(-MAX_SPD, Math.min(MAX_SPD, b1.vx))
             b1.vy = Math.max(-MAX_SPD, Math.min(MAX_SPD, b1.vy))
-            b1.x = Math.max(60, Math.min(b1.x + b1.vx, window.innerWidth - b1.size - 60))
-            b1.y = Math.max(60, Math.min(b1.y + b1.vy, window.innerHeight - b1.size - 60))
+            const pad = window.innerWidth < 640 ? 28 : 60
+            b1.x = Math.max(pad, Math.min(b1.x + b1.vx, window.innerWidth - b1.size - pad))
+            b1.y = Math.max(60, Math.min(b1.y + b1.vy, window.innerHeight - b1.size - pad))
 
             b1.activity = Math.max(0.08, Math.min(1, b1.activity + (Math.random() - 0.5) * 0.006))
             b1.spawnScale += (1 - b1.spawnScale) * 0.14

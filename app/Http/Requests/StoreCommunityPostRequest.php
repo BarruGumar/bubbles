@@ -2,20 +2,13 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Bubble;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreCommunityPostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        if (! auth()->check()) {
-            return false;
-        }
-
-        $bubble = Bubble::find($this->route('id'));
-
-        return $bubble && $bubble->memberships()->where('user_id', auth()->id())->exists();
+        return auth()->check();
     }
 
     public function rules(): array

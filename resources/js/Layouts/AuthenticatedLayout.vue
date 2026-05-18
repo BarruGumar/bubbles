@@ -28,6 +28,7 @@ const unreadNotifications = computed(() => page.props.auth?.unread_notifications
 const open = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref('');
+const isMobile = window.innerWidth < 640;
 
 function avatarInitial(name) {
     return (name ?? '?')[0].toUpperCase();
@@ -93,16 +94,16 @@ onUnmounted(() => {
             "
         >
             <div
-                style="
-                    max-width: 1100px;
-                    margin: 0 auto;
-                    padding: 0 24px;
-                    height: 58px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 12px;
-                "
+                :style="{
+                    maxWidth: '1100px',
+                    margin: '0 auto',
+                    padding: isMobile ? '0 12px' : '0 24px',
+                    height: '58px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                }"
             >
                 <!-- Left: logo + nav links -->
                 <div style="display: flex; align-items: center; gap: 24px; flex-shrink: 0">
@@ -112,6 +113,7 @@ onUnmounted(() => {
                         >
                     </Link>
                     <Link
+                        v-if="!isMobile"
                         href="/bubbles"
                         style="
                             font-size: 13px;
@@ -125,7 +127,7 @@ onUnmounted(() => {
                         >Explorar</Link
                     >
                     <Link
-                        v-if="user"
+                        v-if="user && !isMobile"
                         :href="route('friends.index')"
                         style="
                             font-size: 13px;
@@ -162,7 +164,7 @@ onUnmounted(() => {
                         >
                     </Link>
                     <Link
-                        v-if="user"
+                        v-if="user && !isMobile"
                         :href="route('feed.index')"
                         style="
                             font-size: 13px;
@@ -176,7 +178,7 @@ onUnmounted(() => {
                         >Feed</Link
                     >
                     <Link
-                        v-if="user"
+                        v-if="user && !isMobile"
                         :href="route('conversations.index')"
                         style="
                             font-size: 13px;
@@ -370,8 +372,8 @@ onUnmounted(() => {
                             >
                                 {{ avatarInitial(user.name) }}
                             </div>
-                            <span style="font-size: 13px; font-weight: 700; color: #1a3a4a">{{ user.name }}</span>
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="color: #8ba0b0">
+                            <span v-if="!isMobile" style="font-size: 13px; font-weight: 700; color: #1a3a4a">{{ user.name }}</span>
+                            <svg v-if="!isMobile" width="12" height="12" viewBox="0 0 12 12" fill="none" style="color: #8ba0b0">
                                 <path
                                     d="M2 4l4 4 4-4"
                                     stroke="currentColor"
