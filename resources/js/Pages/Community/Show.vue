@@ -18,6 +18,8 @@ const props = defineProps({
     nextCursor: String,
     hasMorePosts: Boolean,
     isOwn: Boolean,
+    canModerate: Boolean,
+    canManage: Boolean,
     isMember: Boolean,
 });
 
@@ -129,6 +131,8 @@ const showEdit = ref(false);
             <CommunityHeader
                 :community="community"
                 :is-own="isOwn"
+                :can-moderate="canModerate"
+                :can-manage="canManage"
                 :is-member="isMember"
                 :auth-user="authUser"
                 :image-preview="communityImagePreview"
@@ -166,7 +170,7 @@ const showEdit = ref(false);
                     :author="post.author"
                     :auth-user="authUser"
                     :can-edit="post.isOwn"
-                    :can-delete="post.isOwn || isOwn"
+                    :can-delete="post.isOwn || isOwn || authUser?.role === 'admin'"
                     :is-creator="post.isCreator"
                     :accent-color="community.color"
                     :like-route="route('community-posts.like', post.id)"

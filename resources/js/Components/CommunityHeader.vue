@@ -6,6 +6,8 @@ import { clImg } from '@/Composables/useCloudinary';
 const props = defineProps({
     community: { type: Object, required: true },
     isOwn: { type: Boolean, default: false },
+    canModerate: { type: Boolean, default: false },
+    canManage: { type: Boolean, default: false },
     isMember: { type: Boolean, default: false },
     authUser: { type: Object, default: null },
     imagePreview: { type: String, default: null },
@@ -197,6 +199,32 @@ function leaveCommunity() {
                     >
                         ✦ Criador
                     </div>
+                    <Link
+                        :href="route('community.members', community.id)"
+                        style="
+                            padding: 9px 16px;
+                            border-radius: 99px;
+                            border: none;
+                            background: #f0f8ff;
+                            color: #5a7a8a;
+                            font-size: 12px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            white-space: nowrap;
+                            text-decoration: none;
+                            transition: all 0.2s;
+                        "
+                        @mouseenter="
+                            $event.currentTarget.style.background = '#e0f0fc';
+                            $event.currentTarget.style.color = '#009ac7';
+                        "
+                        @mouseleave="
+                            $event.currentTarget.style.background = '#f0f8ff';
+                            $event.currentTarget.style.color = '#5a7a8a';
+                        "
+                    >
+                        👥 Membros
+                    </Link>
                     <button
                         @click="emit('open-edit')"
                         style="
@@ -226,6 +254,36 @@ function leaveCommunity() {
 
                 <!-- Member join/leave -->
                 <template v-else-if="authUser && !isOwn">
+                    <!-- Owner/admin members link (non-owner path) -->
+                    <Link
+                        v-if="canManage && !isOwn"
+                        :href="route('community.members', community.id)"
+                        style="
+                            padding: 9px 16px;
+                            border-radius: 99px;
+                            border: none;
+                            background: #f0f8ff;
+                            color: #5a7a8a;
+                            font-size: 12px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            white-space: nowrap;
+                            text-decoration: none;
+                            align-self: flex-start;
+                            margin-top: 4px;
+                            transition: all 0.2s;
+                        "
+                        @mouseenter="
+                            $event.currentTarget.style.background = '#e0f0fc';
+                            $event.currentTarget.style.color = '#009ac7';
+                        "
+                        @mouseleave="
+                            $event.currentTarget.style.background = '#f0f8ff';
+                            $event.currentTarget.style.color = '#5a7a8a';
+                        "
+                    >
+                        👥 Membros
+                    </Link>
                     <button
                         v-if="!isMember"
                         :style="{

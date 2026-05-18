@@ -108,6 +108,11 @@ class ConversationController extends Controller
 
     public function storeMessage(StoreMessageRequest $request, Conversation $conversation): RedirectResponse
     {
+        $user = $request->user();
+        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
+        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
+        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
+
         abort_unless(
             $conversation->participants()->where('user_id', auth()->id())->exists(),
             403

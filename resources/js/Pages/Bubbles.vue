@@ -13,6 +13,7 @@ import { useConnections } from '@/Composables/useConnections';
 import { usePhysics } from '@/Composables/usePhysics';
 import { useDrag } from '@/Composables/useDrag';
 import { useToast } from '@/Composables/useToast';
+import { useTheme } from '@/Composables/useTheme';
 
 const props = defineProps({
     feed: { type: Array, default: () => [] },
@@ -24,14 +25,18 @@ const { bubbles, hoveredId, connectSource, loading, load, add, toggleSelect } = 
 const { connections, friendConnections, load: loadConnections, loadFriendConnections, connect } = useConnections();
 const { step } = usePhysics();
 const { show: toast } = useToast();
+const { isDark, toggle: toggleTheme } = useTheme();
 
 const page = usePage();
 const authUser = computed(() => page.props.auth?.user);
 const pendingFriends = computed(() => page.props.auth?.pending_friends_count ?? 0);
 const unreadMessages = computed(() => page.props.auth?.unread_messages_count ?? 0);
 const unreadNotifications = computed(() => page.props.auth?.unread_notifications_count ?? 0);
+const isAdmin = computed(() => authUser.value?.role === 'admin');
 
 const feedOpen = ref(false);
+const menuOpen = ref(false);
+const menuEl = ref(null);
 
 watch(
     () => page.props.flash?.status,
@@ -155,8 +160,13 @@ function clearSelection() {
     connectSource.value = null;
 }
 
+function onDocClick(e) {
+    if (menuEl.value && !menuEl.value.contains(e.target)) menuOpen.value = false;
+}
+
 function onKeyDown(e) {
     if (e.key === 'Escape') {
+        if (menuOpen.value) { menuOpen.value = false; return; }
         if (searchOpen.value) {
             searchOpen.value = false;
             return;
@@ -209,6 +219,7 @@ onMounted(async () => {
     window.addEventListener('touchmove', onWindowTouchMove, { passive: false });
     window.addEventListener('touchend', onWindowTouchEnd);
     document.addEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('click', onDocClick);
     startLoop();
     // auth polling handled by AuthenticatedLayout
 });
@@ -220,6 +231,7 @@ onUnmounted(() => {
     window.removeEventListener('touchmove', onWindowTouchMove);
     window.removeEventListener('touchend', onWindowTouchEnd);
     document.removeEventListener('visibilitychange', onVisibilityChange);
+    document.removeEventListener('click', onDocClick);
     stopLoop();
 });
 
@@ -305,9 +317,9 @@ const isMobile = window.innerWidth < 640;
         <div
             class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between"
             :style="{
-                background: 'rgba(255,255,255,0.72)',
+                background: 'var(--nav-bg)',
                 backdropFilter: 'blur(16px)',
-                borderBottom: '1px solid #009ac71a',
+                borderBottom: '1px solid var(--nav-border)',
                 height: '58px',
                 padding: isMobile ? '0 10px' : '0 24px',
             }"
@@ -326,7 +338,7 @@ const isMobile = window.innerWidth < 640;
                         borderRadius: '10px',
                         border: 'none',
                         background: 'transparent',
-                        color: '#5a7a8a',
+                        color: 'var(--text-2)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -361,7 +373,7 @@ const isMobile = window.innerWidth < 640;
                         borderRadius: '10px',
                         border: 'none',
                         background: feedOpen ? '#009ac714' : 'transparent',
-                        color: feedOpen ? '#009ac7' : '#5a7a8a',
+                        color: feedOpen ? '#009ac7' : 'var(--text-2)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -395,7 +407,7 @@ const isMobile = window.innerWidth < 640;
                         borderRadius: '10px',
                         border: 'none',
                         background: showAdd ? '#009ac714' : 'transparent',
-                        color: '#5a7a8a',
+                        color: 'var(--text-2)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -421,7 +433,7 @@ const isMobile = window.innerWidth < 640;
                         height: '36px',
                         borderRadius: '10px',
                         background: 'transparent',
-                        color: '#5a7a8a',
+                        color: 'var(--text-2)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -474,7 +486,7 @@ const isMobile = window.innerWidth < 640;
                         height: '36px',
                         borderRadius: '10px',
                         background: 'transparent',
-                        color: '#5a7a8a',
+                        color: 'var(--text-2)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -533,7 +545,7 @@ const isMobile = window.innerWidth < 640;
                         height: '36px',
                         borderRadius: '10px',
                         background: 'transparent',
-                        color: '#5a7a8a',
+                        color: 'var(--text-2)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -583,39 +595,127 @@ const isMobile = window.innerWidth < 640;
                     >
                 </Link>
 
-                <!-- Perfil -->
-                <Link
-                    v-if="authUser && !isMobile"
-                    :href="authUser.username ? route('profile.show', authUser.username) : route('profile.edit')"
-                    :style="{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '10px',
-                        background: 'transparent',
-                        color: '#5a7a8a',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'background .15s',
-                        textDecoration: 'none',
-                    }"
-                    @mouseenter="$event.currentTarget.style.background = '#009ac714'"
-                    @mouseleave="$event.currentTarget.style.background = 'transparent'"
-                    title="O meu perfil"
-                >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <circle cx="9" cy="5.5" r="2.8" stroke="currentColor" stroke-width="1.4" />
-                        <path
-                            d="M2.5 15c1-3 3.5-4.5 6.5-4.5s5.5 1.5 6.5 4.5"
-                            stroke="currentColor"
-                            stroke-width="1.4"
-                            stroke-linecap="round"
-                        />
-                    </svg>
-                </Link>
+                <!-- Menu de definições (gear) -->
+                <div ref="menuEl" v-if="authUser && !isMobile" style="position: relative">
+                    <button
+                        @click.stop="menuOpen = !menuOpen"
+                        :style="{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            background: menuOpen ? '#009ac714' : 'transparent',
+                            color: menuOpen ? '#009ac7' : 'var(--text-2)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'background .15s, color .15s',
+                        }"
+                        @mouseenter="$event.currentTarget.style.background = '#009ac714'"
+                        @mouseleave="$event.currentTarget.style.background = menuOpen ? '#009ac714' : 'transparent'"
+                        aria-label="Menu de definições"
+                        :aria-expanded="menuOpen"
+                        aria-haspopup="menu"
+                        title="Definições"
+                    >
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown -->
+                    <Transition name="fade">
+                        <div
+                            v-if="menuOpen"
+                            role="menu"
+                            style="position: absolute; top: 44px; right: 0; width: 210px; background: var(--dropdown-bg); backdrop-filter: blur(20px); border-radius: 14px; border: 1px solid var(--nav-border); box-shadow: 0 8px 32px rgba(0,0,0,0.18); padding: 6px; z-index: 100; display: flex; flex-direction: column; gap: 1px;"
+                            @click.stop
+                        >
+                            <!-- Cabeçalho -->
+                            <div style="padding: 10px 12px 8px; border-bottom: 1px solid var(--dropdown-sep); margin-bottom: 4px;">
+                                <p style="font-size: 13px; font-weight: 800; color: var(--text); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ authUser.name }}</p>
+                                <p v-if="authUser.username" style="font-size: 11px; color: #009ac7; margin: 2px 0 0;">@{{ authUser.username }}</p>
+                            </div>
+
+                            <!-- O meu perfil -->
+                            <Link
+                                :href="authUser.username ? route('profile.show', authUser.username) : route('profile.edit')"
+                                @click="menuOpen = false"
+                                role="menuitem"
+                                style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: var(--text); font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer;"
+                                @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
+                                @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                            >
+                                <svg width="15" height="15" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="5.5" r="2.8" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 15c1-3 3.5-4.5 6.5-4.5s5.5 1.5 6.5 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                                O meu perfil
+                            </Link>
+
+                            <!-- Definições -->
+                            <Link
+                                :href="route('profile.edit')"
+                                @click="menuOpen = false"
+                                role="menuitem"
+                                style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: var(--text); font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer;"
+                                @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
+                                @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                            >
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                                Definições
+                            </Link>
+
+                            <!-- Separador -->
+                            <div style="height: 1px; background: var(--dropdown-sep); margin: 4px 0;" />
+
+                            <!-- Tema -->
+                            <button
+                                @click.stop="toggleTheme(); menuOpen = false"
+                                role="menuitem"
+                                style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--text); font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer; border: none; background: transparent; width: 100%; font-family: inherit; text-align: left;"
+                                @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
+                                @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                            >
+                                <span>{{ isDark ? '☀️' : '🌙' }}</span>
+                                {{ isDark ? 'Tema claro' : 'Tema escuro' }}
+                            </button>
+
+                            <!-- Admin -->
+                            <Link
+                                v-if="isAdmin"
+                                :href="route('admin.dashboard')"
+                                @click="menuOpen = false"
+                                role="menuitem"
+                                style="display: block; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: #9b6bdf; font-size: 13px; font-weight: 700; transition: background .12s; cursor: pointer;"
+                                @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
+                                @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                            >
+                                ⊞ Painel Admin
+                            </Link>
+
+                            <!-- Separador -->
+                            <div style="height: 1px; background: var(--dropdown-sep); margin: 4px 0;" />
+
+                            <!-- Sair -->
+                            <Link
+                                :href="route('logout')"
+                                method="post"
+                                as="button"
+                                @click="menuOpen = false"
+                                role="menuitem"
+                                style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: #e05555; font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer; border: none; background: transparent; width: 100%; font-family: inherit; text-align: left;"
+                                @mouseenter="$event.currentTarget.style.background = 'var(--item-hover-red)'"
+                                @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                            >
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                                Sair
+                            </Link>
+                        </div>
+                    </Transition>
+                </div>
 
                 <!-- Divisor -->
-                <div v-if="!isMobile" style="width: 1px; height: 20px; background: #009ac71a; margin: 0 6px" />
+                <div v-if="!isMobile" style="width: 1px; height: 20px; background: var(--nav-border); margin: 0 6px" />
 
                 <!-- Avatar do utilizador → perfil -->
                 <Link
@@ -733,12 +833,12 @@ const isMobile = window.innerWidth < 640;
                             style="
                                 width: 100%;
                                 box-sizing: border-box;
-                                background: rgba(255, 255, 255, 0.97);
+                                background: var(--search-input-bg);
                                 border: none;
                                 border-radius: 16px;
                                 padding: 16px 50px 16px 50px;
                                 font-size: 15px;
-                                color: #1a3a4a;
+                                color: var(--text);
                                 outline: none;
                                 font-family: inherit;
                                 box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
@@ -765,8 +865,8 @@ const isMobile = window.innerWidth < 640;
                                 v-else
                                 style="
                                     font-size: 11px;
-                                    color: #b0c0cc;
-                                    background: #f0f4f8;
+                                    color: var(--text-4);
+                                    background: var(--kbd-bg);
                                     border-radius: 6px;
                                     padding: 2px 7px;
                                     font-family: inherit;
@@ -781,7 +881,7 @@ const isMobile = window.innerWidth < 640;
                         v-if="searchQuery.trim() && (hasResults || searchResults)"
                         style="
                             margin-top: 8px;
-                            background: rgba(255, 255, 255, 0.97);
+                            background: var(--dropdown-bg);
                             border-radius: 16px;
                             box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
                             overflow: hidden;
@@ -792,7 +892,7 @@ const isMobile = window.innerWidth < 640;
                         <!-- Sem resultados -->
                         <div
                             v-if="searchResults && !hasResults && !searchLoading"
-                            style="padding: 24px; text-align: center; color: #8ba0b0; font-size: 13px"
+                            style="padding: 24px; text-align: center; color: var(--text-3); font-size: 13px"
                         >
                             Sem resultados para "{{ searchQuery }}"
                         </div>
@@ -804,7 +904,7 @@ const isMobile = window.innerWidth < 640;
                                     style="
                                         font-size: 10px;
                                         font-weight: 800;
-                                        color: #8ba0b0;
+                                        color: var(--text-3);
                                         text-transform: uppercase;
                                         letter-spacing: 0.1em;
                                         margin: 0;
@@ -825,7 +925,7 @@ const isMobile = window.innerWidth < 640;
                                         cursor: pointer;
                                         transition: background 0.12s;
                                     "
-                                    @mouseenter="$event.currentTarget.style.background = '#f0f8ff'"
+                                    @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
                                     @mouseleave="$event.currentTarget.style.background = 'transparent'"
                                 >
                                     <img
@@ -863,7 +963,7 @@ const isMobile = window.innerWidth < 640;
                                             style="
                                                 font-size: 13px;
                                                 font-weight: 700;
-                                                color: #1a3a4a;
+                                                color: var(--text);
                                                 margin: 0;
                                                 white-space: nowrap;
                                                 overflow: hidden;
@@ -881,12 +981,12 @@ const isMobile = window.innerWidth < 640;
 
                             <!-- Comunidades -->
                             <template v-if="searchResults.communities?.length">
-                                <div style="height: 1px; background: #f0f4f8; margin: 4px 0" />
+                                <div style="height: 1px; background: var(--dropdown-sep); margin: 4px 0" />
                                 <p
                                     style="
                                         font-size: 10px;
                                         font-weight: 800;
-                                        color: #8ba0b0;
+                                        color: var(--text-3);
                                         text-transform: uppercase;
                                         letter-spacing: 0.1em;
                                         margin: 0;
@@ -907,7 +1007,7 @@ const isMobile = window.innerWidth < 640;
                                         cursor: pointer;
                                         transition: background 0.12s;
                                     "
-                                    @mouseenter="$event.currentTarget.style.background = '#f0f8ff'"
+                                    @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
                                     @mouseleave="$event.currentTarget.style.background = 'transparent'"
                                 >
                                     <div
@@ -938,7 +1038,7 @@ const isMobile = window.innerWidth < 640;
                                             style="
                                                 font-size: 13px;
                                                 font-weight: 700;
-                                                color: #1a3a4a;
+                                                color: var(--text);
                                                 margin: 0;
                                                 white-space: nowrap;
                                                 overflow: hidden;
@@ -947,7 +1047,7 @@ const isMobile = window.innerWidth < 640;
                                         >
                                             {{ c.title }}
                                         </p>
-                                        <p style="font-size: 11px; color: #8ba0b0; margin: 0">
+                                        <p style="font-size: 11px; color: var(--text-3); margin: 0">
                                             {{ c.members }} membros
                                         </p>
                                     </div>
@@ -956,12 +1056,12 @@ const isMobile = window.innerWidth < 640;
 
                             <!-- Posts -->
                             <template v-if="searchResults.posts?.length">
-                                <div style="height: 1px; background: #f0f4f8; margin: 4px 0" />
+                                <div style="height: 1px; background: var(--dropdown-sep); margin: 4px 0" />
                                 <p
                                     style="
                                         font-size: 10px;
                                         font-weight: 800;
-                                        color: #8ba0b0;
+                                        color: var(--text-3);
                                         text-transform: uppercase;
                                         letter-spacing: 0.1em;
                                         margin: 0;
@@ -984,7 +1084,7 @@ const isMobile = window.innerWidth < 640;
                                         cursor: pointer;
                                         transition: background 0.12s;
                                     "
-                                    @mouseenter="$event.currentTarget.style.background = '#f0f8ff'"
+                                    @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
                                     @mouseleave="$event.currentTarget.style.background = 'transparent'"
                                 >
                                     <img
@@ -1020,13 +1120,13 @@ const isMobile = window.innerWidth < 640;
                                         {{ (p.author.name ?? '?')[0].toUpperCase() }}
                                     </div>
                                     <div style="flex: 1; min-width: 0">
-                                        <p style="font-size: 12px; font-weight: 700; color: #1a3a4a; margin: 0 0 2px">
+                                        <p style="font-size: 12px; font-weight: 700; color: var(--text); margin: 0 0 2px">
                                             {{ p.author.name }}
                                         </p>
                                         <p
                                             style="
                                                 font-size: 11px;
-                                                color: #5a7a8a;
+                                                color: var(--text-2);
                                                 margin: 0;
                                                 overflow: hidden;
                                                 text-overflow: ellipsis;
@@ -1049,10 +1149,10 @@ const isMobile = window.innerWidth < 640;
                                     font-weight: 700;
                                     color: #009ac7;
                                     cursor: pointer;
-                                    border-top: 1px solid #f0f4f8;
+                                    border-top: 1px solid var(--dropdown-sep);
                                     transition: background 0.12s;
                                 "
-                                @mouseenter="$event.currentTarget.style.background = '#f0f8ff'"
+                                @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
                                 @mouseleave="$event.currentTarget.style.background = 'transparent'"
                             >
                                 Ver todos os resultados →
@@ -1482,10 +1582,10 @@ const isMobile = window.innerWidth < 640;
                     zIndex: 38,
                     width: isMobile ? 'calc(100vw - 16px)' : '330px',
                     height: 'calc(100vh - 86px)',
-                    background: 'rgba(255,255,255,0.94)',
+                    background: 'var(--card-bg)',
                     backdropFilter: 'blur(16px)',
                     borderRadius: '18px',
-                    border: '1px solid #4ebcff22',
+                    border: '1px solid var(--card-border)',
                     boxShadow: '0 4px 20px #009ac70c',
                     display: 'flex',
                     flexDirection: 'column',
@@ -1497,7 +1597,7 @@ const isMobile = window.innerWidth < 640;
                 <div
                     style="
                         padding: 14px 16px 10px;
-                        border-bottom: 1px solid #f0f4f8;
+                        border-bottom: 1px solid var(--dropdown-sep);
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
@@ -1508,7 +1608,7 @@ const isMobile = window.innerWidth < 640;
                         style="
                             font-size: 10px;
                             font-weight: 800;
-                            color: #8ba0b0;
+                            color: var(--text-3);
                             text-transform: uppercase;
                             letter-spacing: 0.1em;
                             margin: 0;
@@ -1527,8 +1627,8 @@ const isMobile = window.innerWidth < 640;
                 <div style="padding: 10px 10px 20px; flex: 1; overflow-y: auto">
                     <div v-if="props.feed.length === 0" style="text-align: center; padding: 40px 16px">
                         <p style="font-size: 28px; margin: 0 0 10px">🫧</p>
-                        <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0 0 6px">Feed vazio</p>
-                        <p style="font-size: 11px; color: #8ba0b0; margin: 0; line-height: 1.5">
+                        <p style="font-size: 13px; font-weight: 700; color: var(--text); margin: 0 0 6px">Feed vazio</p>
+                        <p style="font-size: 11px; color: var(--text-3); margin: 0; line-height: 1.5">
                             Junta-te a comunidades e adiciona amigos para ver posts aqui.
                         </p>
                     </div>
@@ -1569,7 +1669,7 @@ const isMobile = window.innerWidth < 640;
                 left: 0;
                 right: 0;
                 height: 100px;
-                background: linear-gradient(to top, #9dcee8 0%, transparent 100%);
+                background: linear-gradient(to top, var(--floor-gradient) 0%, transparent 100%);
                 pointer-events: none;
                 z-index: 1;
             "
@@ -1590,7 +1690,7 @@ const isMobile = window.innerWidth < 640;
                 style="
                     font-size: 10px;
                     color: #009ac7aa;
-                    background: rgba(255, 255, 255, 0.6);
+                    background: var(--surface);
                     padding: 5px 16px;
                     border-radius: 99px;
                     backdrop-filter: blur(8px);

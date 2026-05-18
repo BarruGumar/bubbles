@@ -16,6 +16,11 @@ class PostController extends Controller
 
     public function store(StorePostRequest $request): RedirectResponse
     {
+        $user = $request->user();
+        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
+        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
+        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
+
         $imageUrl = null;
         $imagePid = null;
         $videoUrl = null;

@@ -27,6 +27,8 @@ const navLinks = [
     { label: 'Posts', route: 'admin.posts', icon: '📝' },
     { label: 'Comunidades', route: 'admin.communities', icon: '🫧' },
     { label: 'Denúncias', route: 'admin.reports', icon: '⚑' },
+    { label: 'Punições', route: 'admin.punishments', icon: '🔒' },
+    { label: 'Audit Log', route: 'admin.audit-logs', icon: '📋' },
 ];
 </script>
 

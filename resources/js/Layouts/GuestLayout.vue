@@ -4,8 +4,9 @@ import { Link } from '@inertiajs/vue3';
 
 <template>
     <div
-        class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
+        class="guest-page min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
         style="
+            background-color: #daeef9;
             background-image:
                 linear-gradient(
                     160deg,
@@ -98,3 +99,18 @@ import { Link } from '@inertiajs/vue3';
         </p>
     </div>
 </template>
+
+<style>
+/* Guest pages always show the light theme regardless of html.dark */
+html.dark .guest-page {
+    background-color: #daeef9 !important;
+}
+/* Suppress the dark body::before bubble overlay on guest pages */
+html.dark body:has(.guest-page)::before {
+    background-image: url('/images/realistic-style-soap-bubbles-background.png') !important;
+    opacity: 0.22 !important;
+}
+html.dark body:has(.guest-page) {
+    background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%) !important;
+}
+</style>

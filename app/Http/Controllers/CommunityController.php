@@ -82,9 +82,14 @@ class CommunityController extends Controller
             ->toArray();
 
         $isOwn = auth()->check() && auth()->id() === $bubble->user_id;
+        $authUser = auth()->user();
+        $canModerate = $authUser && $authUser->canModerateCommunity($bubble);
+        $canManage   = $authUser && $authUser->canManageCommunity($bubble);
 
         return Inertia::render('Community/Show', [
-            'isOwn' => $isOwn,
+            'isOwn'       => $isOwn,
+            'canModerate' => $canModerate,
+            'canManage'   => $canManage,
             'isMember' => $isOwn || (auth()->check() && $bubble->memberships()->where('user_id', auth()->id())->exists()),
             'community' => [
                 'id' => $bubble->id,
@@ -168,6 +173,15 @@ class CommunityController extends Controller
 
     public function store(StoreCommunityPostRequest $request, int $id): RedirectResponse
     {
+        $user   = $request->user();
+        $bubble = Bubble::findOrFail($id);
+
+        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
+        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
+        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
+        abort_if($user->isBannedFromCommunity($bubble), 403, 'Estás banido desta comunidade.');
+        abort_if($user->isMutedInCommunity($bubble), 403, 'Estás em silêncio nesta comunidade.');
+
         $imageUrl = null;
         $imagePid = null;
         $videoUrl = null;
@@ -188,7 +202,6 @@ class CommunityController extends Controller
             );
         }
 
-        $bubble = Bubble::findOrFail($id);
         $bubble->communityPosts()->create([
             'user_id' => auth()->id(),
             'content' => $request->content,

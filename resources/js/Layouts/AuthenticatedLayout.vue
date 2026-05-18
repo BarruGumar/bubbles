@@ -137,6 +137,7 @@ onUnmounted(() => {
                                 <div style="padding:6px">
                                     <Link v-if="user.username" :href="route('profile.show', user.username)" @click="open = false" class="dropdown-link">O meu perfil</Link>
                                     <Link :href="route('profile.edit')" @click="open = false" class="dropdown-link">Definições</Link>
+                                    <Link v-if="user.role === 'admin'" href="/admin" @click="open = false" class="dropdown-link" style="color:#9b6bdf;font-weight:700">⊞ Painel Admin</Link>
                                     <!-- Theme toggle -->
                                     <button @click="toggleTheme(); open = false" class="dropdown-link dropdown-theme-btn">
                                         <span>{{ isDark ? '☀️ Tema claro' : '🌙 Tema escuro' }}</span>

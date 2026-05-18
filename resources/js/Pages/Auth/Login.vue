@@ -29,6 +29,7 @@ const submit = () => {
 
         <div
             v-if="status"
+            class="status-success"
             style="
                 background: #edfaf4;
                 border: 1px solid #2ea87e44;

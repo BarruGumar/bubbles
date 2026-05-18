@@ -17,8 +17,9 @@ const authUser = computed(() => usePage().props.auth?.user);
 <template>
     <Head title="Bubbles" />
     <div
-        class="w-screen h-screen overflow-hidden relative select-none"
+        class="welcome-page w-screen h-screen overflow-hidden relative select-none"
         style="
+            background-color: #daeef9;
             background-image:
                 linear-gradient(
                     160deg,
@@ -304,3 +305,14 @@ const authUser = computed(() => usePage().props.auth?.user);
         />
     </div>
 </template>
+
+<style>
+/* Welcome page always shows the light theme regardless of html.dark */
+html.dark body:has(.welcome-page)::before {
+    background-image: url('/images/realistic-style-soap-bubbles-background.png') !important;
+    opacity: 0.22 !important;
+}
+html.dark body:has(.welcome-page) {
+    background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%) !important;
+}
+</style>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\CommunityModerationController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FriendController;
@@ -81,6 +82,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/c/{id}/join', [CommunityController::class, 'join'])->name('community.join');
     Route::delete('/c/{id}/leave', [CommunityController::class, 'leave'])->name('community.leave');
 
+    // Community moderation
+    Route::get('/c/{id}/members', [CommunityModerationController::class, 'members'])->name('community.members');
+    Route::patch('/c/{id}/members/{user}/role', [CommunityModerationController::class, 'updateRole'])->name('community.members.role');
+    Route::post('/c/{id}/moderation/ban', [CommunityModerationController::class, 'ban'])->name('community.moderation.ban');
+    Route::delete('/c/{id}/moderation/ban/{user}', [CommunityModerationController::class, 'unban'])->name('community.moderation.unban');
+    Route::post('/c/{id}/moderation/mute', [CommunityModerationController::class, 'mute'])->name('community.moderation.mute');
+    Route::delete('/c/{id}/moderation/mute/{user}', [CommunityModerationController::class, 'unmute'])->name('community.moderation.unmute');
+
     // Conversations & Mensagens
     Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
@@ -122,6 +131,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
     Route::patch('/reports/{report}/resolve', [AdminController::class, 'resolveReport'])->name('reports.resolve');
     Route::patch('/reports/{report}/dismiss', [AdminController::class, 'dismissReport'])->name('reports.dismiss');
+
+    // Punishments
+    Route::get('/punishments', [AdminController::class, 'punishments'])->name('punishments');
+    Route::post('/punishments', [AdminController::class, 'createPunishment'])->name('punishments.store');
+    Route::patch('/punishments/{punishment}/revoke', [AdminController::class, 'revokePunishment'])->name('punishments.revoke');
+
+    // Audit Logs
+    Route::get('/audit-logs', [AdminController::class, 'auditLogs'])->name('audit-logs');
 });
 
 require __DIR__.'/auth.php';

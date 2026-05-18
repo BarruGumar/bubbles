@@ -482,10 +482,10 @@ watch(
                         <div class="conv-info">
                             <div class="conv-row">
                                 <p class="conv-name" :style="{ fontWeight: conv.unread_count > 0 ? '800' : '700' }">{{ conv.other_user?.name ?? '—' }}</p>
-                                <span class="conv-time" :style="{ color: conv.unread_count > 0 ? '#009ac7' : '#b0c0cc', fontWeight: conv.unread_count > 0 ? '700' : '400' }">{{ formatTime(conv.last_message?.created_at) }}</span>
+                                <span class="conv-time" :style="{ color: conv.unread_count > 0 ? '#009ac7' : 'var(--text-4)', fontWeight: conv.unread_count > 0 ? '700' : '400' }">{{ formatTime(conv.last_message?.created_at) }}</span>
                             </div>
-                            <p class="conv-sub" :style="{ color: conv.unread_count > 0 ? '#009ac7' : '#8ba0b0', fontWeight: conv.unread_count > 0 ? '600' : '400' }">
-                                <span v-if="conv.last_message?.is_own" style="color:#b0c0cc">Eu: </span>
+                            <p class="conv-sub" :style="{ color: conv.unread_count > 0 ? '#009ac7' : 'var(--text-3)', fontWeight: conv.unread_count > 0 ? '600' : '400' }">
+                                <span v-if="conv.last_message?.is_own" style="color:var(--text-4)">Eu: </span>
                                 {{ conv.last_message?.content ?? (conv.last_message ? '📷 Imagem' : 'Sem mensagens.') }}
                             </p>
                         </div>
@@ -766,6 +766,10 @@ watch(
     background: rgba(255,255,255,0.60);
     backdrop-filter: blur(24px);
 }
+:global(html.dark) .chat-sidebar {
+    background: rgba(8, 18, 36, 0.90);
+    border-color: rgba(0, 154, 199, 0.14);
+}
 @media (max-width: 639px) {
     .chat-sidebar { width: 100%; min-width: unset; }
 }
@@ -778,7 +782,7 @@ watch(
     align-items: center;
     justify-content: space-between;
 }
-.sidebar-title { font-size: 17px; font-weight: 900; color: #1a3a4a; margin: 0; letter-spacing: -0.02em; }
+.sidebar-title { font-size: 17px; font-weight: 900; color: var(--text); margin: 0; letter-spacing: -0.02em; }
 .sidebar-unread-hint { font-size: 11px; color: #009ac7; margin: 2px 0 0; font-weight: 700; }
 
 .new-conv-btn {
@@ -791,7 +795,7 @@ watch(
 .new-conv-btn:hover { transform: scale(1.08); box-shadow: 0 6px 20px #009ac740; }
 
 .sidebar-list { flex: 1; overflow-y: auto; padding: 8px; }
-.sidebar-label { font-size: 10px; font-weight: 800; color: #b0c0cc; text-transform: uppercase; letter-spacing: 0.08em; margin: 8px 12px 10px; }
+.sidebar-label { font-size: 10px; font-weight: 800; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.08em; margin: 8px 12px 10px; }
 .sidebar-empty { text-align: center; padding: 60px 20px; }
 
 .sidebar-item {
@@ -815,7 +819,7 @@ watch(
 
 .conv-info { flex: 1; min-width: 0; }
 .conv-row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
-.conv-name { font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-name { font-size: 13px; font-weight: 700; color: var(--text); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .conv-time { font-size: 10px; white-space: nowrap; flex-shrink: 0; }
 .conv-sub { font-size: 11px; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .unread-badge {
@@ -835,8 +839,12 @@ watch(
     padding: 0 16px; background: rgba(255,255,255,0.70); backdrop-filter: blur(20px);
     border-bottom: 1px solid #009ac712; z-index: 10;
 }
+:global(html.dark) .chat-header {
+    background: rgba(8, 16, 32, 0.92);
+    border-color: rgba(0, 154, 199, 0.14);
+}
 .header-info { flex: 1; min-width: 0; }
-.header-name { font-size: 14px; font-weight: 800; color: #1a3a4a; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-name { font-size: 14px; font-weight: 800; color: var(--text); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .header-username { font-size: 11px; color: #009ac7; margin: 1px 0 0; }
 .h-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .h-avatar-init {
@@ -1066,8 +1074,12 @@ watch(
 /* ── Input bar ────────────────────────────────────────────────── */
 .input-bar {
     flex-shrink: 0; padding: 12px 16px;
-    background: rgba(255,255,255,0.92); backdrop-filter: blur(20px);
-    border-top: 1px solid #009ac712; display: flex; flex-direction: column; gap: 8px;
+    background: #ffffff; border-top: 1px solid #009ac71a;
+    display: flex; flex-direction: column; gap: 8px;
+}
+:global(html.dark) .input-bar {
+    background: #0d1e30;
+    border-color: rgba(0, 154, 199, 0.14);
 }
 .input-row { display: flex; align-items: flex-end; gap: 8px; }
 .reply-preview {
@@ -1091,12 +1103,15 @@ watch(
 .img-btn:hover { border-color: #009ac755; color: #009ac7; }
 
 .msg-input {
-    flex: 1; resize: none; border: 1.5px solid #009ac722;
+    flex: 1; resize: none; border: 1.5px solid #009ac733;
     border-radius: 22px; padding: 10px 16px; font-size: 13.5px;
-    font-family: inherit; color: #1a3a4a; background: #ffffff;
+    font-family: inherit; color: #1a3a4a; background: #f4f8fc;
     outline: none; line-height: 1.5; max-height: 120px; overflow-y: auto;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
+:global(html.dark) .msg-input { color: #cce4f4; background: #0a1828; }
+.msg-input::placeholder { color: #8ba0b0; }
+:global(html.dark) .msg-input::placeholder { color: #456070; }
 .msg-input:focus { border-color: #009ac7; box-shadow: 0 0 0 3px #009ac714; }
 
 .send-btn {
