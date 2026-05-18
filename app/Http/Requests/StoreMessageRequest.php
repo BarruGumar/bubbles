@@ -16,6 +16,7 @@ class StoreMessageRequest extends FormRequest
         return [
             'content' => ['nullable', 'string', 'max:2000', 'required_without:image'],
             'image' => ['nullable', 'image', 'max:5120'],
+            'reply_to_id' => ['nullable', 'integer', 'exists:messages,id'],
         ];
     }
 }

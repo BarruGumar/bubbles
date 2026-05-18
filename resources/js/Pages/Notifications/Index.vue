@@ -41,6 +41,14 @@ function markAllRead() {
     router.patch(route('notifications.read-all'), {}, { preserveScroll: true });
 }
 
+function deleteNotification(id) {
+    router.delete(route('notifications.destroy', id), {}, { preserveScroll: true });
+}
+
+function deleteAll() {
+    router.delete(route('notifications.destroy-all'), {}, { preserveScroll: true });
+}
+
 const hasUnread = props.notifications.some((n) => !n.read);
 </script>
 
@@ -54,25 +62,46 @@ const hasUnread = props.notifications.some((n) => !n.read);
                 <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0; letter-spacing: -0.02em">
                     Notificações
                 </h1>
-                <button
-                    v-if="hasUnread"
-                    @click="markAllRead"
-                    style="
-                        font-size: 12px;
-                        font-weight: 700;
-                        color: #009ac7;
-                        background: none;
-                        border: 1.5px solid #009ac733;
-                        border-radius: 99px;
-                        padding: 6px 16px;
-                        cursor: pointer;
-                        transition: all 0.2s;
-                    "
-                    @mouseenter="$event.currentTarget.style.background = '#009ac70c'"
-                    @mouseleave="$event.currentTarget.style.background = 'transparent'"
-                >
-                    Marcar todas como lidas
-                </button>
+                <div style="display: flex; gap: 8px">
+                    <button
+                        v-if="hasUnread"
+                        @click="markAllRead"
+                        style="
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: #009ac7;
+                            background: none;
+                            border: 1.5px solid #009ac733;
+                            border-radius: 99px;
+                            padding: 6px 16px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                        "
+                        @mouseenter="$event.currentTarget.style.background = '#009ac70c'"
+                        @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                    >
+                        Marcar todas como lidas
+                    </button>
+                    <button
+                        v-if="notifications.length > 0"
+                        @click="deleteAll"
+                        style="
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: #e05353;
+                            background: none;
+                            border: 1.5px solid #e0535333;
+                            border-radius: 99px;
+                            padding: 6px 16px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                        "
+                        @mouseenter="$event.currentTarget.style.background = '#e053530c'"
+                        @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                    >
+                        Apagar todas
+                    </button>
+                </div>
             </div>
 
             <!-- Empty -->
@@ -207,27 +236,48 @@ const hasUnread = props.notifications.some((n) => !n.read);
                         <p style="font-size: 10px; color: #b0c0cc; margin: 0">{{ n.created_at }}</p>
                     </div>
 
-                    <!-- Mark read button (if unread) -->
-                    <button
-                        v-if="!n.read"
-                        @click.prevent.stop="markRead(n.id)"
-                        style="
-                            flex-shrink: 0;
-                            background: none;
-                            border: none;
-                            cursor: pointer;
-                            color: #b0c0cc;
-                            padding: 4px;
-                            border-radius: 6px;
-                            transition: color 0.15s;
-                            font-size: 11px;
-                        "
-                        @mouseenter="$event.currentTarget.style.color = '#009ac7'"
-                        @mouseleave="$event.currentTarget.style.color = '#b0c0cc'"
-                        title="Marcar como lida"
-                    >
-                        ✓
-                    </button>
+                    <!-- Action buttons -->
+                    <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; align-items: center">
+                        <button
+                            v-if="!n.read"
+                            @click.prevent.stop="markRead(n.id)"
+                            style="
+                                background: none;
+                                border: none;
+                                cursor: pointer;
+                                color: #b0c0cc;
+                                padding: 4px 6px;
+                                border-radius: 6px;
+                                transition: color 0.15s;
+                                font-size: 13px;
+                                line-height: 1;
+                            "
+                            @mouseenter="$event.currentTarget.style.color = '#009ac7'"
+                            @mouseleave="$event.currentTarget.style.color = '#b0c0cc'"
+                            title="Marcar como lida"
+                        >
+                            ✓
+                        </button>
+                        <button
+                            @click.prevent.stop="deleteNotification(n.id)"
+                            style="
+                                background: none;
+                                border: none;
+                                cursor: pointer;
+                                color: #c8d8e0;
+                                padding: 4px 6px;
+                                border-radius: 6px;
+                                transition: color 0.15s;
+                                font-size: 14px;
+                                line-height: 1;
+                            "
+                            @mouseenter="$event.currentTarget.style.color = '#e05353'"
+                            @mouseleave="$event.currentTarget.style.color = '#c8d8e0'"
+                            title="Apagar notificação"
+                        >
+                            ×
+                        </button>
+                    </div>
                 </component>
             </div>
         </div>

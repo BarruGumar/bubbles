@@ -50,7 +50,7 @@ class ConversationController extends Controller
             ->first();
 
         // Load last PER_PAGE messages; support paging older ones via ?before=id
-        $query = $conversation->messages()->with('user')->orderByDesc('id');
+        $query = $conversation->messages()->with(['user', 'replyTo.user'])->orderByDesc('id');
 
         $beforeId = $request->query('before');
         if ($beforeId) {
@@ -67,6 +67,9 @@ class ConversationController extends Controller
             'conversations' => $this->listConversations(),
             'activeConversation' => [
                 'id' => $conversation->id,
+                'other_last_read_at' => $other?->pivot?->last_read_at
+                    ? \Carbon\Carbon::parse($other->pivot->last_read_at)->toISOString()
+                    : null,
                 'other_user' => $other ? [
                     'id' => $other->id,
                     'name' => $other->name,
@@ -119,6 +122,7 @@ class ConversationController extends Controller
             'user_id' => auth()->id(),
             'content' => $request->input('content'),
             'image_url' => $imageUrl,
+            'reply_to_id' => $request->input('reply_to_id'),
         ]);
 
         $conversation->update(['last_message_id' => $message->id]);
@@ -157,7 +161,7 @@ class ConversationController extends Controller
         $afterId = (int) $request->query('after', 0);
 
         $messages = $conversation->messages()
-            ->with('user')
+            ->with(['user', 'replyTo.user'])
             ->where('id', '>', $afterId)
             ->orderBy('id')
             ->limit(50)
@@ -171,7 +175,16 @@ class ConversationController extends Controller
             ]);
         }
 
-        return response()->json(['messages' => $messages]);
+        $other = $conversation->participants()
+            ->where('users.id', '!=', auth()->id())
+            ->first();
+
+        return response()->json([
+            'messages' => $messages,
+            'other_last_read_at' => $other?->pivot?->last_read_at
+                ? \Carbon\Carbon::parse($other->pivot->last_read_at)->toISOString()
+                : null,
+        ]);
     }
 
     public function updateMessage(Request $request, Message $message): JsonResponse
@@ -198,10 +211,22 @@ class ConversationController extends Controller
 
     private function formatMessage($m): array
     {
+        $replyTo = null;
+        if ($m->reply_to_id && $m->replyTo) {
+            $rt = $m->replyTo;
+            $replyTo = [
+                'id' => $rt->id,
+                'content' => $rt->content,
+                'image_url' => $rt->image_url,
+                'author_name' => $rt->user->name ?? '?',
+            ];
+        }
+
         return [
             'id' => $m->id,
             'content' => $m->content,
             'image_url' => $m->image_url,
+            'reply_to' => $replyTo,
             'created_at' => $m->created_at->toISOString(),
             'is_edited' => $m->updated_at->gt($m->created_at->addSecond()),
             'is_own' => $m->user_id === auth()->id(),

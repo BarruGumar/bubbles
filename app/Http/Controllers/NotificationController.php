@@ -12,6 +12,7 @@ class NotificationController extends Controller
     {
         $notifications = auth()->user()
             ->notifications()
+            ->where('type', '!=', \App\Notifications\MessageReceived::class)
             ->latest()
             ->limit(60)
             ->get()
@@ -44,6 +45,23 @@ class NotificationController extends Controller
     public function markAllRead(): RedirectResponse
     {
         auth()->user()->unreadNotifications->markAsRead();
+
+        return back();
+    }
+
+    public function destroy(string $id): RedirectResponse
+    {
+        auth()->user()
+            ->notifications()
+            ->where('id', $id)
+            ->delete();
+
+        return back();
+    }
+
+    public function destroyAll(): RedirectResponse
+    {
+        auth()->user()->notifications()->delete();
 
         return back();
     }

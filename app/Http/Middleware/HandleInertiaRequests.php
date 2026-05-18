@@ -46,7 +46,9 @@ class HandleInertiaRequests extends Middleware
                         ->count()
                     : 0,
                 'unread_notifications_count' => $user
-                    ? $user->unreadNotifications()->count()
+                    ? $user->unreadNotifications()
+                        ->where('type', '!=', \App\Notifications\MessageReceived::class)
+                        ->count()
                     : 0,
             ],
         ];

@@ -195,6 +195,14 @@ class ProfileController extends Controller
         return back()->with('status', 'banner-updated');
     }
 
+    public function updateTheme(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['theme' => 'required|in:light,dark']);
+        $request->user()->update(['theme' => $request->input('theme')]);
+
+        return response()->json(['theme' => $request->input('theme')]);
+    }
+
     public function destroy(Request $request): RedirectResponse
     {
         $request->validate([

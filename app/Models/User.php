@@ -32,6 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'avatar_public_id',
         'banner',
         'banner_public_id',
+        'theme',
     ];
 
     public function isAdmin(): bool

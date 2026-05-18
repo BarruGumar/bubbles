@@ -7,6 +7,9 @@
         <title inertia></title>
         <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/BubblesLogo.png') }}">
 
+        <!-- Anti-FOUC: apply theme before paint -->
+        <script>(function(){try{if(localStorage.getItem('bubbles_theme')==='dark')document.documentElement.classList.add('dark');}catch(e){}})();</script>
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />

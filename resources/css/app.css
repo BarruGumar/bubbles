@@ -2,26 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme Variables ───────────────────────────────────────────── */
+:root {
+    --nav-bg: rgba(255, 255, 255, 0.78);
+    --nav-border: rgba(0, 154, 199, 0.10);
+    --nav-bg-solid: #ffffff;
+    --layout-bg: rgba(240, 248, 255, 0.45);
+    --text: #1a3a4a;
+    --text-2: #5a7a8a;
+    --text-3: #8ba0b0;
+    --text-4: #b0c0cc;
+    --dropdown-bg: rgba(255, 255, 255, 0.97);
+    --dropdown-sep: #f0f4f8;
+    --item-hover: #f0f8ff;
+    --item-hover-red: #fef0f4;
+    --search-input-bg: rgba(255, 255, 255, 0.97);
+    --kbd-bg: #f0f4f8;
+    --card-bg: rgba(255, 255, 255, 0.88);
+    --card-border: rgba(78, 188, 255, 0.13);
+    --surface: rgba(255, 255, 255, 0.60);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 154, 199, 0.20);
+    --input-text: #1a3a4a;
+    --input-placeholder: #8ba0b0;
+}
+
+html.dark {
+    --nav-bg: rgba(8, 16, 32, 0.92);
+    --nav-border: rgba(0, 154, 199, 0.14);
+    --nav-bg-solid: #08101f;
+    --layout-bg: rgba(0, 0, 0, 0.12);
+    --text: #cce4f4;
+    --text-2: #6a8ea8;
+    --text-3: #456070;
+    --text-4: #304555;
+    --dropdown-bg: rgba(8, 18, 38, 0.98);
+    --dropdown-sep: rgba(255, 255, 255, 0.07);
+    --item-hover: rgba(0, 154, 199, 0.10);
+    --item-hover-red: rgba(199, 74, 107, 0.12);
+    --search-input-bg: rgba(10, 22, 45, 0.98);
+    --kbd-bg: rgba(255, 255, 255, 0.08);
+    --card-bg: rgba(10, 22, 44, 0.92);
+    --card-border: rgba(0, 154, 199, 0.12);
+    --surface: rgba(8, 18, 36, 0.80);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-border: rgba(0, 154, 199, 0.18);
+    --input-text: #cce4f4;
+    --input-placeholder: #456070;
+}
+
+/* ── Body ──────────────────────────────────────────────────────── */
 body {
     background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%);
-  min-height: 100vh;
+    min-height: 100vh;
+    transition: background 0.35s ease;
+}
+
+html.dark body {
+    background: linear-gradient(160deg, #060e1c 0%, #0b1a2e 50%, #060e1c 100%);
 }
 
 body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image: url('/images/realistic-style-soap-bubbles-background.png');
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  opacity: 0.22;
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url('/images/realistic-style-soap-bubbles-background.png');
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0.22;
+    transition: opacity 0.35s ease;
+}
+
+html.dark body::before {
+    opacity: 0.05;
 }
 
 #app {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+}
+
+/* ── Dark mode native input color-scheme ───────────────────────── */
+html.dark input,
+html.dark textarea,
+html.dark select {
+    color-scheme: dark;
 }
