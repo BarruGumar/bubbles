@@ -24,6 +24,7 @@ class AdminController extends Controller
     public function dashboard(): Response
     {
         return Inertia::render('Admin/Dashboard', [
+            'isSiteOwner' => auth()->user()->isSiteOwner(),
             'stats' => [
                 'users'       => User::count(),
                 'posts'       => Post::withTrashed()->count(),
@@ -52,6 +53,8 @@ class AdminController extends Controller
     {
         $q = $request->get('q');
 
+        $actor = auth()->user();
+
         $users = User::when($q, fn ($query) => $query->where('name', 'like', "%$q%")->orWhere('username', 'like', "%$q%"))
             ->withCount(['punishments as active_punishments_count' => fn ($q) => $q->active()])
             ->orderBy('created_at', 'desc')
@@ -70,22 +73,43 @@ class AdminController extends Controller
                 'is_suspended'            => $u->isSuspended(),
                 'is_muted'                => $u->isGloballyMuted(),
                 'created_at'              => $u->created_at->format('d/m/Y'),
+                'can_manage'              => $actor->canManageUser($u),
             ]);
 
         return Inertia::render('Admin/Users', [
-            'users' => $users,
-            'query' => $q,
+            'users'          => $users,
+            'query'          => $q,
+            'isSiteOwner'    => $actor->isSiteOwner(),
         ]);
     }
 
     public function updateUserRole(Request $request, User $user): RedirectResponse
     {
+        $actor = auth()->user();
+
+        $allowedRoles = $actor->isSiteOwner()
+            ? ['user', 'moderator', 'admin', 'site_owner', 'suspended']
+            : ['user', 'moderator', 'admin', 'suspended'];
+
         $data = $request->validate([
-            'role' => 'required|in:user,moderator,admin,suspended',
+            'role' => 'required|in:' . implode(',', $allowedRoles),
         ]);
 
-        if ($user->id === auth()->id()) {
+        if ($user->id === $actor->id) {
             return back()->with('error', 'Não podes alterar o teu próprio papel.');
+        }
+
+        // Only site_owner can change roles involving site_owner
+        if (($user->isSiteOwner() || $data['role'] === 'site_owner') && ! $actor->isSiteOwner()) {
+            abort(403, 'Apenas o Dono do Site pode gerir este cargo.');
+        }
+
+        // Prevent removing the last site_owner
+        if ($user->isSiteOwner() && $data['role'] !== 'site_owner') {
+            $ownerCount = User::where('role', 'site_owner')->count();
+            if ($ownerCount <= 1) {
+                return back()->with('error', 'Não é possível remover o único Dono do Site.');
+            }
         }
 
         $old = $user->role;
@@ -103,8 +127,19 @@ class AdminController extends Controller
 
     public function destroyUser(User $user): RedirectResponse
     {
-        if ($user->id === auth()->id()) {
+        $actor = auth()->user();
+
+        if ($user->id === $actor->id) {
             return back()->with('error', 'Não podes apagar a tua própria conta.');
+        }
+
+        if ($user->isSiteOwner()) {
+            return back()->with('error', 'Não é possível apagar o Dono do Site.');
+        }
+
+        // Admin cannot delete another admin — only site_owner can
+        if ($user->isAdmin() && ! $actor->isSiteOwner()) {
+            return back()->with('error', 'Apenas o Dono do Site pode apagar um admin.');
         }
 
         AuditLogger::log('user.delete', 'admin', $user, ['username' => $user->username]);

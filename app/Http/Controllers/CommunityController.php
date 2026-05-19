@@ -47,6 +47,7 @@ class CommunityController extends Controller
                 'username' => $p->user->username,
                 'avatar_color' => $p->user->avatar_color ?? '#009ac7',
                 'avatar' => $p->user->avatar,
+                'role' => $p->user->role,
             ],
             'isOwn' => auth()->check() && auth()->id() === $p->user_id,
             'isCreator' => $p->user_id === $bubble->user_id,

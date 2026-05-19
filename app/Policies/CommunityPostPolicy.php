@@ -19,8 +19,8 @@ class CommunityPostPolicy
             return true;
         }
 
-        // Global admin/moderator can delete anything
-        if ($user->isModerator()) {
+        // Global admin/moderator/site_owner can delete anything
+        if ($user->hasModerationAccess()) {
             return true;
         }
 

@@ -33,19 +33,75 @@ class User extends Authenticatable implements MustVerifyEmail
 
     // ── Global role helpers ───────────────────────────────────────
 
+    public function isSiteOwner(): bool
+    {
+        return $this->role === 'site_owner';
+    }
+
+    /** True only for role=admin (not site_owner). Use hasAdminAccess() for permission checks. */
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
-    public function isModerator(): bool
+    /** True for site_owner OR admin — use this in middleware/policies. */
+    public function hasAdminAccess(): bool
     {
-        return in_array($this->role, ['admin', 'moderator']);
+        return $this->isSiteOwner() || $this->isAdmin();
     }
 
-    /** Role-based suspension OR active suspension punishment */
+    /** True for site_owner, admin, or moderator. */
+    public function isModerator(): bool
+    {
+        return in_array($this->role, ['site_owner', 'admin', 'moderator']);
+    }
+
+    /** True for site_owner or admin. Alias for hasAdminAccess(). */
+    public function hasModerationAccess(): bool
+    {
+        return $this->hasAdminAccess() || $this->role === 'moderator';
+    }
+
+    /**
+     * Numeric rank for hierarchy comparisons.
+     * site_owner=4, admin=3, moderator=2, user=1, suspended=0
+     */
+    public function roleRank(): int
+    {
+        return match($this->role) {
+            'site_owner' => 4,
+            'admin'      => 3,
+            'moderator'  => 2,
+            'user'       => 1,
+            default      => 0,
+        };
+    }
+
+    /** Returns true if this user's role rank is strictly higher than $other's. */
+    public function isHigherThan(User $other): bool
+    {
+        return $this->roleRank() > $other->roleRank();
+    }
+
+    /** Returns true if this user can manage (punish/role-change) $target based on hierarchy. */
+    public function canManageUser(User $target): bool
+    {
+        return $this->id !== $target->id && $this->isHigherThan($target);
+    }
+
+    /** Returns true if this user can be punished by $actor. */
+    public function canBePunishedBy(User $actor): bool
+    {
+        return $actor->canManageUser($this);
+    }
+
+    /** Role-based suspension OR active suspension punishment. site_owner is immune. */
     public function isSuspended(): bool
     {
+        if ($this->isSiteOwner()) {
+            return false;
+        }
+
         if ($this->role === 'suspended') {
             return true;
         }
@@ -56,18 +112,26 @@ class User extends Authenticatable implements MustVerifyEmail
             ->exists();
     }
 
-    /** Active global ban via user_punishments */
+    /** Active global ban via user_punishments. site_owner is immune. */
     public function isBanned(): bool
     {
+        if ($this->isSiteOwner()) {
+            return false;
+        }
+
         return $this->punishments()
             ->active()
             ->ofType('ban')
             ->exists();
     }
 
-    /** Active global mute via user_punishments */
+    /** Active global mute via user_punishments. site_owner is immune. */
     public function isGloballyMuted(): bool
     {
+        if ($this->isSiteOwner()) {
+            return false;
+        }
+
         return $this->punishments()
             ->active()
             ->ofType('mute')
@@ -118,7 +182,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canManageCommunity(Bubble $bubble): bool
     {
-        if ($this->isAdmin()) {
+        if ($this->hasAdminAccess()) {
             return true;
         }
 
@@ -127,7 +191,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canModerateCommunity(Bubble $bubble): bool
     {
-        if ($this->isModerator()) {
+        if ($this->hasModerationAccess()) {
             return true;
         }
 

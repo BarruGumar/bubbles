@@ -14,7 +14,8 @@ class PunishmentService
     public function punish(User $target, User $admin, array $data): UserPunishment
     {
         abort_if($target->id === $admin->id, 403, 'Não podes punir a ti próprio.');
-        abort_if($target->isAdmin() && ! $admin->isAdmin(), 403, 'Não tens permissão para punir um admin.');
+        abort_if($target->isSiteOwner(), 403, 'Não é possível punir o Dono do Site.');
+        abort_if(! $admin->canManageUser($target), 403, 'Não tens permissão para punir este utilizador.');
 
         $punishment = UserPunishment::create([
             'user_id'   => $target->id,
@@ -68,6 +69,7 @@ class PunishmentService
     public function banFromCommunity(User $target, Bubble $bubble, User $by, array $data): void
     {
         abort_if($target->id === $bubble->user_id, 403, 'Não podes banir o criador da comunidade.');
+        abort_if($target->isSiteOwner(), 403, 'Não é possível banir o Dono do Site de uma comunidade.');
         abort_if($target->id === $by->id, 403, 'Não podes banir a ti próprio.');
 
         $this->ensureMembership($target, $bubble);
@@ -127,6 +129,7 @@ class PunishmentService
     public function muteInCommunity(User $target, Bubble $bubble, User $by, array $data): void
     {
         abort_if($target->id === $bubble->user_id, 403, 'Não podes mutar o criador da comunidade.');
+        abort_if($target->isSiteOwner(), 403, 'Não é possível mutar o Dono do Site.');
         abort_if($target->id === $by->id, 403, 'Não podes mutar a ti próprio.');
 
         $this->ensureMembership($target, $bubble);

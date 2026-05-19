@@ -32,7 +32,7 @@ const authUser = computed(() => page.props.auth?.user);
 const pendingFriends = computed(() => page.props.auth?.pending_friends_count ?? 0);
 const unreadMessages = computed(() => page.props.auth?.unread_messages_count ?? 0);
 const unreadNotifications = computed(() => page.props.auth?.unread_notifications_count ?? 0);
-const isAdmin = computed(() => authUser.value?.role === 'admin');
+const isAdmin = computed(() => ['admin', 'site_owner'].includes(authUser.value?.role));
 
 const feedOpen = ref(false);
 const menuOpen = ref(false);
@@ -182,12 +182,25 @@ function onKeyDown(e) {
 let animId = null;
 let lastTime = 0;
 
+function badgeObstacles() {
+    return friendConnections.value
+        .filter((c) => bubbles.value.find((b) => b.id === c.from) && bubbles.value.find((b) => b.id === c.to))
+        .map((c) => {
+            const from = bubbles.value.find((b) => b.id === c.from);
+            const to = bubbles.value.find((b) => b.id === c.to);
+            return {
+                x: (from.x + from.size / 2 + to.x + to.size / 2) / 2,
+                y: (from.y + from.size / 2 + to.y + to.size / 2) / 2,
+            };
+        });
+}
+
 function loop(timestamp) {
     const dt = timestamp - lastTime;
     lastTime = timestamp;
     // Skip physics after a large gap (tab was hidden or page froze).
     // Normal 60fps ≈ 16ms; anything beyond 100ms means we missed frames.
-    if (dt < 100) step(bubbles.value, dragging.value?.id);
+    if (dt < 100) step(bubbles.value, dragging.value?.id, badgeObstacles());
     animId = requestAnimationFrame(loop);
 }
 

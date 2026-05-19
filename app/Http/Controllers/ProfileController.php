@@ -119,6 +119,7 @@ class ProfileController extends Controller
                 'avatar_color' => $profileUser->avatar_color ?? '#009ac7',
                 'avatar' => $profileUser->avatar,
                 'banner' => $profileUser->banner,
+                'role' => $profileUser->role,
                 'created_at' => $profileUser->created_at->format('M Y'),
                 'posts_count' => $profileUser->posts()->count(),
             ],

@@ -46,9 +46,15 @@ const NEAR_BOTTOM_THRESHOLD = 160;
 
 // ── Polling ───────────────────────────────────────────────────
 let pollInterval = null;
-const lastMsgId = computed(() =>
-    localMessages.value.length ? localMessages.value[localMessages.value.length - 1].id : 0,
-);
+// Scan from the end and return the last confirmed (numeric) ID, skipping temp IDs
+// that exist while an optimistic message is in flight.
+const lastMsgId = computed(() => {
+    for (let i = localMessages.value.length - 1; i >= 0; i--) {
+        const id = localMessages.value[i].id;
+        if (typeof id === 'number') return id;
+    }
+    return 0;
+});
 
 // ── Chat background ───────────────────────────────────────────
 const BG_PRESETS = [
@@ -265,7 +271,7 @@ async function poll() {
 function startPolling() {
     if (pollInterval) return;
     poll();
-    pollInterval = setInterval(poll, 3_000);
+    pollInterval = setInterval(poll, 6_000);
 }
 function stopPolling() { clearInterval(pollInterval); pollInterval = null; }
 
@@ -285,30 +291,89 @@ function removeImage() {
 }
 
 // ── Send ──────────────────────────────────────────────────────
-function send() {
+async function send() {
     const hasText = msgForm.content.trim().length > 0;
-    const hasImage = !!msgForm.image;
-    if ((!hasText && !hasImage) || sendState.value === 'sending' || !props.activeConversation) return;
+    const hasImg = !!msgForm.image;
+    if ((!hasText && !hasImg) || sendState.value === 'sending' || !props.activeConversation) return;
+
     sendState.value = 'sending';
     clearTimeout(sentTimer);
-    msgForm.reply_to_id = replyingTo.value?.id ?? null;
-    msgForm.post(route('messages.store', props.activeConversation.id), {
-        forceFormData: true,
-        preserveScroll: true,
-        onSuccess: (p) => {
-            msgForm.reset('content', 'image', 'reply_to_id');
-            removeImage();
-            replyingTo.value = null;
-            sendState.value = 'sent';
-            localMessages.value = p.props.messages ?? localMessages.value;
-            sentTimer = setTimeout(() => { sendState.value = 'idle'; }, 2000);
-            scrollToBottom(true);
+
+    // Capture values before clearing (image File must stay alive for FormData)
+    const content = msgForm.content.trim();
+    const imageFile = msgForm.image;
+    const tempPreviewUrl = imagePreview.value;
+    const replyTo = replyingTo.value;
+    const replyId = replyTo?.id ?? null;
+
+    // Optimistic message — shown immediately, replaced once server confirms
+    const tempId = `temp-${Date.now()}`;
+    localMessages.value = [
+        ...localMessages.value,
+        {
+            id: tempId,
+            content: content || null,
+            image_url: tempPreviewUrl ?? null,
+            reply_to: replyTo
+                ? {
+                      id: replyTo.id,
+                      content: replyTo.content ?? null,
+                      image_url: replyTo.image_url ?? null,
+                      author_name: replyTo.author?.name ?? replyTo.author_name ?? '?',
+                  }
+                : null,
+            created_at: new Date().toISOString(),
+            is_edited: false,
+            is_own: true,
+            _sending: true,
+            author: {
+                id: authUser.value?.id,
+                name: authUser.value?.name ?? '?',
+                username: authUser.value?.username ?? null,
+                avatar: authUser.value?.avatar ?? null,
+                avatar_color: authUser.value?.avatar_color ?? '#009ac7',
+            },
         },
-        onError: () => {
-            sendState.value = 'error';
-            sentTimer = setTimeout(() => { sendState.value = 'idle'; }, 3000);
-        },
-    });
+    ];
+    scrollToBottom(true);
+
+    // Clear form immediately so the user can type the next message
+    msgForm.content = '';
+    msgForm.image = null;
+    // Set imagePreview to null to hide preview strip; DON'T revoke ObjectURL yet
+    // — the optimistic message still displays it
+    imagePreview.value = null;
+    replyingTo.value = null;
+    await nextTick();
+    const ta = document.querySelector('.msg-input');
+    if (ta) ta.style.height = 'auto';
+
+    try {
+        const fd = new FormData();
+        if (content) fd.append('content', content);
+        if (imageFile) fd.append('image', imageFile);
+        if (replyId) fd.append('reply_to_id', String(replyId));
+
+        const res = await axios.post(route('messages.store', props.activeConversation.id), fd);
+        const confirmed = res.data.message;
+
+        // If polling already added this message, just drop the optimistic copy
+        if (localMessages.value.some((m) => m.id === confirmed.id)) {
+            localMessages.value = localMessages.value.filter((m) => m.id !== tempId);
+        } else {
+            localMessages.value = localMessages.value.map((m) => (m.id === tempId ? confirmed : m));
+        }
+
+        if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
+        sendState.value = 'sent';
+        sentTimer = setTimeout(() => { sendState.value = 'idle'; }, 2000);
+    } catch {
+        // Rollback: remove optimistic message so the user sees the failure clearly
+        localMessages.value = localMessages.value.filter((m) => m.id !== tempId);
+        if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
+        sendState.value = 'error';
+        sentTimer = setTimeout(() => { sendState.value = 'idle'; }, 3000);
+    }
 }
 
 function handleKeydown(e) {
@@ -409,16 +474,10 @@ watch(
     { flush: 'post' },
 );
 
-watch(
-    () => props.messages,
-    (msgs) => {
-        if (!loadingOlder.value) {
-            localMessages.value = [...msgs];
-            hasMore.value = props.hasMoreMessages;
-        }
-    },
-    { deep: true },
-);
+// props.messages watch removed: the activeConversation.id watch already syncs
+// localMessages when the conversation changes, and send now uses axios (no Inertia
+// prop update on submit). Keeping the watch caused loadOlderMessages to overwrite
+// the accumulated message list right after its onSuccess prepended older messages.
 </script>
 
 <template>
@@ -607,8 +666,8 @@ watch(
 
                                 <!-- Bubble + actions row -->
                                 <div class="bubble-row" :style="{ flexDirection: item.is_own ? 'row-reverse' : 'row' }">
-                                    <!-- Action buttons (beside bubble) -->
-                                    <div v-if="editingId !== item.id && confirmDeleteId !== item.id" class="msg-actions">
+                                    <!-- Action buttons (beside bubble) — hidden while message is in flight -->
+                                    <div v-if="editingId !== item.id && confirmDeleteId !== item.id && !item._sending" class="msg-actions">
                                         <button @click.stop="startReply(item)" class="action-btn" title="Responder">
                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
                                         </button>
@@ -629,6 +688,7 @@ watch(
                                             editingId === item.id ? 'bubble-editing' : (item.is_own ? 'bubble-own' : 'bubble-recv'),
                                             item.isLast && editingId !== item.id ? 'is-last' : '',
                                             item.image_url && !item.content && !item.reply_to && editingId !== item.id ? 'image-only' : '',
+                                            item._sending ? 'bubble-sending' : '',
                                         ]"
                                     >
                                         <!-- Edit mode -->
@@ -1012,6 +1072,9 @@ watch(
     border-radius: 14px; overflow: hidden;
 }
 .bubble.image-only::after { display: none; }
+
+/* Optimistic (in-flight) */
+.bubble-sending { opacity: 0.60; }
 
 /* Editing */
 .bubble-editing {

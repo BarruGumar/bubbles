@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import ToastContainer from '@/Components/ToastContainer.vue';
+import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
 import { useTheme } from '@/Composables/useTheme';
@@ -113,15 +114,29 @@ onUnmounted(() => {
                     <!-- User avatar dropdown -->
                     <div v-if="user" style="position:relative">
                         <button @click.stop="open = !open" class="avatar-btn">
-                            <img
-                                v-if="user.avatar"
-                                :src="clImg(user.avatar, 64, 64, 'fill', 'face')"
-                                :style="{ width:'32px', height:'32px', borderRadius:'50%', objectFit:'cover', border:`2px solid ${user.avatar_color ?? '#009ac7'}`, boxShadow:`0 2px 8px ${user.avatar_color ?? '#009ac7'}44` }"
-                            />
-                            <div v-else :style="{ width:'32px', height:'32px', borderRadius:'50%', background: user.avatar_color ?? '#009ac7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'800', color:'white', boxShadow:`0 2px 8px ${user.avatar_color ?? '#009ac7'}44` }">
-                                {{ avatarInitial(user.name) }}
+                            <div style="position:relative;flex-shrink:0">
+                                <img
+                                    v-if="user.avatar"
+                                    :src="clImg(user.avatar, 64, 64, 'fill', 'face')"
+                                    :style="{
+                                        width:'32px', height:'32px', borderRadius:'50%', objectFit:'cover',
+                                        border: user.role === 'site_owner' ? '2.5px solid transparent' : `2px solid ${user.avatar_color ?? '#009ac7'}`,
+                                        boxShadow: user.role === 'site_owner' ? '0 0 0 2px #d4a017, 0 2px 10px #d4a01755' : `0 2px 8px ${user.avatar_color ?? '#009ac7'}44`,
+                                        background: user.role === 'site_owner' ? 'linear-gradient(135deg,#f5d060,#c084fc) border-box' : undefined,
+                                    }"
+                                />
+                                <div v-else :style="{
+                                    width:'32px', height:'32px', borderRadius:'50%',
+                                    background: user.avatar_color ?? '#009ac7',
+                                    display:'flex', alignItems:'center', justifyContent:'center',
+                                    fontSize:'13px', fontWeight:'800', color:'white',
+                                    boxShadow: user.role === 'site_owner' ? '0 0 0 2px #d4a017, 0 2px 10px #d4a01755' : `0 2px 8px ${user.avatar_color ?? '#009ac7'}44`,
+                                }">
+                                    {{ avatarInitial(user.name) }}
+                                </div>
+                                <span v-if="user.role === 'site_owner'" style="position:absolute;bottom:-3px;right:-4px;font-size:11px;line-height:1">👑</span>
                             </div>
-                            <span v-if="!isMobile" class="avatar-name">{{ user.name }}</span>
+                            <span v-if="!isMobile" class="avatar-name" :class="{ 'owner-name': user.role === 'site_owner' }">{{ user.name }}</span>
                             <svg v-if="!isMobile" width="12" height="12" viewBox="0 0 12 12" fill="none" style="color:#8ba0b0">
                                 <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
@@ -131,13 +146,16 @@ onUnmounted(() => {
                             <div v-if="open" class="dropdown-menu" @click.stop>
                                 <!-- User info header -->
                                 <div class="dropdown-header">
-                                    <p class="dropdown-name">{{ user.name }}</p>
+                                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                                        <p class="dropdown-name" :class="{ 'owner-name': user.role === 'site_owner' }">{{ user.name }}</p>
+                                        <SiteOwnerBadge v-if="user.role === 'site_owner'" size="sm" />
+                                    </div>
                                     <p v-if="user.username" class="dropdown-username">@{{ user.username }}</p>
                                 </div>
                                 <div style="padding:6px">
                                     <Link v-if="user.username" :href="route('profile.show', user.username)" @click="open = false" class="dropdown-link">O meu perfil</Link>
                                     <Link :href="route('profile.edit')" @click="open = false" class="dropdown-link">Definições</Link>
-                                    <Link v-if="user.role === 'admin'" href="/admin" @click="open = false" class="dropdown-link" style="color:#9b6bdf;font-weight:700">⊞ Painel Admin</Link>
+                                    <Link v-if="user.role === 'admin' || user.role === 'site_owner'" href="/admin" @click="open = false" class="dropdown-link" style="color:#9b6bdf;font-weight:700">⊞ Painel Admin</Link>
                                     <!-- Theme toggle -->
                                     <button @click="toggleTheme(); open = false" class="dropdown-link dropdown-theme-btn">
                                         <span>{{ isDark ? '☀️ Tema claro' : '🌙 Tema escuro' }}</span>
@@ -268,6 +286,13 @@ onUnmounted(() => {
 }
 .avatar-btn:hover { background: rgba(0, 154, 199, 0.08); }
 .avatar-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.owner-name {
+    background: linear-gradient(135deg, #d4a017 0%, #c084fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+}
 
 /* ── Dropdown ──────────────────────────────────────────────────── */
 .dropdown-menu {

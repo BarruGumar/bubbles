@@ -63,8 +63,13 @@ class ConversationController extends Controller
 
         $mapped = $messages->map(fn ($m) => $this->formatMessage($m));
 
+        // Skip the expensive conversation list query when Inertia only needs messages/hasMoreMessages
+        $partialData = $request->header('X-Inertia-Partial-Data', '');
+        $requestedProps = array_filter(array_map('trim', explode(',', $partialData)));
+        $skipConversations = !empty($requestedProps) && !in_array('conversations', $requestedProps);
+
         return Inertia::render('Chat/Index', [
-            'conversations' => $this->listConversations(),
+            'conversations' => $skipConversations ? [] : $this->listConversations(),
             'activeConversation' => [
                 'id' => $conversation->id,
                 'other_last_read_at' => $other?->pivot?->last_read_at
@@ -106,7 +111,7 @@ class ConversationController extends Controller
         return redirect()->route('conversations.show', $conversation->id);
     }
 
-    public function storeMessage(StoreMessageRequest $request, Conversation $conversation): RedirectResponse
+    public function storeMessage(StoreMessageRequest $request, Conversation $conversation): JsonResponse
     {
         $user = $request->user();
         abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
@@ -149,7 +154,9 @@ class ConversationController extends Controller
             ));
         }
 
-        return back();
+        $message->load(['user', 'replyTo.user']);
+
+        return response()->json(['message' => $this->formatMessage($message)]);
     }
 
     /**

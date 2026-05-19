@@ -83,6 +83,7 @@ class SearchController extends Controller
                     'username' => $p->user->username,
                     'avatar' => $p->user->avatar,
                     'avatar_color' => $p->user->avatar_color ?? '#009ac7',
+                    'role' => $p->user->role,
                 ],
             ])->values();
 

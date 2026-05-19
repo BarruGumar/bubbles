@@ -9,6 +9,7 @@ import PostReactionBar from '@/Components/PostReactionBar.vue';
 import PostComments from '@/Components/PostComments.vue';
 import PostEditForm from '@/Components/PostEditForm.vue';
 import PostReportForm from '@/Components/PostReportForm.vue';
+import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
 
 const props = defineProps({
     post: { type: Object, required: true },
@@ -90,8 +91,11 @@ async function submitReport() {
         showReport.value = false;
         reportText.value = '';
         toast('Denúncia enviada.');
-    } catch {
-        toast('Erro ao enviar denúncia.', 'error');
+    } catch (e) {
+        const msg = e?.response?.data?.errors?.reason?.[0]
+            ?? e?.response?.data?.message
+            ?? 'Erro ao enviar denúncia.';
+        toast(msg, 'error');
     } finally {
         reportSending.value = false;
     }
@@ -216,6 +220,7 @@ function formatInitial(name) {
                         >
                             <span v-if="isCreator" style="margin-right: 2px">✦</span>{{ author.name }}
                         </component>
+                        <SiteOwnerBadge v-if="author.role === 'site_owner'" size="sm" />
                         <span
                             v-if="isCreator"
                             :style="{

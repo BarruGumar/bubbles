@@ -4,6 +4,7 @@ import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PostCard from '@/Components/PostCard.vue';
 import PostCardSkeleton from '@/Components/PostCardSkeleton.vue';
+import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
 
@@ -196,37 +197,47 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                 >
                     <!-- Avatar overlapping -->
                     <div style="position: absolute; bottom: -45px; left: 32px; z-index: 5">
-                        <img
-                            v-if="profileUser.avatar"
-                            :src="clImg(profileUser.avatar, 200, 200, 'fill', 'face')"
-                            :style="{
-                                width: '90px',
-                                height: '90px',
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                                border: '4px solid white',
-                                boxShadow: `0 4px 20px ${profileUser.avatar_color}66`,
-                                display: 'block',
-                            }"
-                        />
-                        <div
-                            v-else
-                            :style="{
-                                width: '90px',
-                                height: '90px',
-                                borderRadius: '50%',
-                                background: profileUser.avatar_color,
-                                border: '4px solid white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '30px',
-                                fontWeight: '900',
-                                color: 'white',
-                                boxShadow: `0 4px 20px ${profileUser.avatar_color}66`,
-                            }"
-                        >
-                            {{ formatInitial(profileUser.name) }}
+                        <div style="position: relative; display: inline-block">
+                            <img
+                                v-if="profileUser.avatar"
+                                :src="clImg(profileUser.avatar, 200, 200, 'fill', 'face')"
+                                :style="{
+                                    width: '90px',
+                                    height: '90px',
+                                    borderRadius: '50%',
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                    border: profileUser.role === 'site_owner' ? '4px solid transparent' : '4px solid white',
+                                    boxShadow: profileUser.role === 'site_owner'
+                                        ? '0 0 0 3px #d4a017, 0 4px 24px #d4a01755'
+                                        : `0 4px 20px ${profileUser.avatar_color}66`,
+                                }"
+                            />
+                            <div
+                                v-else
+                                :style="{
+                                    width: '90px',
+                                    height: '90px',
+                                    borderRadius: '50%',
+                                    background: profileUser.avatar_color,
+                                    border: profileUser.role === 'site_owner' ? '4px solid transparent' : '4px solid white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '30px',
+                                    fontWeight: '900',
+                                    color: 'white',
+                                    boxShadow: profileUser.role === 'site_owner'
+                                        ? '0 0 0 3px #d4a017, 0 4px 24px #d4a01755'
+                                        : `0 4px 20px ${profileUser.avatar_color}66`,
+                                }"
+                            >
+                                {{ formatInitial(profileUser.name) }}
+                            </div>
+                            <span
+                                v-if="profileUser.role === 'site_owner'"
+                                style="position: absolute; bottom: 0; right: 0; font-size: 20px; line-height: 1"
+                            >👑</span>
                         </div>
                     </div>
                 </div>
@@ -254,9 +265,24 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                         "
                     >
                         <div>
-                            <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 2px">
-                                {{ profileUser.name }}
-                            </h1>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 2px">
+                                <h1
+                                    :style="{
+                                        fontSize: '22px',
+                                        fontWeight: '900',
+                                        margin: '0',
+                                        ...(profileUser.role === 'site_owner' ? {
+                                            background: 'linear-gradient(135deg, #d4a017 0%, #c084fc 100%)',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                            backgroundClip: 'text',
+                                        } : { color: '#1a3a4a' }),
+                                    }"
+                                >
+                                    {{ profileUser.name }}
+                                </h1>
+                                <SiteOwnerBadge v-if="profileUser.role === 'site_owner'" size="md" />
+                            </div>
                             <p style="font-size: 13px; color: #009ac7; font-weight: 600; margin: 0">
                                 @{{ profileUser.username }}
                             </p>

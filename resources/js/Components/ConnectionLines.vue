@@ -27,6 +27,48 @@ function midpoint(fromId, toId) {
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 
+const BADGE_R = 20; // badge radius + margin to trigger repulsion
+
+function badgePosition(c) {
+    const mid = midpoint(c.from, c.to);
+
+    const fromC = center(c.from);
+    const toC = center(c.to);
+    const lineX = toC.x - fromC.x;
+    const lineY = toC.y - fromC.y;
+    const lineLen = Math.sqrt(lineX * lineX + lineY * lineY) || 1;
+
+    // Perpendicular unit vector (90° rotation of the connection line)
+    const perpX = -lineY / lineLen;
+    const perpY = lineX / lineLen;
+
+    let perpOffset = 0;
+
+    for (const bubble of props.bubbles) {
+        if (bubble.id === c.from || bubble.id === c.to) continue;
+
+        const bx = bubble.x + bubble.size / 2;
+        const by = bubble.y + bubble.size / 2;
+        const bR = bubble.size / 2;
+        const dx = mid.x - bx;
+        const dy = mid.y - by;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const minDist = bR + BADGE_R;
+
+        if (dist < minDist) {
+            const overlap = minDist - dist;
+            // Project bubble→midpoint vector onto perpendicular to decide which side to push
+            const perpDot = dx * perpX + dy * perpY;
+            perpOffset += perpDot >= 0 ? overlap : -overlap;
+        }
+    }
+
+    return {
+        x: mid.x + perpX * perpOffset,
+        y: mid.y + perpY * perpOffset,
+    };
+}
+
 function badgeLabel(friends) {
     if (!friends?.length) return '?';
     return friends.length === 1 ? friends[0].name[0].toUpperCase() : friends.length;
@@ -62,10 +104,10 @@ function balloonTextX(angle, msg) {
 </script>
 
 <template>
+    <!-- Layer 1: lines + member avatars — behind the bubbles -->
     <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 2">
         <!-- Friend connection lines (amigos em comum) -->
         <g v-for="(c, i) in validFriendConnections" :key="'fc-' + i">
-            <!-- Glow -->
             <line
                 :x1="center(c.from).x"
                 :y1="center(c.from).y"
@@ -76,7 +118,6 @@ function balloonTextX(angle, msg) {
                 stroke-linecap="round"
                 opacity="0.07"
             />
-            <!-- Main line -->
             <line
                 :x1="center(c.from).x"
                 :y1="center(c.from).y"
@@ -88,50 +129,6 @@ function balloonTextX(angle, msg) {
                 opacity="0.4"
                 class="friend-line"
             />
-            <!-- Midpoint badge -->
-            <g
-                :transform="`translate(${midpoint(c.from, c.to).x}, ${midpoint(c.from, c.to).y})`"
-                style="pointer-events: auto; cursor: default"
-            >
-                <title v-if="c.friends?.length">{{ c.friends.map((f) => f.name).join(', ') }}</title>
-                <!-- Borda branca -->
-                <circle r="13" fill="white" stroke="#9b6bdf" stroke-width="1.6" opacity="0.97" />
-                <!-- Inicial colorida como base (fallback sempre visível) -->
-                <circle r="12" :fill="c.friends?.[0]?.avatar_color ?? '#9b6bdf'" />
-                <text
-                    text-anchor="middle"
-                    dominant-baseline="central"
-                    font-size="9"
-                    font-weight="800"
-                    font-family="Segoe UI, system-ui, sans-serif"
-                    fill="white"
-                >
-                    {{ badgeLabel(c.friends) }}
-                </text>
-                <!-- Foto por cima via foreignObject -->
-                <foreignObject v-if="c.friends?.[0]?.avatar" x="-12" y="-12" width="24" height="24">
-                    <img
-                        xmlns="http://www.w3.org/1999/xhtml"
-                        :src="clImg(c.friends[0].avatar, 48, 48, 'fill', 'face')"
-                        style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; display: block"
-                        @error="$event.target.style.display = 'none'"
-                    />
-                </foreignObject>
-                <!-- Badge de contagem se houver mais de 1 amigo -->
-                <g v-if="c.friends?.length > 1" transform="translate(8, -8)">
-                    <circle r="6" fill="#9b6bdf" stroke="white" stroke-width="1.2" />
-                    <text
-                        text-anchor="middle"
-                        dominant-baseline="central"
-                        font-size="7"
-                        font-weight="800"
-                        font-family="Segoe UI, system-ui, sans-serif"
-                        fill="white"
-                    >
-                        +{{ c.friends.length - 1 }}
-                    </text>
-                </g>
-            </g>
         </g>
 
         <!-- Manual connection lines -->
@@ -149,24 +146,21 @@ function balloonTextX(angle, msg) {
             class="conn-line"
         />
 
-        <!-- Avatars + speech bubbles per bubble -->
+        <!-- Member avatars + speech bubbles per bubble -->
         <g v-for="bubble in bubbles" :key="'av-' + bubble.id">
             <g v-for="av in bubble.avatars" :key="av.id">
-                <!-- Shadow -->
                 <circle
                     :cx="avatarPos(bubble, av.angle).x"
                     :cy="avatarPos(bubble, av.angle).y + 2"
                     r="19"
                     fill="rgba(0,0,0,0.1)"
                 />
-                <!-- Colour ring -->
                 <circle
                     :cx="avatarPos(bubble, av.angle).x"
                     :cy="avatarPos(bubble, av.angle).y"
                     r="19"
                     :fill="bubble.color"
                 />
-                <!-- Face -->
                 <circle
                     :cx="avatarPos(bubble, av.angle).x"
                     :cy="avatarPos(bubble, av.angle).y"
@@ -174,7 +168,6 @@ function balloonTextX(angle, msg) {
                     fill="white"
                     opacity="0.92"
                 />
-                <!-- Initial -->
                 <text
                     :x="avatarPos(bubble, av.angle).x"
                     :y="avatarPos(bubble, av.angle).y + 5"
@@ -186,8 +179,6 @@ function balloonTextX(angle, msg) {
                 >
                     {{ av.name[0] }}
                 </text>
-
-                <!-- Speech balloon -->
                 <g :transform="`translate(${balloonPos(bubble, av.angle).x}, ${balloonPos(bubble, av.angle).y})`">
                     <rect
                         :x="balloonLeft(av.angle, av.msg)"
@@ -211,6 +202,51 @@ function balloonTextX(angle, msg) {
                         {{ av.msg }}
                     </text>
                 </g>
+            </g>
+        </g>
+    </svg>
+
+    <!-- Layer 2: friend midpoint badges — above the bubbles -->
+    <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 25">
+        <g
+            v-for="(c, i) in validFriendConnections"
+            :key="'badge-' + i"
+            :transform="`translate(${badgePosition(c).x}, ${badgePosition(c).y})`"
+            style="pointer-events: auto; cursor: default"
+        >
+            <title v-if="c.friends?.length">{{ c.friends.map((f) => f.name).join(', ') }}</title>
+            <circle r="13" fill="white" stroke="#9b6bdf" stroke-width="1.6" opacity="0.97" />
+            <circle r="12" :fill="c.friends?.[0]?.avatar_color ?? '#9b6bdf'" />
+            <text
+                text-anchor="middle"
+                dominant-baseline="central"
+                font-size="9"
+                font-weight="800"
+                font-family="Segoe UI, system-ui, sans-serif"
+                fill="white"
+            >
+                {{ badgeLabel(c.friends) }}
+            </text>
+            <foreignObject v-if="c.friends?.[0]?.avatar" x="-12" y="-12" width="24" height="24">
+                <img
+                    xmlns="http://www.w3.org/1999/xhtml"
+                    :src="clImg(c.friends[0].avatar, 48, 48, 'fill', 'face')"
+                    style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; display: block"
+                    @error="$event.target.style.display = 'none'"
+                />
+            </foreignObject>
+            <g v-if="c.friends?.length > 1" transform="translate(8, -8)">
+                <circle r="6" fill="#9b6bdf" stroke="white" stroke-width="1.2" />
+                <text
+                    text-anchor="middle"
+                    dominant-baseline="central"
+                    font-size="7"
+                    font-weight="800"
+                    font-family="Segoe UI, system-ui, sans-serif"
+                    fill="white"
+                >
+                    +{{ c.friends.length - 1 }}
+                </text>
             </g>
         </g>
     </svg>

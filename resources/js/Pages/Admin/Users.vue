@@ -2,16 +2,28 @@
 import { ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
 import { clImg } from '@/Composables/useCloudinary';
 
 const props = defineProps({
     users: { type: Object, required: true },
     query: { type: String, default: '' },
+    isSiteOwner: { type: Boolean, default: false },
 });
 
 const search = ref(props.query ?? '');
-const roleMap = { user: 'Utilizador', moderator: 'Moderador', admin: 'Admin', suspended: 'Suspenso' };
-const roleColor = { user: '#5a7a8a', moderator: '#9b6bdf', admin: '#009ac7', suspended: '#e05555' };
+
+const baseRoles = { user: 'Utilizador', moderator: 'Moderador', admin: 'Admin', suspended: 'Suspenso' };
+const ownerRoles = { site_owner: '👑 Dono do Site', ...baseRoles };
+const roleMap = props.isSiteOwner ? ownerRoles : baseRoles;
+
+const roleColor = {
+    site_owner: '#d4a017',
+    user: '#5a7a8a',
+    moderator: '#9b6bdf',
+    admin: '#009ac7',
+    suspended: '#e05555',
+};
 
 let timer = null;
 
@@ -22,13 +34,16 @@ function doSearch() {
     }, 320);
 }
 
-function setRole(userId, role) {
+function setRole(userId, role, user) {
+    if (!user.can_manage) return;
+    if (role === 'site_owner' && !props.isSiteOwner) return;
     router.patch(route('admin.users.role', userId), { role }, { preserveScroll: true });
 }
 
-function deleteUser(userId) {
+function deleteUser(u) {
+    if (!u.can_manage) return;
     if (!confirm('Tens a certeza? Esta ação é irreversível.')) return;
-    router.delete(route('admin.users.destroy', userId), { preserveScroll: true });
+    router.delete(route('admin.users.destroy', u.id), { preserveScroll: true });
 }
 </script>
 
@@ -197,9 +212,12 @@ function deleteUser(userId) {
                                     {{ (u.name ?? '?')[0].toUpperCase() }}
                                 </div>
                                 <div>
-                                    <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0">
-                                        {{ u.name }}
-                                    </p>
+                                    <div style="display: flex; align-items: center; gap: 5px">
+                                        <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0">
+                                            {{ u.name }}
+                                        </p>
+                                        <SiteOwnerBadge v-if="u.role === 'site_owner'" size="sm" />
+                                    </div>
                                     <p style="font-size: 11px; color: #8ba0b0; margin: 0">@{{ u.username }}</p>
                                 </div>
                             </div>
@@ -209,8 +227,9 @@ function deleteUser(userId) {
                         <td style="padding: 12px 16px; font-size: 12px; color: #5a7a8a">{{ u.created_at }}</td>
                         <td style="padding: 12px 16px">
                             <select
+                                v-if="u.can_manage"
                                 :value="u.role"
-                                @change="setRole(u.id, $event.target.value)"
+                                @change="setRole(u.id, $event.target.value, u)"
                                 :style="{
                                     fontSize: '11px',
                                     fontWeight: '700',
@@ -223,10 +242,17 @@ function deleteUser(userId) {
                             >
                                 <option v-for="(label, val) in roleMap" :key="val" :value="val">{{ label }}</option>
                             </select>
+                            <span
+                                v-else
+                                :style="{ fontSize: '11px', fontWeight: '700', color: roleColor[u.role] ?? '#5a7a8a' }"
+                            >
+                                {{ roleMap[u.role] ?? u.role }}
+                            </span>
                         </td>
                         <td style="padding: 12px 16px; text-align: right">
                             <button
-                                @click="deleteUser(u.id)"
+                                v-if="u.can_manage"
+                                @click="deleteUser(u)"
                                 style="
                                     font-size: 11px;
                                     color: #e05555;
@@ -249,6 +275,7 @@ function deleteUser(userId) {
                             >
                                 Eliminar
                             </button>
+                            <span v-else style="font-size: 11px; color: #b0c0cc">—</span>
                         </td>
                     </tr>
                 </tbody>
