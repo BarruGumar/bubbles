@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import PostImageLightbox from '@/Components/PostImageLightbox.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import axios from 'axios';
 
@@ -41,12 +42,16 @@ const otherLastReadAt = ref(props.activeConversation?.other_last_read_at ?? null
 // ── Reply ─────────────────────────────────────────────────────
 const replyingTo = ref(null);
 
+// ── Lightbox ──────────────────────────────────────────────────
+const lightboxUrl = ref(null);
+
 // ── Smart scroll ──────────────────────────────────────────────
 const isNearBottom = ref(true);
 const NEAR_BOTTOM_THRESHOLD = 160;
 
 // ── Polling ───────────────────────────────────────────────────
-let pollInterval = null;
+let pollTimer = null;   // null = stopped, -1 = running (no timer scheduled yet), N = setTimeout ID
+let pollFailures = 0;
 // Scan from the end and return the last confirmed (numeric) ID, skipping temp IDs
 // that exist while an optimistic message is in flight.
 const lastMsgId = computed(() => {
@@ -98,22 +103,37 @@ function clearBgImage() {
     const imgKey = bgImgKey();
     if (imgKey) localStorage.removeItem(imgKey);
 }
-function onBgImageChange(e) {
+function compressBgImage(file, maxPx = 1280, quality = 0.75) {
+    return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
+            canvas.width  = Math.round(img.width  * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+        img.src = url;
+    });
+}
+
+async function onBgImageChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-        const dataUrl = ev.target.result;
-        bgImageUrl.value = dataUrl;
-        const imgKey = bgImgKey();
-        if (imgKey) {
-            try { localStorage.setItem(imgKey, dataUrl); }
-            catch (_) { /* quota exceeded — image applied but not persisted */ }
-        }
-        bgPickerOpen.value = false;
-    };
-    reader.readAsDataURL(file);
     e.target.value = '';
+    const dataUrl = await compressBgImage(file);
+    if (!dataUrl) return;
+    bgImageUrl.value = dataUrl;
+    const imgKey = bgImgKey();
+    if (imgKey) {
+        try { localStorage.setItem(imgKey, dataUrl); }
+        catch (_) { /* quota esgotada mesmo após compressão — aplicado apenas nesta sessão */ }
+    }
+    bgPickerOpen.value = false;
 }
 
 const activeBg = computed(() => BG_PRESETS.find(p => p.id === chatBgId.value) ?? BG_PRESETS[0]);
@@ -251,30 +271,43 @@ async function loadOlderMessages() {
 
 // ── Polling ───────────────────────────────────────────────────
 async function poll() {
-    if (!props.activeConversation || document.hidden) return;
-    try {
-        const res = await axios.get(route('conversations.poll', props.activeConversation.id), {
-            params: { after: lastMsgId.value },
-        });
-        const newMsgs = res.data?.messages ?? [];
-        if (newMsgs.length) {
-            const existingIds = new Set(localMessages.value.map(m => m.id));
-            const fresh = newMsgs.filter(m => !existingIds.has(m.id));
-            if (fresh.length) {
-                localMessages.value = [...localMessages.value, ...fresh];
-                if (isNearBottom.value) scrollToBottom(true);
+    if (!props.activeConversation) { pollTimer = null; return; }
+
+    if (!document.hidden) {
+        try {
+            const res = await axios.get(route('conversations.poll', props.activeConversation.id), {
+                params: { after: lastMsgId.value },
+            });
+            pollFailures = 0;
+            const newMsgs = res.data?.messages ?? [];
+            if (newMsgs.length) {
+                const existingIds = new Set(localMessages.value.map(m => m.id));
+                const fresh = newMsgs.filter(m => !existingIds.has(m.id));
+                if (fresh.length) {
+                    localMessages.value = [...localMessages.value, ...fresh];
+                    if (isNearBottom.value) scrollToBottom(true);
+                }
             }
+            if (res.data?.other_last_read_at) otherLastReadAt.value = res.data.other_last_read_at;
+        } catch {
+            pollFailures = Math.min(pollFailures + 1, 5);
         }
-        if (res.data?.other_last_read_at) otherLastReadAt.value = res.data.other_last_read_at;
-    } catch (_) {}
+    }
+
+    // Reschedule only if polling is still active (not stopped by stopPolling)
+    if (pollTimer !== null) {
+        const delay = pollFailures === 0 ? 3_000 : Math.min(3_000 * (2 ** pollFailures), 30_000);
+        pollTimer = setTimeout(poll, delay);
+    }
 }
 
 function startPolling() {
-    if (pollInterval) return;
+    if (pollTimer !== null) return;
+    pollFailures = 0;
+    pollTimer = -1; // sentinel: polling active, timer not yet set
     poll();
-    pollInterval = setInterval(poll, 6_000);
 }
-function stopPolling() { clearInterval(pollInterval); pollInterval = null; }
+function stopPolling() { clearTimeout(pollTimer); pollTimer = null; pollFailures = 0; }
 
 // ── Image ─────────────────────────────────────────────────────
 function onImageChange(e) {
@@ -429,10 +462,16 @@ function cancelReply() { replyingTo.value = null; }
 
 // ── Sidebar ───────────────────────────────────────────────────
 const totalUnread = computed(() => props.conversations.reduce((s, c) => s + (c.unread_count ?? 0), 0));
-function startWith(recipientId) { router.post(route('conversations.store'), { recipient_id: recipientId }); }
+function startWith(recipientId) { router.post(route('conversations.store'), { recipient_id: recipientId }, { replace: true }); }
 
 // ── Lifecycle ─────────────────────────────────────────────────
-function onVisibilityChange() { if (!document.hidden && props.activeConversation) poll(); }
+function onVisibilityChange() {
+    if (!document.hidden && props.activeConversation && pollTimer !== null) {
+        clearTimeout(pollTimer);
+        pollTimer = -1;
+        poll();
+    }
+}
 function onDocClick(e) {
     if (bgPickerOpen.value && bgPickerEl.value && !bgPickerEl.value.contains(e.target)) bgPickerOpen.value = false;
 }
@@ -717,7 +756,7 @@ watch(
                                                 <p class="reply-text">{{ item.reply_to.content ?? '[imagem]' }}</p>
                                             </div>
                                             <!-- Image -->
-                                            <img v-if="item.image_url" :src="clImg(item.image_url, 520, 0, 'limit')" loading="lazy" class="msg-img" />
+                                            <img v-if="item.image_url" :src="clImg(item.image_url, 520, 0, 'limit')" loading="lazy" class="msg-img" style="cursor:zoom-in" @click.stop="lightboxUrl = item.image_url" />
                                             <!-- Text -->
                                             <span v-if="item.content" :class="item.image_url ? 'text-after-img' : ''">{{ item.content }}</span>
                                             <!-- Meta inside bubble (only when has content/reply) -->
@@ -807,6 +846,8 @@ watch(
             </main>
         </div>
     </AuthenticatedLayout>
+
+    <PostImageLightbox v-if="lightboxUrl" :image-url="lightboxUrl" :open="!!lightboxUrl" @close="lightboxUrl = null" />
 </template>
 
 <style scoped>
@@ -823,13 +864,15 @@ watch(
     min-width: 300px;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #009ac712;
-    background: rgba(255,255,255,0.60);
-    backdrop-filter: blur(24px);
+    border-right: 1px solid rgba(0, 154, 199, 0.15);
+    background: linear-gradient(180deg, rgba(61, 73, 81, 0.858) 0%, rgba(76, 95, 108, 0.836) 100%);
+    backdrop-filter: blur(32px);
+    box-shadow: inset -1px 0 0 rgba(0,154,199,0.08);
 }
 :global(html.dark) .chat-sidebar {
-    background: rgba(8, 18, 36, 0.90);
-    border-color: rgba(0, 154, 199, 0.14);
+    background: linear-gradient(180deg, rgba(4, 10, 24, 0.97) 0%, rgba(2, 7, 16, 0.98) 100%);
+    border-color: rgba(0, 154, 199, 0.18);
+    box-shadow: inset -1px 0 0 rgba(0,154,199,0.08), 4px 0 24px rgba(0,0,0,0.4);
 }
 @media (max-width: 639px) {
     .chat-sidebar { width: 100%; min-width: unset; }
@@ -866,8 +909,12 @@ watch(
     transition: background 0.15s; margin-bottom: 2px;
     text-decoration: none; color: inherit;
 }
-.sidebar-item:hover { background: rgba(0,154,199,0.06); }
-.sidebar-item.is-active { background: rgba(0,154,199,0.10); border-color: #009ac722; }
+.sidebar-item:hover { background: rgba(0,154,199,0.08); }
+.sidebar-item.is-active {
+    background: linear-gradient(135deg, rgba(0,154,199,0.13) 0%, rgba(78,188,255,0.08) 100%);
+    border-color: rgba(0,154,199,0.22);
+    box-shadow: 0 2px 8px rgba(0,154,199,0.08);
+}
 
 .s-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0; }
 .s-avatar-init {
@@ -897,12 +944,14 @@ watch(
 /* ── Header ───────────────────────────────────────────────────── */
 .chat-header {
     height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 12px;
-    padding: 0 16px; background: rgba(255,255,255,0.70); backdrop-filter: blur(20px);
-    border-bottom: 1px solid #009ac712; z-index: 10;
+    padding: 0 16px;
+    background: linear-gradient(180deg, rgba(104, 123, 136, 0.75) 0%, rgba(117, 143, 162, 0.8) 100%);
+    backdrop-filter: blur(32px);
+    border-bottom: 1px solid rgba(0, 154, 199, 0.15); z-index: 10;
 }
 :global(html.dark) .chat-header {
-    background: rgba(8, 16, 32, 0.92);
-    border-color: rgba(0, 154, 199, 0.14);
+    background: linear-gradient(180deg, rgba(4, 10, 24, 0.97) 0%, rgba(2, 7, 16, 0.98) 100%);
+    border-color: rgba(0, 154, 199, 0.18);
 }
 .header-info { flex: 1; min-width: 0; }
 .header-name { font-size: 14px; font-weight: 800; color: var(--text); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

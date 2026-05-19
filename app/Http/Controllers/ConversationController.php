@@ -165,8 +165,13 @@ class ConversationController extends Controller
      */
     public function poll(Conversation $conversation, Request $request): JsonResponse
     {
+        $userId = auth()->id();
+
         abort_unless(
-            $conversation->participants()->where('user_id', auth()->id())->exists(),
+            DB::table('conversation_user')
+                ->where('conversation_id', $conversation->id)
+                ->where('user_id', $userId)
+                ->exists(),
             403
         );
 
@@ -180,21 +185,23 @@ class ConversationController extends Controller
             ->get()
             ->map(fn ($m) => $this->formatMessage($m));
 
-        // Mark as read if there are new messages
         if ($messages->isNotEmpty()) {
-            $conversation->participants()->updateExistingPivot(auth()->id(), [
-                'last_read_at' => now(),
-            ]);
+            DB::table('conversation_user')
+                ->where('conversation_id', $conversation->id)
+                ->where('user_id', $userId)
+                ->update(['last_read_at' => now()]);
         }
 
-        $other = $conversation->participants()
-            ->where('users.id', '!=', auth()->id())
-            ->first();
+        // Direct pivot query — avoids JOIN with users table
+        $otherReadAt = DB::table('conversation_user')
+            ->where('conversation_id', $conversation->id)
+            ->where('user_id', '!=', $userId)
+            ->value('last_read_at');
 
         return response()->json([
             'messages' => $messages,
-            'other_last_read_at' => $other?->pivot?->last_read_at
-                ? \Carbon\Carbon::parse($other->pivot->last_read_at)->toISOString()
+            'other_last_read_at' => $otherReadAt
+                ? \Carbon\Carbon::parse($otherReadAt)->toISOString()
                 : null,
         ]);
     }

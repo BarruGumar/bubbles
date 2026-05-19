@@ -121,8 +121,8 @@ function submitBanner() {
 
     <section>
         <header style="margin-bottom: 24px">
-            <h2 style="font-size: 15px; font-weight: 800; color: #1a3a4a; margin: 0 0 4px">Informação de perfil</h2>
-            <p style="font-size: 12px; color: #8ba0b0; margin: 0">Nome, username, bio, avatar e banner.</p>
+            <h2 style="font-size: 15px; font-weight: 800; color: var(--text); margin: 0 0 4px">Informação de perfil</h2>
+            <p style="font-size: 12px; color: var(--text-3); margin: 0">Nome, username, bio, avatar e banner.</p>
         </header>
 
         <!-- ── BANNER ── -->
@@ -131,7 +131,7 @@ function submitBanner() {
                 style="
                     font-size: 11px;
                     font-weight: 700;
-                    color: #5a7a8a;
+                    color: var(--text-2);
                     text-transform: uppercase;
                     letter-spacing: 0.06em;
                     margin: 0 0 8px;
@@ -164,7 +164,7 @@ function submitBanner() {
                     v-if="!bannerPreview"
                     style="
                         font-size: 12px;
-                        color: #8ba0b0;
+                        color: var(--text-3);
                         background: rgba(255, 255, 255, 0.75);
                         padding: 5px 16px;
                         border-radius: 99px;
@@ -291,7 +291,7 @@ function submitBanner() {
                     style="
                         font-size: 11px;
                         font-weight: 700;
-                        color: #5a7a8a;
+                        color: var(--text-2);
                         text-transform: uppercase;
                         letter-spacing: 0.06em;
                         margin: 0 0 8px;
@@ -387,7 +387,7 @@ function submitBanner() {
                         />
                     </label>
                 </div>
-                <p v-if="!avatarPreview" style="font-size: 10px; color: #b0c0cc; margin: 6px 0 0">
+                <p v-if="!avatarPreview" style="font-size: 10px; color: var(--text-4); margin: 6px 0 0">
                     Ou clica na imagem acima para fazer upload de uma foto
                 </p>
             </div>
@@ -403,7 +403,7 @@ function submitBanner() {
                     style="
                         font-size: 11px;
                         font-weight: 700;
-                        color: #5a7a8a;
+                        color: var(--text-2);
                         text-transform: uppercase;
                         letter-spacing: 0.06em;
                     "
@@ -415,12 +415,12 @@ function submitBanner() {
                     required
                     autocomplete="name"
                     style="
-                        background: #f0f8ff;
+                        background: var(--input-bg);
                         border: 1.5px solid #4ebcff44;
                         border-radius: 11px;
                         padding: 10px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: var(--input-text);
                         outline: none;
                         font-family: inherit;
                         width: 100%;
@@ -438,7 +438,7 @@ function submitBanner() {
                     style="
                         font-size: 11px;
                         font-weight: 700;
-                        color: #5a7a8a;
+                        color: var(--text-2);
                         text-transform: uppercase;
                         letter-spacing: 0.06em;
                     "
@@ -463,12 +463,12 @@ function submitBanner() {
                         autocomplete="off"
                         placeholder="o_teu_username"
                         style="
-                            background: #f0f8ff;
+                            background: var(--input-bg);
                             border: 1.5px solid #4ebcff44;
                             border-radius: 11px;
                             padding: 10px 14px 10px 28px;
                             font-size: 13px;
-                            color: #1a3a4a;
+                            color: var(--input-text);
                             outline: none;
                             font-family: inherit;
                             width: 100%;
@@ -479,7 +479,7 @@ function submitBanner() {
                         @blur="$event.target.style.borderColor = '#4ebcff44'"
                     />
                 </div>
-                <p style="font-size: 10px; color: #b0c0cc; margin: 0">Só letras minúsculas, números e underscores.</p>
+                <p style="font-size: 10px; color: var(--text-4); margin: 0">Só letras minúsculas, números e underscores.</p>
                 <p v-if="form.errors.username" style="font-size: 11px; color: #e05555; margin: 0">
                     {{ form.errors.username }}
                 </p>
@@ -490,7 +490,7 @@ function submitBanner() {
                     style="
                         font-size: 11px;
                         font-weight: 700;
-                        color: #5a7a8a;
+                        color: var(--text-2);
                         text-transform: uppercase;
                         letter-spacing: 0.06em;
                     "
@@ -502,12 +502,12 @@ function submitBanner() {
                     required
                     autocomplete="username"
                     style="
-                        background: #f0f8ff;
+                        background: var(--input-bg);
                         border: 1.5px solid #4ebcff44;
                         border-radius: 11px;
                         padding: 10px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: var(--input-text);
                         outline: none;
                         font-family: inherit;
                         width: 100%;
@@ -528,7 +528,7 @@ function submitBanner() {
                         style="
                             font-size: 11px;
                             font-weight: 700;
-                            color: #5a7a8a;
+                            color: var(--text-2);
                             text-transform: uppercase;
                             letter-spacing: 0.06em;
                         "
@@ -542,12 +542,12 @@ function submitBanner() {
                     rows="3"
                     placeholder="Conta um pouco sobre ti..."
                     style="
-                        background: #f0f8ff;
+                        background: var(--input-bg);
                         border: 1.5px solid #4ebcff44;
                         border-radius: 11px;
                         padding: 10px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: var(--input-text);
                         outline: none;
                         font-family: inherit;
                         width: 100%;

@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { clImg } from '@/Composables/useCloudinary';
+import { resolveBadgePos } from '@/Composables/useBadgeLayout';
 
 const props = defineProps({
     connections: { type: Array, required: true },
@@ -27,46 +28,9 @@ function midpoint(fromId, toId) {
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 
-const BADGE_R = 20; // badge radius + margin to trigger repulsion
-
 function badgePosition(c) {
     const mid = midpoint(c.from, c.to);
-
-    const fromC = center(c.from);
-    const toC = center(c.to);
-    const lineX = toC.x - fromC.x;
-    const lineY = toC.y - fromC.y;
-    const lineLen = Math.sqrt(lineX * lineX + lineY * lineY) || 1;
-
-    // Perpendicular unit vector (90° rotation of the connection line)
-    const perpX = -lineY / lineLen;
-    const perpY = lineX / lineLen;
-
-    let perpOffset = 0;
-
-    for (const bubble of props.bubbles) {
-        if (bubble.id === c.from || bubble.id === c.to) continue;
-
-        const bx = bubble.x + bubble.size / 2;
-        const by = bubble.y + bubble.size / 2;
-        const bR = bubble.size / 2;
-        const dx = mid.x - bx;
-        const dy = mid.y - by;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const minDist = bR + BADGE_R;
-
-        if (dist < minDist) {
-            const overlap = minDist - dist;
-            // Project bubble→midpoint vector onto perpendicular to decide which side to push
-            const perpDot = dx * perpX + dy * perpY;
-            perpOffset += perpDot >= 0 ? overlap : -overlap;
-        }
-    }
-
-    return {
-        x: mid.x + perpX * perpOffset,
-        y: mid.y + perpY * perpOffset,
-    };
+    return resolveBadgePos(mid.x, mid.y, c.from, c.to, props.bubbles);
 }
 
 function badgeLabel(friends) {

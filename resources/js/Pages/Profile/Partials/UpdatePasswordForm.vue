@@ -40,8 +40,8 @@ const updatePassword = () => {
 <template>
     <section>
         <header>
-            <h2 class="text-lg font-medium text-gray-900">Alterar Password</h2>
-            <p class="mt-1 text-sm text-gray-600">
+            <h2 class="text-lg font-medium" style="color: var(--text)">Alterar Password</h2>
+            <p class="mt-1 text-sm" style="color: var(--text-3)">
                 Usa uma password longa e aleatória para manteres a conta segura.
             </p>
         </header>

@@ -47,7 +47,7 @@ export function usePhysics() {
                         const dx = b1.x - b2.x
                         const dy = b1.y - b2.y
                         const d = Math.hypot(dx, dy) || 0.01
-                        const minD = (b1.size + s2) * 0.5 + 26
+                        const minD = (b1.size + s2) * 0.5 + 10
                         if (d < minD) {
                             const penetration = minD - d
                             const s = penetration / minD

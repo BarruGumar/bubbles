@@ -11,6 +11,7 @@ import { clImg } from '@/Composables/useCloudinary';
 import { useBubbles } from '@/Composables/useBubbles';
 import { useConnections } from '@/Composables/useConnections';
 import { usePhysics } from '@/Composables/usePhysics';
+import { resolveBadgePos } from '@/Composables/useBadgeLayout';
 import { useDrag } from '@/Composables/useDrag';
 import { useToast } from '@/Composables/useToast';
 import { useTheme } from '@/Composables/useTheme';
@@ -21,7 +22,8 @@ const props = defineProps({
     hasCommunities: { type: Boolean, default: false },
 });
 
-const { bubbles, hoveredId, connectSource, loading, load, add, toggleSelect } = useBubbles();
+const { bubbles, hoveredId, connectSource, load, add, toggleSelect } = useBubbles();
+const ready = ref(false);
 const { connections, friendConnections, load: loadConnections, loadFriendConnections, connect } = useConnections();
 const { step } = usePhysics();
 const { show: toast } = useToast();
@@ -189,10 +191,9 @@ function badgeObstacles() {
         const from = byId.get(c.from);
         const to = byId.get(c.to);
         if (!from || !to) continue;
-        result.push({
-            x: (from.x + from.size / 2 + to.x + to.size / 2) / 2,
-            y: (from.y + from.size / 2 + to.y + to.size / 2) / 2,
-        });
+        const midX = (from.x + from.size / 2 + to.x + to.size / 2) / 2;
+        const midY = (from.y + from.size / 2 + to.y + to.size / 2) / 2;
+        result.push(resolveBadgePos(midX, midY, c.from, c.to, bubbles.value));
     }
     return result;
 }
@@ -225,9 +226,8 @@ function onVisibilityChange() {
 onMounted(async () => {
     // Refresh CSRF token before any authenticated API calls (Sanctum SPA requirement)
     try { await axios.get('/sanctum/csrf-cookie'); } catch { /* non-fatal */ }
-    load();
-    loadConnections();
-    loadFriendConnections();
+    await Promise.all([load(), loadConnections(), loadFriendConnections()]);
+    ready.value = true;
     window.addEventListener('mousemove', onWindowMouseMove);
     window.addEventListener('mouseup', onWindowMouseUp);
     window.addEventListener('keydown', onKeyDown);
@@ -1190,7 +1190,7 @@ const isMobile = window.innerWidth < 640;
 
         <!-- LOADING -->
         <div
-            v-if="loading"
+            v-if="!ready"
             style="
                 position: absolute;
                 inset: 0;
@@ -1220,7 +1220,7 @@ const isMobile = window.innerWidth < 640;
 
         <!-- SVG LAYER: connections + avatars -->
         <ConnectionLines
-            v-if="!loading"
+            v-if="ready"
             :connections="connections"
             :friend-connections="friendConnections"
             :bubbles="bubbles"
