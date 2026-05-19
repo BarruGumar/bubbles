@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import axios from 'axios';
@@ -18,7 +18,8 @@ const authUser = computed(() => page.props.auth?.user);
 
 // ── Refs ──────────────────────────────────────────────────────
 const messagesEl = ref(null);
-const msgForm = useForm({ content: '', image: null, reply_to_id: null });
+const msgContent = ref('');
+const msgImage = ref(null);
 const imagePreview = ref(null);
 const imageInput = ref(null);
 const isMobile = ref(false);
@@ -280,28 +281,28 @@ function onImageChange(e) {
     const file = e.target.files[0];
     if (!file) return;
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
-    msgForm.image = file;
+    msgImage.value = file;
     imagePreview.value = URL.createObjectURL(file);
     e.target.value = '';
 }
 function removeImage() {
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
-    msgForm.image = null;
+    msgImage.value = null;
     imagePreview.value = null;
 }
 
 // ── Send ──────────────────────────────────────────────────────
 async function send() {
-    const hasText = msgForm.content.trim().length > 0;
-    const hasImg = !!msgForm.image;
+    const hasText = msgContent.value.trim().length > 0;
+    const hasImg = !!msgImage.value;
     if ((!hasText && !hasImg) || sendState.value === 'sending' || !props.activeConversation) return;
 
     sendState.value = 'sending';
     clearTimeout(sentTimer);
 
     // Capture values before clearing (image File must stay alive for FormData)
-    const content = msgForm.content.trim();
-    const imageFile = msgForm.image;
+    const content = msgContent.value.trim();
+    const imageFile = msgImage.value;
     const tempPreviewUrl = imagePreview.value;
     const replyTo = replyingTo.value;
     const replyId = replyTo?.id ?? null;
@@ -338,8 +339,8 @@ async function send() {
     scrollToBottom(true);
 
     // Clear form immediately so the user can type the next message
-    msgForm.content = '';
-    msgForm.image = null;
+    msgContent.value = '';
+    msgImage.value = null;
     // Set imagePreview to null to hide preview strip; DON'T revoke ObjectURL yet
     // — the optimistic message still displays it
     imagePreview.value = null;
@@ -779,7 +780,7 @@ watch(
                             </label>
 
                             <textarea
-                                v-model="msgForm.content"
+                                v-model="msgContent"
                                 placeholder="Escreve uma mensagem…"
                                 rows="1"
                                 class="msg-input"
@@ -789,7 +790,7 @@ watch(
 
                             <button
                                 @click="send"
-                                :disabled="(!msgForm.content.trim() && !msgForm.image) || sendState === 'sending'"
+                                :disabled="(!msgContent.trim() && !msgImage) || sendState === 'sending'"
                                 class="send-btn"
                                 :class="sendState"
                             >

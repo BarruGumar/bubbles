@@ -183,16 +183,18 @@ let animId = null;
 let lastTime = 0;
 
 function badgeObstacles() {
-    return friendConnections.value
-        .filter((c) => bubbles.value.find((b) => b.id === c.from) && bubbles.value.find((b) => b.id === c.to))
-        .map((c) => {
-            const from = bubbles.value.find((b) => b.id === c.from);
-            const to = bubbles.value.find((b) => b.id === c.to);
-            return {
-                x: (from.x + from.size / 2 + to.x + to.size / 2) / 2,
-                y: (from.y + from.size / 2 + to.y + to.size / 2) / 2,
-            };
+    const byId = new Map(bubbles.value.map((b) => [b.id, b]));
+    const result = [];
+    for (const c of friendConnections.value) {
+        const from = byId.get(c.from);
+        const to = byId.get(c.to);
+        if (!from || !to) continue;
+        result.push({
+            x: (from.x + from.size / 2 + to.x + to.size / 2) / 2,
+            y: (from.y + from.size / 2 + to.y + to.size / 2) / 2,
         });
+    }
+    return result;
 }
 
 function loop(timestamp) {
@@ -1593,7 +1595,7 @@ const isMobile = window.innerWidth < 640;
                     left: isMobile ? '8px' : '16px',
                     top: '70px',
                     zIndex: 38,
-                    width: isMobile ? 'calc(100vw - 16px)' : '330px',
+                    width: isMobile ? 'calc(100vw - 16px)' : '380px',
                     height: 'calc(100vh - 86px)',
                     background: 'var(--card-bg)',
                     backdropFilter: 'blur(16px)',

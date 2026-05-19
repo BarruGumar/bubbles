@@ -28,7 +28,9 @@ const unreadNotifications = computed(() => page.props.auth?.unread_notifications
 const open = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref('');
-const isMobile = window.innerWidth < 640;
+const isMobile = ref(window.innerWidth < 640);
+
+function onResize() { isMobile.value = window.innerWidth < 640; }
 
 function avatarInitial(name) { return (name ?? '?')[0].toUpperCase(); }
 
@@ -55,6 +57,7 @@ let pollTimer = null;
 
 onMounted(() => {
     window.addEventListener('keydown', handleGlobalKey);
+    window.addEventListener('resize', onResize);
     if (page.props.auth?.user) {
         pollTimer = setInterval(() => {
             router.reload({ only: ['auth'], preserveScroll: true, preserveState: true });
@@ -64,6 +67,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     window.removeEventListener('keydown', handleGlobalKey);
+    window.removeEventListener('resize', onResize);
     clearInterval(pollTimer);
 });
 </script>
