@@ -19,7 +19,7 @@ class ConversationController extends Controller
 {
     use StoresImages;
 
-    private const PER_PAGE = 40;
+    private const PER_PAGE = 20;
 
     public function index(): Response
     {

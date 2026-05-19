@@ -250,10 +250,12 @@ function checkNearBottom() {
 
 function scrollToBottom(smooth = true) {
     nextTick(() => {
-        if (messagesEl.value) {
-            messagesEl.value.scrollTo({ top: messagesEl.value.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
-            isNearBottom.value = true;
-        }
+        requestAnimationFrame(() => {
+            if (messagesEl.value) {
+                messagesEl.value.scrollTop = messagesEl.value.scrollHeight;
+                isNearBottom.value = true;
+            }
+        });
     });
 }
 
@@ -944,6 +946,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                                 class="msg-input"
                                 @keydown="handleKeydown"
                                 @input="e => { autoResize(e); onTypingInput(); }"
+                                @blur="stopTyping"
                                 @paste="handleMsgPaste"
                             />
 

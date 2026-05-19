@@ -15,6 +15,7 @@ import { resolveBadgePos } from '@/Composables/useBadgeLayout';
 import { useDrag } from '@/Composables/useDrag';
 import { useToast } from '@/Composables/useToast';
 import { useTheme } from '@/Composables/useTheme';
+import { useSearch } from '@/Composables/useSearch';
 
 const props = defineProps({
     feed: { type: Array, default: () => [] },
@@ -56,9 +57,9 @@ watch(
 const showAdd = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref('');
-const searchResults = ref(null);
-const searchLoading = ref(false);
-let searchTimer = null;
+const activeSearchIdx = ref(-1);
+
+const { results: searchResults, loading: searchLoading, error: searchError, search: doSearch, clear: clearSearch } = useSearch();
 
 const hasResults = computed(
     () =>
@@ -68,25 +69,18 @@ const hasResults = computed(
             searchResults.value.posts?.length),
 );
 
+// Precomputed offsets for keyboard navigation across result sections
+const searchOffsets = computed(() => {
+    const u = Math.min(searchResults.value?.users?.length ?? 0, 4);
+    const c = Math.min(searchResults.value?.communities?.length ?? 0, 4);
+    const p = Math.min(searchResults.value?.posts?.length ?? 0, 3);
+    return { users: 0, communities: u, posts: u + c, all: u + c + p };
+});
+
 watch(searchQuery, (q) => {
-    clearTimeout(searchTimer);
-    if (!q.trim()) {
-        searchResults.value = null;
-        searchLoading.value = false;
-        return;
-    }
-    searchLoading.value = true;
-    searchTimer = setTimeout(() => {
-        axios
-            .get(route('search.api'), { params: { q } })
-            .then((r) => {
-                searchResults.value = r.data;
-                searchLoading.value = false;
-            })
-            .catch(() => {
-                searchLoading.value = false;
-            });
-    }, 320);
+    activeSearchIdx.value = -1;
+    if (!q.trim()) { clearSearch(); return; }
+    doSearch(q);
 });
 
 function openSearch() {
@@ -97,8 +91,8 @@ function openSearch() {
 function closeSearch() {
     searchOpen.value = false;
     searchQuery.value = '';
-    searchResults.value = null;
-    searchLoading.value = false;
+    clearSearch();
+    activeSearchIdx.value = -1;
 }
 
 function goToResult(url) {
@@ -106,12 +100,44 @@ function goToResult(url) {
     router.visit(url);
 }
 
-function submitSearch(e) {
-    e.preventDefault();
+function viewAllResults() {
     const q = searchQuery.value.trim();
     if (!q) return;
     closeSearch();
     router.visit(route('search.index', { q }));
+}
+
+function submitSearch(e) {
+    e.preventDefault();
+    viewAllResults();
+}
+
+function handleSearchKey(e) {
+    if (!hasResults.value) return;
+    const total = searchOffsets.value.all + 1; // +1 for "ver todos"
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeSearchIdx.value = Math.min(activeSearchIdx.value + 1, total - 1);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeSearchIdx.value = Math.max(activeSearchIdx.value - 1, -1);
+    } else if (e.key === 'Enter' && activeSearchIdx.value >= 0) {
+        e.preventDefault();
+        if (activeSearchIdx.value === searchOffsets.value.all) {
+            viewAllResults();
+            return;
+        }
+        const urls = [
+            ...(searchResults.value?.users?.slice(0, 4) ?? []).map(u =>
+                u.username ? route('profile.show', u.username) : null),
+            ...(searchResults.value?.communities?.slice(0, 4) ?? []).map(c =>
+                route('community.show', c.id)),
+            ...(searchResults.value?.posts?.slice(0, 3) ?? []).map(p =>
+                p.author.username ? route('profile.show', p.author.username) : null),
+        ];
+        const url = urls[activeSearchIdx.value];
+        if (url) goToResult(url);
+    }
 }
 
 const {
@@ -170,7 +196,7 @@ function onKeyDown(e) {
     if (e.key === 'Escape') {
         if (menuOpen.value) { menuOpen.value = false; return; }
         if (searchOpen.value) {
-            searchOpen.value = false;
+            closeSearch();
             return;
         }
         clearSelection();
@@ -858,6 +884,7 @@ const isMobile = window.innerWidth < 640;
                                 font-family: inherit;
                                 box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
                             "
+                            @keydown="handleSearchKey"
                         />
                         <!-- Loading spinner ou Esc hint -->
                         <div style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%)">
@@ -893,7 +920,7 @@ const isMobile = window.innerWidth < 640;
 
                     <!-- Resultados inline -->
                     <div
-                        v-if="searchQuery.trim() && (hasResults || searchResults)"
+                        v-if="searchQuery.trim() && (hasResults || searchResults || searchLoading)"
                         style="
                             margin-top: 8px;
                             background: var(--dropdown-bg);
@@ -903,10 +930,19 @@ const isMobile = window.innerWidth < 640;
                             max-height: 420px;
                             overflow-y: auto;
                         "
+                        @mouseleave="activeSearchIdx = -1"
                     >
+                        <!-- Erro de rede -->
+                        <div
+                            v-if="searchError"
+                            style="padding: 24px; text-align: center; color: #e05555; font-size: 13px; font-weight: 600"
+                        >
+                            Erro de rede. Tenta novamente.
+                        </div>
+
                         <!-- Sem resultados -->
                         <div
-                            v-if="searchResults && !hasResults && !searchLoading"
+                            v-else-if="searchResults && !hasResults && !searchLoading"
                             style="padding: 24px; text-align: center; color: var(--text-3); font-size: 13px"
                         >
                             Sem resultados para "{{ searchQuery }}"
@@ -929,19 +965,19 @@ const isMobile = window.innerWidth < 640;
                                     Pessoas
                                 </p>
                                 <div
-                                    v-for="u in searchResults.users.slice(0, 4)"
+                                    v-for="(u, i) in searchResults.users.slice(0, 4)"
                                     :key="'u' + u.id"
                                     @click="goToResult(u.username ? route('profile.show', u.username) : '#')"
-                                    style="
-                                        display: flex;
-                                        align-items: center;
-                                        gap: 12px;
-                                        padding: 10px 16px;
-                                        cursor: pointer;
-                                        transition: background 0.12s;
-                                    "
-                                    @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
-                                    @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                                    :style="{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        padding: '10px 16px',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.12s',
+                                        background: activeSearchIdx === searchOffsets.users + i ? 'var(--item-hover)' : 'transparent',
+                                    }"
+                                    @mouseenter="activeSearchIdx = searchOffsets.users + i"
                                 >
                                     <img
                                         v-if="u.avatar"
@@ -1011,19 +1047,19 @@ const isMobile = window.innerWidth < 640;
                                     Comunidades
                                 </p>
                                 <div
-                                    v-for="c in searchResults.communities.slice(0, 4)"
+                                    v-for="(c, i) in searchResults.communities.slice(0, 4)"
                                     :key="'c' + c.id"
                                     @click="goToResult(route('community.show', c.id))"
-                                    style="
-                                        display: flex;
-                                        align-items: center;
-                                        gap: 12px;
-                                        padding: 10px 16px;
-                                        cursor: pointer;
-                                        transition: background 0.12s;
-                                    "
-                                    @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
-                                    @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                                    :style="{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        padding: '10px 16px',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.12s',
+                                        background: activeSearchIdx === searchOffsets.communities + i ? 'var(--item-hover)' : 'transparent',
+                                    }"
+                                    @mouseenter="activeSearchIdx = searchOffsets.communities + i"
                                 >
                                     <div
                                         :style="{
@@ -1086,21 +1122,19 @@ const isMobile = window.innerWidth < 640;
                                     Posts
                                 </p>
                                 <div
-                                    v-for="p in searchResults.posts.slice(0, 3)"
+                                    v-for="(p, i) in searchResults.posts.slice(0, 3)"
                                     :key="'p' + p.id"
-                                    @click="
-                                        goToResult(p.author.username ? route('profile.show', p.author.username) : '#')
-                                    "
-                                    style="
-                                        display: flex;
-                                        align-items: flex-start;
-                                        gap: 10px;
-                                        padding: 10px 16px;
-                                        cursor: pointer;
-                                        transition: background 0.12s;
-                                    "
-                                    @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
-                                    @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                                    @click="goToResult(p.author.username ? route('profile.show', p.author.username) : '#')"
+                                    :style="{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: '10px',
+                                        padding: '10px 16px',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.12s',
+                                        background: activeSearchIdx === searchOffsets.posts + i ? 'var(--item-hover)' : 'transparent',
+                                    }"
+                                    @mouseenter="activeSearchIdx = searchOffsets.posts + i"
                                 >
                                     <img
                                         v-if="p.author.avatar"
@@ -1156,19 +1190,19 @@ const isMobile = window.innerWidth < 640;
 
                             <!-- Ver todos -->
                             <div
-                                @click="submitSearch({ preventDefault: () => {} })"
-                                style="
-                                    padding: 12px 16px;
-                                    text-align: center;
-                                    font-size: 12px;
-                                    font-weight: 700;
-                                    color: #009ac7;
-                                    cursor: pointer;
-                                    border-top: 1px solid var(--dropdown-sep);
-                                    transition: background 0.12s;
-                                "
-                                @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
-                                @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                                @click="viewAllResults"
+                                :style="{
+                                    padding: '12px 16px',
+                                    textAlign: 'center',
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    color: '#009ac7',
+                                    cursor: 'pointer',
+                                    borderTop: '1px solid var(--dropdown-sep)',
+                                    transition: 'background 0.12s',
+                                    background: activeSearchIdx === searchOffsets.all ? 'var(--item-hover)' : 'transparent',
+                                }"
+                                @mouseenter="activeSearchIdx = searchOffsets.all"
                             >
                                 Ver todos os resultados →
                             </div>

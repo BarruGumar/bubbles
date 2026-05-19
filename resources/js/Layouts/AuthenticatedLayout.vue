@@ -6,6 +6,7 @@ import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
 import { useTheme } from '@/Composables/useTheme';
+import { useSearch } from '@/Composables/useSearch';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -28,28 +29,93 @@ const unreadNotifications = computed(() => page.props.auth?.unread_notifications
 const open = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref('');
+const activeSearchIdx = ref(-1);
 const isMobile = ref(window.innerWidth < 640);
+
+const { results: searchResults, loading: searchLoading, error: searchError, search: doSearch, clear: clearSearch } = useSearch();
+
+const hasSearchResults = computed(() =>
+    searchResults.value &&
+    (searchResults.value.users?.length ||
+        searchResults.value.communities?.length ||
+        searchResults.value.posts?.length),
+);
+
+const searchOffsets = computed(() => {
+    const u = Math.min(searchResults.value?.users?.length ?? 0, 4);
+    const c = Math.min(searchResults.value?.communities?.length ?? 0, 4);
+    const p = Math.min(searchResults.value?.posts?.length ?? 0, 3);
+    return { users: 0, communities: u, posts: u + c, all: u + c + p };
+});
+
+watch(searchQuery, (q) => {
+    activeSearchIdx.value = -1;
+    if (!q.trim()) { clearSearch(); return; }
+    doSearch(q);
+});
 
 function onResize() { isMobile.value = window.innerWidth < 640; }
 
 function avatarInitial(name) { return (name ?? '?')[0].toUpperCase(); }
 
+function closeSearchOverlay() {
+    searchOpen.value = false;
+    searchQuery.value = '';
+    clearSearch();
+    activeSearchIdx.value = -1;
+}
+
 function submitSearch(e) {
     e.preventDefault();
     const q = searchQuery.value.trim();
     if (!q) return;
+    closeSearchOverlay();
     router.visit(route('search.index', { q }));
-    searchOpen.value = false;
-    searchQuery.value = '';
+}
+
+function viewAllSearchResults() {
+    const q = searchQuery.value.trim();
+    if (!q) return;
+    closeSearchOverlay();
+    router.visit(route('search.index', { q }));
+}
+
+function handleSearchKey(e) {
+    if (!hasSearchResults.value) return;
+    const total = searchOffsets.value.all + 1;
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeSearchIdx.value = Math.min(activeSearchIdx.value + 1, total - 1);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeSearchIdx.value = Math.max(activeSearchIdx.value - 1, -1);
+    } else if (e.key === 'Enter' && activeSearchIdx.value >= 0) {
+        e.preventDefault();
+        if (activeSearchIdx.value === searchOffsets.value.all) {
+            viewAllSearchResults();
+            return;
+        }
+        const urls = [
+            ...(searchResults.value?.users?.slice(0, 4) ?? []).map(u =>
+                u.username ? route('profile.show', u.username) : null),
+            ...(searchResults.value?.communities?.slice(0, 4) ?? []).map(c =>
+                route('community.show', c.id)),
+            ...(searchResults.value?.posts?.slice(0, 3) ?? []).map(p =>
+                p.author.username ? route('profile.show', p.author.username) : null),
+        ];
+        const url = urls[activeSearchIdx.value];
+        if (url) { closeSearchOverlay(); router.visit(url); }
+    }
 }
 
 function openSearch() {
     searchOpen.value = true;
+    activeSearchIdx.value = -1;
     setTimeout(() => { document.getElementById('global-search-input')?.focus(); }, 50);
 }
 
 function handleGlobalKey(e) {
-    if (e.key === 'Escape') searchOpen.value = false;
+    if (e.key === 'Escape') closeSearchOverlay();
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
 }
 

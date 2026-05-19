@@ -3,7 +3,7 @@ import { ref, watch, computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { clImg } from '@/Composables/useCloudinary';
-import axios from 'axios';
+import { useSearch } from '@/Composables/useSearch';
 
 const props = defineProps({
     query: { type: String, default: '' },
@@ -11,47 +11,19 @@ const props = defineProps({
 });
 
 const localQuery = ref(props.query);
-const localResults = ref(props.results);
-const loading = ref(false);
-const error = ref(false);
+const { results: fetched, loading, error, search, clear } = useSearch();
 
-let debounceTimer = null;
-
-function formatInitial(name) {
-    return (name ?? '?')[0].toUpperCase();
-}
-
-function doSearch(q) {
-    if (!q.trim()) {
-        localResults.value = null;
-        loading.value = false;
-        return;
-    }
-
-    loading.value = true;
-    error.value = false;
-
-    axios
-        .get(route('search.api'), { params: { q } })
-        .then((res) => {
-            localResults.value = res.data;
-            loading.value = false;
-        })
-        .catch(() => {
-            error.value = true;
-            loading.value = false;
-        });
-}
+// Use server-rendered results on initial load; switch to API results as user types
+const localResults = computed(() => {
+    if (!localQuery.value.trim()) return null;
+    if (fetched.value !== null) return fetched.value;
+    if (localQuery.value.trim() === props.query.trim()) return props.results;
+    return null;
+});
 
 watch(localQuery, (q) => {
-    clearTimeout(debounceTimer);
-    if (!q.trim()) {
-        localResults.value = null;
-        loading.value = false;
-        return;
-    }
-    loading.value = true;
-    debounceTimer = setTimeout(() => doSearch(q), 320);
+    if (!q.trim()) { clear(); return; }
+    search(q);
 });
 
 const hasResults = computed(
@@ -64,11 +36,34 @@ const hasResults = computed(
 
 const isEmpty = computed(
     () =>
-        localResults.value &&
-        !localResults.value.users?.length &&
-        !localResults.value.communities?.length &&
-        !localResults.value.posts?.length,
+        localResults.value !== null &&
+        !loading.value &&
+        !localResults.value?.users?.length &&
+        !localResults.value?.communities?.length &&
+        !localResults.value?.posts?.length,
 );
+
+function formatInitial(name) {
+    return (name ?? '?')[0].toUpperCase();
+}
+
+// Safe HTML-escape before inserting <mark> tags
+function escHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function highlight(text, q) {
+    const safe = escHtml(text);
+    if (!q?.trim()) return safe;
+    const pat = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return safe.replace(
+        new RegExp(`(${pat})`, 'gi'),
+        '<mark style="background:#ffd54f55;color:inherit;border-radius:2px;padding:0 1px">$1</mark>',
+    );
+}
 </script>
 
 <template>
@@ -114,14 +109,12 @@ const isEmpty = computed(
                         background: rgba(255, 255, 255, 0.88);
                         border: 1.5px solid #009ac722;
                         border-radius: 14px;
-                        padding: 13px 16px 13px 44px;
+                        padding: 13px 44px 13px 44px;
                         font-size: 14px;
                         color: #3a6478;
                         outline: none;
                         font-family: inherit;
-                        transition:
-                            border-color 0.2s,
-                            box-shadow 0.2s;
+                        transition: border-color 0.2s, box-shadow 0.2s;
                         backdrop-filter: blur(12px);
                     "
                     @focus="
@@ -132,42 +125,46 @@ const isEmpty = computed(
                         $event.target.style.borderColor = '#009ac722';
                         $event.target.style.boxShadow = 'none';
                     "
+                    @keydown.escape="clear(); localQuery = ''"
                 />
-                <!-- Loading indicator -->
-                <svg
-                    v-if="loading"
+                <!-- Spinner wrapper: translateY on span, rotation on svg -->
+                <span
                     style="
                         position: absolute;
                         right: 16px;
                         top: 50%;
                         transform: translateY(-50%);
-                        color: #009ac7;
-                        animation: spin 1s linear infinite;
-                        transform-origin: center;
+                        display: flex;
+                        align-items: center;
                     "
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
                 >
-                    <path
-                        d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
-                    />
-                </svg>
+                    <svg
+                        v-if="loading"
+                        style="color: #009ac7; animation: spin 0.8s linear infinite; display: block"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                    >
+                        <path
+                            d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
+                        />
+                    </svg>
+                </span>
             </div>
 
-            <!-- Error -->
+            <!-- Network error -->
             <div
                 v-if="error"
                 style="text-align: center; padding: 32px; color: #e05555; font-size: 13px; font-weight: 600"
             >
-                Erro ao pesquisar. Tenta novamente.
+                Erro de rede. Verifica a tua ligação e tenta novamente.
             </div>
 
-            <!-- Empty -->
+            <!-- Empty state -->
             <div
                 v-else-if="isEmpty"
                 style="
@@ -280,12 +277,11 @@ const isEmpty = computed(
                                         text-overflow: ellipsis;
                                         white-space: nowrap;
                                     "
-                                >
-                                    {{ u.name }}
-                                </p>
-                                <p v-if="u.username" style="font-size: 12px; color: #009ac7; margin: 1px 0 0">
-                                    @{{ u.username }}
-                                </p>
+                                    v-html="highlight(u.name, localQuery)"
+                                />
+                                <p v-if="u.username" style="font-size: 12px; color: #009ac7; margin: 1px 0 0"
+                                    v-html="'@' + highlight(u.username, localQuery)"
+                                />
                                 <p
                                     v-if="u.bio"
                                     style="
@@ -356,7 +352,6 @@ const isEmpty = computed(
                             @mouseenter="$event.currentTarget.style.background = 'rgba(0,154,199,0.04)'"
                             @mouseleave="$event.currentTarget.style.background = 'transparent'"
                         >
-                            <!-- Community bubble icon -->
                             <div
                                 :style="{
                                     width: '46px',
@@ -398,9 +393,8 @@ const isEmpty = computed(
                                         text-overflow: ellipsis;
                                         white-space: nowrap;
                                     "
-                                >
-                                    {{ c.title }}
-                                </p>
+                                    v-html="highlight(c.title, localQuery)"
+                                />
                                 <p
                                     v-if="c.description"
                                     style="
@@ -516,9 +510,8 @@ const isEmpty = computed(
                                     -webkit-box-orient: vertical;
                                     overflow: hidden;
                                 "
-                            >
-                                {{ p.content }}
-                            </p>
+                                v-html="highlight(p.content, localQuery)"
+                            />
                             <img
                                 v-if="p.image"
                                 :src="clImg(p.image, 600, 0, 'limit')"
@@ -541,8 +534,6 @@ const isEmpty = computed(
 
 <style scoped>
 @keyframes spin {
-    to {
-        transform: translateY(-50%) rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
 }
 </style>
