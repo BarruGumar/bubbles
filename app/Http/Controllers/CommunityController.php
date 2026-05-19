@@ -225,14 +225,19 @@ class CommunityController extends Controller
         return response()->json(['content' => $post->content]);
     }
 
-    public function destroy(int $id, CommunityPost $post): RedirectResponse
+    public function destroy(int $id, CommunityPost $post): JsonResponse
     {
         Gate::authorize('delete', $post);
-        $this->deleteCloudinaryImage($post->image_public_id);
-        $this->deleteCloudinaryVideo($post->video_public_id);
+
+        $imagePid = $post->image_public_id;
+        $videoPid = $post->video_public_id;
+
         $post->delete();
 
-        return back();
+        app()->terminating(fn () => $this->deleteCloudinaryImage($imagePid));
+        app()->terminating(fn () => $this->deleteCloudinaryVideo($videoPid));
+
+        return response()->json(['ok' => true]);
     }
 
     public function uploadImage(Request $request, int $id): RedirectResponse

@@ -7,6 +7,8 @@ import PostCardSkeleton from '@/Components/PostCardSkeleton.vue';
 import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
+import { useClipboardImage } from '@/Composables/useClipboardImage';
+import { compressImage } from '@/Composables/useImageCompressor';
 
 const { show: toast } = useToast();
 
@@ -66,7 +68,7 @@ const isVideoMedia = ref(false);
 const uploadProgress = ref(0);
 const uploadingServer = ref(false);
 
-function onMediaChange(e) {
+async function onMediaChange(e) {
     const file = e.target.files[0];
     if (!file) return;
     if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
@@ -74,12 +76,14 @@ function onMediaChange(e) {
         postForm.image = null;
         postForm.video = file;
         isVideoMedia.value = true;
+        mediaPreview.value = URL.createObjectURL(file);
     } else {
         postForm.video = null;
-        postForm.image = file;
         isVideoMedia.value = false;
+        mediaPreview.value = URL.createObjectURL(file);
+        postForm.image = file;
+        postForm.image = await compressImage(file);
     }
-    mediaPreview.value = URL.createObjectURL(file);
 }
 
 function removeMedia() {
@@ -90,6 +94,21 @@ function removeMedia() {
     isVideoMedia.value = false;
     if (mediaInput.value) mediaInput.value.value = '';
 }
+
+async function setMediaFile(file) {
+    if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
+    postForm.video = null;
+    isVideoMedia.value = false;
+    mediaPreview.value = URL.createObjectURL(file);
+    postForm.image = file;
+    postForm.image = await compressImage(file);
+}
+
+const { handlePaste: handlePostPaste } = useClipboardImage({
+    onImage: setMediaFile,
+    maxKB: 4096,
+    onError: (msg) => toast(msg, 'error'),
+});
 
 onUnmounted(() => {
     if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
@@ -276,7 +295,7 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                                             WebkitBackgroundClip: 'text',
                                             WebkitTextFillColor: 'transparent',
                                             backgroundClip: 'text',
-                                        } : { color: '#1a3a4a' }),
+                                        } : { color: '#3a6478' }),
                                     }"
                                 >
                                     {{ profileUser.name }}
@@ -504,7 +523,7 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
 
                     <div style="display: flex; gap: 24px; margin-top: 18px">
                         <div>
-                            <span style="font-size: 18px; font-weight: 800; color: #1a3a4a">{{
+                            <span style="font-size: 18px; font-weight: 800; color: #3a6478">{{
                                 profileUser.posts_count
                             }}</span>
                             <span style="font-size: 11px; color: #8ba0b0; font-weight: 600; margin-left: 5px"
@@ -868,7 +887,7 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                                 border-radius: 12px;
                                 padding: 12px 14px;
                                 font-size: 14px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 resize: vertical;
@@ -878,6 +897,7 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                             @focus="$event.target.style.borderColor = '#009ac7'"
                             @blur="$event.target.style.borderColor = '#4ebcff33'"
                             @keydown.ctrl.enter="submitPost"
+                            @paste="handlePostPaste"
                         />
                         <div v-if="mediaPreview" style="margin-top: 10px; position: relative; display: inline-block">
                             <video
@@ -1072,6 +1092,7 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                     :delete-route="route('posts.destroy', post.id)"
                     :edit-route="route('posts.update', post.id)"
                     :report-route="!isOwn && authUser ? route('posts.report', post.id) : null"
+                    @deleted="localPosts = localPosts.filter(p => p.id !== $event)"
                 />
             </div>
 

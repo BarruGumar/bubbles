@@ -30,7 +30,7 @@ const emit = defineEmits(['update:text', 'submit', 'cancel']);
                 border-radius: 8px;
                 padding: 8px 10px;
                 font-size: 12px;
-                color: #1a3a4a;
+                color: #3a6478;
                 outline: none;
                 font-family: inherit;
                 resize: none;

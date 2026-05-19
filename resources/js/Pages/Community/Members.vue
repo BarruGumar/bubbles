@@ -221,19 +221,19 @@ function unmute(member) {
         style="position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px;"
         @click.self="banModal=null">
         <div style="background:white; border-radius:18px; padding:28px 32px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,.2);">
-            <h2 style="font-size:15px; font-weight:900; color:#1a3a4a; margin:0 0 6px;">Banir {{ banModal.name }}</h2>
+            <h2 style="font-size:15px; font-weight:900; color:#3a6478; margin:0 0 6px;">Banir {{ banModal.name }}</h2>
             <p style="font-size:12px; color:#8ba0b0; margin:0 0 18px;">@{{ banModal.username }}</p>
 
             <div style="margin-bottom:14px;">
                 <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Motivo *</label>
                 <textarea v-model="banForm.reason" rows="3" placeholder="Motivo do banimento..."
-                    style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"
+                    style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"
                     @focus="$event.target.style.borderColor='#e05555'" @blur="$event.target.style.borderColor='#dde8f0'" />
             </div>
             <div style="margin-bottom:22px;">
                 <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Banido até (vazio = permanente)</label>
                 <input type="datetime-local" v-model="banForm.banned_until"
-                    style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; font-family:inherit; outline:none; box-sizing:border-box;" />
+                    style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; font-family:inherit; outline:none; box-sizing:border-box;" />
             </div>
             <div style="display:flex; gap:10px;">
                 <button @click="banModal=null"
@@ -254,19 +254,19 @@ function unmute(member) {
         style="position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px;"
         @click.self="muteModal=null">
         <div style="background:white; border-radius:18px; padding:28px 32px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,.2);">
-            <h2 style="font-size:15px; font-weight:900; color:#1a3a4a; margin:0 0 6px;">Silenciar {{ muteModal.name }}</h2>
+            <h2 style="font-size:15px; font-weight:900; color:#3a6478; margin:0 0 6px;">Silenciar {{ muteModal.name }}</h2>
             <p style="font-size:12px; color:#8ba0b0; margin:0 0 18px;">@{{ muteModal.username }}</p>
 
             <div style="margin-bottom:14px;">
                 <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Motivo *</label>
                 <textarea v-model="muteForm.reason" rows="3" placeholder="Motivo do silêncio..."
-                    style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"
+                    style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"
                     @focus="$event.target.style.borderColor='#9b6bdf'" @blur="$event.target.style.borderColor='#dde8f0'" />
             </div>
             <div style="margin-bottom:22px;">
                 <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Silenciado até (vazio = permanente)</label>
                 <input type="datetime-local" v-model="muteForm.muted_until"
-                    style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; font-family:inherit; outline:none; box-sizing:border-box;" />
+                    style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; font-family:inherit; outline:none; box-sizing:border-box;" />
             </div>
             <div style="display:flex; gap:10px;">
                 <button @click="muteModal=null"

@@ -92,7 +92,7 @@ function submitRevoke() {
 
     <AdminLayout>
         <template #header>
-            <h1 style="font-size: 16px; font-weight: 800; color: #1a3a4a; margin: 0">Punições Globais</h1>
+            <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Punições Globais</h1>
         </template>
 
         <!-- Toolbar -->
@@ -100,7 +100,7 @@ function submitRevoke() {
             <input
                 v-model="search" @input="applyFilters"
                 placeholder="Pesquisar utilizador..."
-                style="background: white; border: 1.5px solid #dde8f0; border-radius: 10px; padding: 9px 14px; font-size: 13px; color: #1a3a4a; outline: none; font-family: inherit; width: 220px;"
+                style="background: white; border: 1.5px solid #dde8f0; border-radius: 10px; padding: 9px 14px; font-size: 13px; color: #3a6478; outline: none; font-family: inherit; width: 220px;"
                 @focus="$event.target.style.borderColor='#009ac7'" @blur="$event.target.style.borderColor='#dde8f0'"
             />
 
@@ -116,7 +116,7 @@ function submitRevoke() {
 
             <!-- Type filter -->
             <select @change="setType($event.target.value)" :value="typeFilter"
-                style="background: white; border: 1.5px solid #dde8f0; border-radius: 10px; padding: 8px 12px; font-size: 12px; color: #1a3a4a; font-family: inherit; cursor: pointer; outline: none;">
+                style="background: white; border: 1.5px solid #dde8f0; border-radius: 10px; padding: 8px 12px; font-size: 12px; color: #3a6478; font-family: inherit; cursor: pointer; outline: none;">
                 <option value="">Todos os tipos</option>
                 <option v-for="(label, val) in typeLabel" :key="val" :value="val">{{ label }}</option>
             </select>
@@ -145,7 +145,7 @@ function submitRevoke() {
                     <tr v-for="(p, i) in punishments.data" :key="p.id"
                         :style="{ borderTop: i>0 ? '1px solid #f4f7fb' : 'none' }">
                         <td style="padding: 11px 14px;">
-                            <p style="font-size:13px; font-weight:700; color:#1a3a4a; margin:0">{{ p.user.name }}</p>
+                            <p style="font-size:13px; font-weight:700; color:#3a6478; margin:0">{{ p.user.name }}</p>
                             <p style="font-size:11px; color:#8ba0b0; margin:0">@{{ p.user.username }}</p>
                         </td>
                         <td style="padding: 11px 14px;">
@@ -198,18 +198,18 @@ function submitRevoke() {
             style="position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px;"
             @click.self="showModal=false">
             <div style="background:white; border-radius:18px; padding:28px 32px; width:100%; max-width:480px; box-shadow:0 20px 60px rgba(0,0,0,.2);">
-                <h2 style="font-size:16px; font-weight:900; color:#1a3a4a; margin:0 0 20px;">Nova Punição</h2>
+                <h2 style="font-size:16px; font-weight:900; color:#3a6478; margin:0 0 20px;">Nova Punição</h2>
 
                 <!-- User search -->
                 <div style="margin-bottom:14px; position:relative;">
                     <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Utilizador</label>
                     <input v-model="userSearch" @input="searchUsers" placeholder="Pesquisar pelo nome ou username..."
-                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; outline:none; font-family:inherit; box-sizing:border-box;"
+                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; outline:none; font-family:inherit; box-sizing:border-box;"
                         @focus="$event.target.style.borderColor='#009ac7'" @blur="setTimeout(()=>userResults=[],200)" />
                     <div v-if="userResults.length" style="position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #dde8f0; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.1); z-index:10; overflow:hidden;">
                         <div v-for="u in userResults" :key="u.id"
                             @click="selectUser(u)"
-                            style="padding:10px 14px; font-size:13px; cursor:pointer; color:#1a3a4a;"
+                            style="padding:10px 14px; font-size:13px; cursor:pointer; color:#3a6478;"
                             @mouseenter="$event.currentTarget.style.background='#f0f8ff'"
                             @mouseleave="$event.currentTarget.style.background='white'">
                             <strong>{{ u.name }}</strong> <span style="color:#8ba0b0">@{{ u.username }}</span>
@@ -221,7 +221,7 @@ function submitRevoke() {
                 <div style="margin-bottom:14px;">
                     <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Tipo</label>
                     <select v-model="form.type"
-                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; font-family:inherit; outline:none; cursor:pointer;">
+                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; font-family:inherit; outline:none; cursor:pointer;">
                         <option v-for="(label, val) in typeLabel" :key="val" :value="val">{{ label }}</option>
                     </select>
                 </div>
@@ -230,7 +230,7 @@ function submitRevoke() {
                 <div style="margin-bottom:14px;">
                     <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Motivo *</label>
                     <textarea v-model="form.reason" rows="3" placeholder="Descreve o motivo da punição..."
-                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"
+                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"
                         @focus="$event.target.style.borderColor='#009ac7'" @blur="$event.target.style.borderColor='#dde8f0'" />
                 </div>
 
@@ -238,7 +238,7 @@ function submitRevoke() {
                 <div style="margin-bottom:14px;">
                     <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Termina em (deixa vazio para permanente)</label>
                     <input type="datetime-local" v-model="form.ends_at"
-                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; font-family:inherit; outline:none; box-sizing:border-box;"
+                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; font-family:inherit; outline:none; box-sizing:border-box;"
                         @focus="$event.target.style.borderColor='#009ac7'" @blur="$event.target.style.borderColor='#dde8f0'" />
                 </div>
 
@@ -246,7 +246,7 @@ function submitRevoke() {
                 <div style="margin-bottom:22px;">
                     <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Notas internas (só admins veem)</label>
                     <textarea v-model="form.notes" rows="2" placeholder="Notas opcionais..."
-                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"
+                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"
                         @focus="$event.target.style.borderColor='#009ac7'" @blur="$event.target.style.borderColor='#dde8f0'" />
                 </div>
 
@@ -270,14 +270,14 @@ function submitRevoke() {
             style="position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px;"
             @click.self="revokeModal=null">
             <div style="background:white; border-radius:18px; padding:28px 32px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,.2);">
-                <h2 style="font-size:15px; font-weight:900; color:#1a3a4a; margin:0 0 6px;">Revogar Punição</h2>
+                <h2 style="font-size:15px; font-weight:900; color:#3a6478; margin:0 0 6px;">Revogar Punição</h2>
                 <p style="font-size:12px; color:#8ba0b0; margin:0 0 18px;">
                     {{ typeLabel[revokeModal.type] }} de {{ revokeModal.user.name }}
                 </p>
                 <div style="margin-bottom:18px;">
                     <label style="font-size:12px; font-weight:700; color:#5a7a8a; display:block; margin-bottom:6px;">Motivo da revogação (opcional)</label>
                     <input v-model="revokeReason" placeholder="ex: apelação aceite..."
-                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#1a3a4a; font-family:inherit; outline:none; box-sizing:border-box;" />
+                        style="width:100%; background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:10px; padding:10px 14px; font-size:13px; color:#3a6478; font-family:inherit; outline:none; box-sizing:border-box;" />
                 </div>
                 <div style="display:flex; gap:10px;">
                     <button @click="revokeModal=null"

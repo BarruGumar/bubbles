@@ -20,7 +20,7 @@ const emit = defineEmits(['update:content', 'save', 'cancel']);
                 border-radius: 10px;
                 padding: 10px 12px;
                 font-size: 14px;
-                color: #1a3a4a;
+                color: #3a6478;
                 outline: none;
                 font-family: inherit;
                 resize: vertical;

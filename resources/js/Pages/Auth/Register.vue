@@ -20,7 +20,7 @@ const submit = () => {
     <GuestLayout>
         <Head title="Criar conta" />
 
-        <h2 style="font-weight: 800; font-size: 18px; color: #1a3a4a; margin-bottom: 4px">Cria a tua conta</h2>
+        <h2 style="font-weight: 800; font-size: 18px; color: #3a6478; margin-bottom: 4px">Cria a tua conta</h2>
         <p style="font-size: 12px; color: #8ba0b0; margin-bottom: 28px">Entra no mundo Bubbles</p>
 
         <form @submit.prevent="submit" style="display: flex; flex-direction: column; gap: 16px">
@@ -48,7 +48,7 @@ const submit = () => {
                         border-radius: 11px;
                         padding: 11px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition: border-color 0.2s;
@@ -82,7 +82,7 @@ const submit = () => {
                         border-radius: 11px;
                         padding: 11px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition: border-color 0.2s;
@@ -117,7 +117,7 @@ const submit = () => {
                         border-radius: 11px;
                         padding: 11px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition: border-color 0.2s;
@@ -152,7 +152,7 @@ const submit = () => {
                         border-radius: 11px;
                         padding: 11px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition: border-color 0.2s;

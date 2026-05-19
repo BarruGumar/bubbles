@@ -161,7 +161,7 @@ class ConversationController extends Controller
 
     /**
      * Lightweight polling: return messages newer than ?after=id as JSON.
-     * Frontend polls this every ~12 s when the tab is visible.
+     * Frontend polls this every ~3 s when the tab is visible.
      */
     public function poll(Conversation $conversation, Request $request): JsonResponse
     {
@@ -198,12 +198,48 @@ class ConversationController extends Controller
             ->where('user_id', '!=', $userId)
             ->value('last_read_at');
 
+        // Read typing state for other participants from cache (no DB query)
+        $otherUserIds = DB::table('conversation_user')
+            ->where('conversation_id', $conversation->id)
+            ->where('user_id', '!=', $userId)
+            ->pluck('user_id');
+
+        $typingUsers = $otherUserIds->map(function ($uid) use ($conversation) {
+            return cache()->get("typing:{$conversation->id}:{$uid}");
+        })->filter()->values();
+
         return response()->json([
             'messages' => $messages,
             'other_last_read_at' => $otherReadAt
                 ? \Carbon\Carbon::parse($otherReadAt)->toISOString()
                 : null,
+            'typing_users' => $typingUsers,
         ]);
+    }
+
+    public function typing(Request $request, Conversation $conversation): JsonResponse
+    {
+        $userId = auth()->id();
+
+        abort_unless(
+            DB::table('conversation_user')
+                ->where('conversation_id', $conversation->id)
+                ->where('user_id', $userId)
+                ->exists(),
+            403
+        );
+
+        $request->validate(['is_typing' => 'required|boolean']);
+
+        $key = "typing:{$conversation->id}:{$userId}";
+
+        if ($request->boolean('is_typing')) {
+            cache()->put($key, ['id' => $userId, 'name' => auth()->user()->name], 8);
+        } else {
+            cache()->forget($key);
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     public function updateMessage(Request $request, Message $message): JsonResponse

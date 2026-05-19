@@ -78,7 +78,7 @@ body::before {
 
 html.dark body::before {
     background-image: url('/images/BubblesDarkMode.png');
-    opacity: 0.90;
+    opacity: 0.45;
 }
 
 /* ── Floor gradient colour ─────────────────────────────────────── */

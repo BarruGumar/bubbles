@@ -178,7 +178,7 @@ const authUser = computed(() => usePage().props.auth?.user);
                         style="
                             font-size: 28px;
                             font-weight: 900;
-                            color: #1a3a4a;
+                            color: #3a6478;
                             margin: 0 0 16px;
                             letter-spacing: -0.5px;
                             line-height: 1.2;

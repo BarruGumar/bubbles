@@ -59,7 +59,7 @@ const hasUnread = props.notifications.some((n) => !n.read);
         <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px 80px">
             <!-- Header -->
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px">
-                <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0; letter-spacing: -0.02em">
+                <h1 style="font-size: 22px; font-weight: 900; color: #3a6478; margin: 0; letter-spacing: -0.02em">
                     Notificações
                 </h1>
                 <div style="display: flex; gap: 8px">
@@ -214,7 +214,7 @@ const hasUnread = props.notifications.some((n) => !n.read);
                     <!-- Content -->
                     <div style="flex: 1; min-width: 0">
                         <p
-                            style="font-size: 13px; color: #1a3a4a; margin: 0 0 3px; line-height: 1.4"
+                            style="font-size: 13px; color: #3a6478; margin: 0 0 3px; line-height: 1.4"
                             :style="{ fontWeight: n.read ? '400' : '600' }"
                         >
                             {{ n.data.message }}

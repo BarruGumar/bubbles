@@ -58,7 +58,7 @@ function clearFilters() {
 
     <AdminLayout>
         <template #header>
-            <h1 style="font-size: 16px; font-weight: 800; color: #1a3a4a; margin: 0">Audit Log</h1>
+            <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Audit Log</h1>
         </template>
 
         <!-- Filters -->
@@ -66,25 +66,25 @@ function clearFilters() {
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <label style="font-size:10px; font-weight:700; color:#8ba0b0; text-transform:uppercase; letter-spacing:.05em;">User ID</label>
                 <input v-model="f.user_id" @input="applyFilters" placeholder="ID do utilizador"
-                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#1a3a4a; outline:none; font-family:inherit; width:130px;"
+                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#3a6478; outline:none; font-family:inherit; width:130px;"
                     @focus="$event.target.style.borderColor='#009ac7'" @blur="$event.target.style.borderColor='#dde8f0'" />
             </div>
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <label style="font-size:10px; font-weight:700; color:#8ba0b0; text-transform:uppercase; letter-spacing:.05em;">IP</label>
                 <input v-model="f.ip" @input="applyFilters" placeholder="ex: 192.168.1.1"
-                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#1a3a4a; outline:none; font-family:inherit; width:130px;"
+                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#3a6478; outline:none; font-family:inherit; width:130px;"
                     @focus="$event.target.style.borderColor='#009ac7'" @blur="$event.target.style.borderColor='#dde8f0'" />
             </div>
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <label style="font-size:10px; font-weight:700; color:#8ba0b0; text-transform:uppercase; letter-spacing:.05em;">Ação</label>
                 <input v-model="f.action" @input="applyFilters" placeholder="ex: user.punish"
-                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#1a3a4a; outline:none; font-family:inherit; width:140px;"
+                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#3a6478; outline:none; font-family:inherit; width:140px;"
                     @focus="$event.target.style.borderColor='#009ac7'" @blur="$event.target.style.borderColor='#dde8f0'" />
             </div>
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <label style="font-size:10px; font-weight:700; color:#8ba0b0; text-transform:uppercase; letter-spacing:.05em;">Categoria</label>
                 <select v-model="f.category" @change="applyFilters"
-                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#1a3a4a; font-family:inherit; outline:none; cursor:pointer; width:130px;">
+                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#3a6478; font-family:inherit; outline:none; cursor:pointer; width:130px;">
                     <option value="">Todas</option>
                     <option v-for="c in ['auth','moderation','admin','content','community','security','system']" :key="c" :value="c">{{ c }}</option>
                 </select>
@@ -92,12 +92,12 @@ function clearFilters() {
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <label style="font-size:10px; font-weight:700; color:#8ba0b0; text-transform:uppercase; letter-spacing:.05em;">De</label>
                 <input type="date" v-model="f.from" @change="applyFilters"
-                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#1a3a4a; font-family:inherit; outline:none; width:130px;" />
+                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#3a6478; font-family:inherit; outline:none; width:130px;" />
             </div>
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <label style="font-size:10px; font-weight:700; color:#8ba0b0; text-transform:uppercase; letter-spacing:.05em;">Até</label>
                 <input type="date" v-model="f.to" @change="applyFilters"
-                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#1a3a4a; font-family:inherit; outline:none; width:130px;" />
+                    style="background:#f4f7fb; border:1.5px solid #dde8f0; border-radius:8px; padding:7px 10px; font-size:12px; color:#3a6478; font-family:inherit; outline:none; width:130px;" />
             </div>
             <button @click="clearFilters"
                 style="background:#f0f4f8; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:700; color:#5a7a8a; cursor:pointer; font-family:inherit;">
@@ -123,12 +123,12 @@ function clearFilters() {
                     <tr v-for="(l, i) in logs.data" :key="l.id"
                         :style="{ borderTop: i>0 ? '1px solid #f4f7fb' : 'none' }">
                         <td style="padding:10px 14px; font-size:11px; color:#8ba0b0; white-space:nowrap;">{{ l.created_at }}</td>
-                        <td style="padding:10px 14px; font-size:12px; color:#1a3a4a;">
+                        <td style="padding:10px 14px; font-size:12px; color:#3a6478;">
                             <span v-if="l.actor">{{ l.actor.name }}<br><span style="color:#8ba0b0;font-size:10px;">@{{ l.actor.username }}</span></span>
                             <span v-else style="color:#b0c0cc; font-style:italic;">Sistema</span>
                         </td>
                         <td style="padding:10px 14px;">
-                            <code style="font-size:11px; background:#f4f7fb; padding:2px 6px; border-radius:4px; color:#1a3a4a;">{{ l.action }}</code>
+                            <code style="font-size:11px; background:#f4f7fb; padding:2px 6px; border-radius:4px; color:#3a6478;">{{ l.action }}</code>
                         </td>
                         <td style="padding:10px 14px;">
                             <span :style="{ fontSize:'10px', fontWeight:'800', padding:'2px 7px', borderRadius:'99px',
@@ -171,14 +171,14 @@ function clearFilters() {
             @click.self="detailLog=null">
             <div style="background:white; border-radius:18px; padding:28px 32px; width:100%; max-width:560px; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2);">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-                    <h2 style="font-size:15px; font-weight:900; color:#1a3a4a; margin:0;">Metadata</h2>
+                    <h2 style="font-size:15px; font-weight:900; color:#3a6478; margin:0;">Metadata</h2>
                     <button @click="detailLog=null" style="background:none; border:none; cursor:pointer; font-size:18px; color:#8ba0b0;">✕</button>
                 </div>
                 <div style="margin-bottom:12px;">
                     <p style="font-size:11px; color:#8ba0b0; margin:0 0 4px;">Ação</p>
-                    <code style="font-size:13px; color:#1a3a4a;">{{ detailLog.action }}</code>
+                    <code style="font-size:13px; color:#3a6478;">{{ detailLog.action }}</code>
                 </div>
-                <pre style="background:#f4f7fb; border-radius:10px; padding:14px; font-size:12px; color:#1a3a4a; overflow:auto; white-space:pre-wrap; word-break:break-word;">{{ JSON.stringify(detailLog.metadata, null, 2) }}</pre>
+                <pre style="background:#f4f7fb; border-radius:10px; padding:14px; font-size:12px; color:#3a6478; overflow:auto; white-space:pre-wrap; word-break:break-word;">{{ JSON.stringify(detailLog.metadata, null, 2) }}</pre>
             </div>
         </div>
     </AdminLayout>

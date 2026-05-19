@@ -4,6 +4,8 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PostImageLightbox from '@/Components/PostImageLightbox.vue';
 import { clImg } from '@/Composables/useCloudinary';
+import { useClipboardImage } from '@/Composables/useClipboardImage';
+import { compressImage } from '@/Composables/useImageCompressor';
 import axios from 'axios';
 
 const props = defineProps({
@@ -23,12 +25,14 @@ const msgContent = ref('');
 const msgImage = ref(null);
 const imagePreview = ref(null);
 const imageInput = ref(null);
+const pasteError = ref(null);
 const isMobile = ref(false);
 const showSidebar = ref(true);
 const bgPickerEl = ref(null);
 
 // ── Pagination ────────────────────────────────────────────────
 const localMessages = ref([...props.messages]);
+const localConversations = ref([...props.conversations]);
 const hasMore = ref(props.hasMoreMessages);
 const loadingOlder = ref(false);
 
@@ -52,6 +56,12 @@ const NEAR_BOTTOM_THRESHOLD = 160;
 // ── Polling ───────────────────────────────────────────────────
 let pollTimer = null;   // null = stopped, -1 = running (no timer scheduled yet), N = setTimeout ID
 let pollFailures = 0;
+
+// ── Typing indicator ──────────────────────────────────────────
+const isOtherTyping = ref(false);
+let typingExpireTimer = null;  // fail-safe: clears indicator if poll stops arriving
+let typingStopTimer = null;    // debounce: sends typing_stop after 2.5s of no input
+let lastTypingSentAt = 0;      // timestamp of last typing_start sent (for 3s throttle)
 // Scan from the end and return the last confirmed (numeric) ID, skipping temp IDs
 // that exist while an optimistic message is in flight.
 const lastMsgId = computed(() => {
@@ -269,6 +279,43 @@ async function loadOlderMessages() {
     });
 }
 
+// ── Typing indicator ──────────────────────────────────────────
+function sendTyping(isTyping) {
+    if (!props.activeConversation || document.hidden) return;
+    axios.post(route('conversations.typing', props.activeConversation.id), { is_typing: isTyping })
+        .catch(() => {});
+}
+
+function onTypingInput() {
+    if (document.hidden || !props.activeConversation) return;
+    const now = Date.now();
+    if (now - lastTypingSentAt > 3_000) {
+        lastTypingSentAt = now;
+        sendTyping(true);
+    }
+    clearTimeout(typingStopTimer);
+    typingStopTimer = setTimeout(() => {
+        lastTypingSentAt = 0;
+        sendTyping(false);
+    }, 2_500);
+}
+
+function stopTyping() {
+    clearTimeout(typingStopTimer);
+    typingStopTimer = null;
+    if (lastTypingSentAt > 0) {
+        lastTypingSentAt = 0;
+        sendTyping(false);
+    }
+}
+
+function clearTypingState() {
+    stopTyping();
+    clearTimeout(typingExpireTimer);
+    typingExpireTimer = null;
+    isOtherTyping.value = false;
+}
+
 // ── Polling ───────────────────────────────────────────────────
 async function poll() {
     if (!props.activeConversation) { pollTimer = null; return; }
@@ -286,9 +333,28 @@ async function poll() {
                 if (fresh.length) {
                     localMessages.value = [...localMessages.value, ...fresh];
                     if (isNearBottom.value) scrollToBottom(true);
+                    if (props.activeConversation) {
+                        const lastFresh = fresh[fresh.length - 1];
+                        const ci = localConversations.value.findIndex(c => c.id === props.activeConversation.id);
+                        if (ci !== -1) {
+                            const upd = { ...localConversations.value[ci], last_message: { content: lastFresh.content, created_at: lastFresh.created_at, is_own: lastFresh.is_own }, unread_count: 0 };
+                            const arr = [...localConversations.value];
+                            arr.splice(ci, 1);
+                            arr.unshift(upd);
+                            localConversations.value = arr;
+                        }
+                    }
                 }
             }
             if (res.data?.other_last_read_at) otherLastReadAt.value = res.data.other_last_read_at;
+
+            // Update typing indicator from poll response
+            const typingUsers = res.data?.typing_users ?? [];
+            isOtherTyping.value = typingUsers.length > 0;
+            clearTimeout(typingExpireTimer);
+            if (isOtherTyping.value) {
+                typingExpireTimer = setTimeout(() => { isOtherTyping.value = false; }, 8_000);
+            }
         } catch {
             pollFailures = Math.min(pollFailures + 1, 5);
         }
@@ -313,10 +379,16 @@ function stopPolling() { clearTimeout(pollTimer); pollTimer = null; pollFailures
 function onImageChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
-    msgImage.value = file;
-    imagePreview.value = URL.createObjectURL(file);
+    setImageFile(file);
     e.target.value = '';
+}
+async function setImageFile(file) {
+    if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
+    // Show preview immediately with original so there's no visible delay
+    imagePreview.value = URL.createObjectURL(file);
+    msgImage.value = file;
+    // Compress in background; preview stays unchanged, only the sent file shrinks
+    msgImage.value = await compressImage(file);
 }
 function removeImage() {
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
@@ -324,12 +396,22 @@ function removeImage() {
     imagePreview.value = null;
 }
 
+const { handlePaste: handleMsgPaste } = useClipboardImage({
+    onImage: setImageFile,
+    maxKB: 5120,
+    onError: (msg) => {
+        pasteError.value = msg;
+        setTimeout(() => { pasteError.value = null; }, 4000);
+    },
+});
+
 // ── Send ──────────────────────────────────────────────────────
 async function send() {
     const hasText = msgContent.value.trim().length > 0;
     const hasImg = !!msgImage.value;
     if ((!hasText && !hasImg) || sendState.value === 'sending' || !props.activeConversation) return;
 
+    stopTyping();
     sendState.value = 'sending';
     clearTimeout(sentTimer);
 
@@ -401,6 +483,14 @@ async function send() {
         if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
         sendState.value = 'sent';
         sentTimer = setTimeout(() => { sendState.value = 'idle'; }, 2000);
+        const ci = localConversations.value.findIndex(c => c.id === props.activeConversation?.id);
+        if (ci !== -1) {
+            const upd = { ...localConversations.value[ci], last_message: { content: confirmed.content, created_at: confirmed.created_at, is_own: true }, unread_count: 0 };
+            const arr = [...localConversations.value];
+            arr.splice(ci, 1);
+            arr.unshift(upd);
+            localConversations.value = arr;
+        }
     } catch {
         // Rollback: remove optimistic message so the user sees the failure clearly
         localMessages.value = localMessages.value.filter((m) => m.id !== tempId);
@@ -446,11 +536,14 @@ function cancelDelete() { confirmDeleteId.value = null; }
 async function confirmDelete(id) {
     if (actionLoading.value) return;
     actionLoading.value = true;
+    const backup = localMessages.value.find((m) => m.id === id);
+    localMessages.value = localMessages.value.filter((m) => m.id !== id);
+    confirmDeleteId.value = null;
     try {
         await axios.delete(route('messages.destroy', id));
-        localMessages.value = localMessages.value.filter((m) => m.id !== id);
-        confirmDeleteId.value = null;
-    } catch {} finally { actionLoading.value = false; }
+    } catch {
+        if (backup) localMessages.value = [...localMessages.value, backup].sort((a, b) => a.id - b.id);
+    } finally { actionLoading.value = false; }
 }
 
 // ── Reply ─────────────────────────────────────────────────────
@@ -461,8 +554,19 @@ function startReply(msg) {
 function cancelReply() { replyingTo.value = null; }
 
 // ── Sidebar ───────────────────────────────────────────────────
-const totalUnread = computed(() => props.conversations.reduce((s, c) => s + (c.unread_count ?? 0), 0));
+const totalUnread = computed(() => localConversations.value.reduce((s, c) => s + (c.unread_count ?? 0), 0));
 function startWith(recipientId) { router.post(route('conversations.store'), { recipient_id: recipientId }, { replace: true }); }
+function switchConversation(convId) {
+    if (isMobile.value) showSidebar.value = false;
+    if (convId === props.activeConversation?.id) return;
+    const ci = localConversations.value.findIndex(c => c.id === convId);
+    if (ci !== -1) localConversations.value[ci] = { ...localConversations.value[ci], unread_count: 0 };
+    router.visit(route('conversations.show', convId), {
+        preserveState: true,
+        preserveScroll: true,
+        only: ['messages', 'hasMoreMessages', 'activeConversation'],
+    });
+}
 
 // ── Lifecycle ─────────────────────────────────────────────────
 function onVisibilityChange() {
@@ -495,6 +599,7 @@ onUnmounted(() => {
     if (messagesEl.value) messagesEl.value.removeEventListener('scroll', checkNearBottom);
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
     stopPolling();
+    clearTypingState();
     clearTimeout(sentTimer);
 });
 
@@ -502,6 +607,7 @@ watch(
     () => props.activeConversation?.id,
     (newId) => {
         stopPolling();
+        clearTypingState();
         localMessages.value = [...props.messages];
         hasMore.value = props.hasMoreMessages;
         sendState.value = 'idle';
@@ -518,6 +624,7 @@ watch(
 // localMessages when the conversation changes, and send now uses axios (no Inertia
 // prop update on submit). Keeping the watch caused loadOlderMessages to overwrite
 // the accumulated message list right after its onSuccess prepended older messages.
+watch(() => props.conversations, (newConvs) => { localConversations.value = [...newConvs]; });
 </script>
 
 <template>
@@ -544,7 +651,7 @@ watch(
 
                 <div class="sidebar-list">
                     <!-- Friends (no conversations yet) -->
-                    <template v-if="conversations.length === 0 && friends.length > 0">
+                    <template v-if="localConversations.length === 0 && friends.length > 0">
                         <p class="sidebar-label">Os teus amigos</p>
                         <button v-for="f in friends" :key="f.id" @click="startWith(f.id)" class="sidebar-item">
                             <img v-if="f.avatar" :src="clImg(f.avatar, 80, 80, 'fill', 'face')" class="s-avatar" :style="{ border: `2px solid ${f.avatar_color}` }" loading="lazy" />
@@ -557,7 +664,7 @@ watch(
                     </template>
 
                     <!-- Empty state -->
-                    <div v-else-if="conversations.length === 0" class="sidebar-empty">
+                    <div v-else-if="localConversations.length === 0" class="sidebar-empty">
                         <p style="font-size:28px;margin:0 0 10px">💬</p>
                         <p style="font-size:13px;color:#8ba0b0;margin:0">Nenhuma conversa ainda.</p>
                         <p style="font-size:11px;color:#b0c0cc;margin:6px 0 0">
@@ -566,11 +673,11 @@ watch(
                     </div>
 
                     <!-- Conversation list -->
-                    <Link
-                        v-for="conv in conversations"
+                    <a
+                        v-for="conv in localConversations"
                         :key="conv.id"
                         :href="route('conversations.show', conv.id)"
-                        @click="isMobile && (showSidebar = false)"
+                        @click.prevent="switchConversation(conv.id)"
                         class="sidebar-item conv-item"
                         :class="{ 'is-active': activeConversation?.id === conv.id }"
                     >
@@ -589,7 +696,7 @@ watch(
                             </p>
                         </div>
                         <span v-if="conv.unread_count > 0" class="unread-badge">{{ conv.unread_count }}</span>
-                    </Link>
+                    </a>
                 </div>
             </aside>
 
@@ -602,7 +709,7 @@ watch(
                         <div v-if="friends.length > 0" style="max-width:480px;width:100%;margin:0 auto;padding:40px 28px 60px">
                             <div style="text-align:center;margin-bottom:32px">
                                 <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#009ac714,#4ebcff0e);border:2px solid #009ac722;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px">💬</div>
-                                <p style="font-size:16px;font-weight:800;color:#1a3a4a;margin:0 0 6px">As tuas mensagens</p>
+                                <p style="font-size:16px;font-weight:800;color:#3a6478;margin:0 0 6px">As tuas mensagens</p>
                                 <p style="font-size:13px;color:#8ba0b0;margin:0;line-height:1.5">Escolhe um amigo para começar a conversar.</p>
                             </div>
                             <div style="background:rgba(255,255,255,0.8);backdrop-filter:blur(20px);border:1px solid #009ac714;border-radius:20px;box-shadow:0 4px 20px #009ac70a;overflow:hidden">
@@ -610,7 +717,7 @@ watch(
                                     <img v-if="f.avatar" :src="clImg(f.avatar, 96, 96, 'fill', 'face')" :style="{ width:'46px',height:'46px',borderRadius:'50%',objectFit:'cover',flexShrink:'0',border:`2.5px solid ${f.avatar_color}`,boxShadow:`0 2px 10px ${f.avatar_color}33` }" />
                                     <div v-else :style="{ width:'46px',height:'46px',borderRadius:'50%',flexShrink:'0',background:f.avatar_color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'17px',fontWeight:'800',color:'white' }">{{ avatarInitial(f.name) }}</div>
                                     <div style="flex:1;min-width:0">
-                                        <p style="font-size:14px;font-weight:700;color:#1a3a4a;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.name }}</p>
+                                        <p style="font-size:14px;font-weight:700;color:#3a6478;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.name }}</p>
                                         <p v-if="f.username" style="font-size:12px;color:#009ac7;margin:2px 0 0">@{{ f.username }}</p>
                                     </div>
                                     <span style="flex-shrink:0;padding:7px 16px;border-radius:99px;background:linear-gradient(135deg,#009ac7,#4ebcff);color:white;font-size:12px;font-weight:700;box-shadow:0 3px 10px #009ac730">Enviar mensagem</span>
@@ -619,7 +726,7 @@ watch(
                         </div>
                         <div v-else style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px">
                             <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#009ac714,#4ebcff0e);border:2px solid #009ac722;display:flex;align-items:center;justify-content:center;font-size:36px">💬</div>
-                            <p style="font-size:15px;font-weight:700;color:#1a3a4a;margin:0">As tuas mensagens</p>
+                            <p style="font-size:15px;font-weight:700;color:#3a6478;margin:0">As tuas mensagens</p>
                             <p style="font-size:13px;color:#8ba0b0;margin:0;text-align:center;max-width:260px;line-height:1.5">Adiciona amigos para começar a conversar.</p>
                             <Link :href="route('friends.index')" style="margin-top:4px;padding:10px 22px;background:linear-gradient(135deg,#009ac7,#4ebcff);color:white;font-size:13px;font-weight:700;border-radius:99px;text-decoration:none;box-shadow:0 4px 16px #009ac730">Ver amigos</Link>
                         </div>
@@ -740,7 +847,7 @@ watch(
                                                 @keydown.enter.exact.prevent="saveEdit(item)"
                                                 @keydown.esc="cancelEdit"
                                                 @input="autoResize"
-                                                style="width:100%;resize:none;border:none;border-radius:14px;padding:10px 14px;font-size:13.5px;font-family:inherit;background:transparent;color:#1a3a4a;outline:none;line-height:1.5;box-sizing:border-box;display:block"
+                                                style="width:100%;resize:none;border:none;border-radius:14px;padding:10px 14px;font-size:13.5px;font-family:inherit;background:transparent;color:#3a6478;outline:none;line-height:1.5;box-sizing:border-box;display:block"
                                             />
                                             <div class="edit-actions">
                                                 <button @click="cancelEdit" class="btn-cancel">Cancelar</button>
@@ -792,6 +899,18 @@ watch(
                         </div>
                     </Transition>
 
+                    <!-- Typing indicator -->
+                    <Transition name="typing-slide">
+                        <div v-if="isOtherTyping" class="typing-bar">
+                            <div class="typing-bubble">
+                                <div class="typing-dots">
+                                    <span></span><span></span><span></span>
+                                </div>
+                            </div>
+                            <span class="typing-label">{{ activeConversation.other_user?.name }} está a digitar…</span>
+                        </div>
+                    </Transition>
+
                     <!-- Input bar -->
                     <div class="input-bar">
                         <!-- Reply preview -->
@@ -824,7 +943,8 @@ watch(
                                 rows="1"
                                 class="msg-input"
                                 @keydown="handleKeydown"
-                                @input="autoResize"
+                                @input="e => { autoResize(e); onTypingInput(); }"
+                                @paste="handleMsgPaste"
                             />
 
                             <button
@@ -841,6 +961,7 @@ watch(
                         </div>
 
                         <p v-if="sendState === 'error'" class="send-error">Erro ao enviar. Tenta novamente.</p>
+                        <p v-if="pasteError" class="send-error">{{ pasteError }}</p>
                     </div>
                 </template>
             </main>
@@ -1084,13 +1205,13 @@ watch(
     font-size: 13.5px; line-height: 1.5; word-break: break-word;
 }
 .bubble-own {
-    background: #d4f1fa; color: #1a3a4a;
+    background: #d4f1fa; color: #3a6478;
     border-radius: 18px 18px 5px 18px;
     padding: 8px 12px 6px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 .bubble-recv {
-    background: #ffffff; color: #1a3a4a;
+    background: #ffffff; color: #3a6478;
     border-radius: 18px 18px 18px 5px;
     padding: 8px 12px 6px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
@@ -1218,7 +1339,7 @@ watch(
 .msg-input {
     flex: 1; resize: none; border: 1.5px solid #009ac733;
     border-radius: 22px; padding: 10px 16px; font-size: 13.5px;
-    font-family: inherit; color: #1a3a4a; background: #f4f8fc;
+    font-family: inherit; color: #3a6478; background: #f4f8fc;
     outline: none; line-height: 1.5; max-height: 120px; overflow-y: auto;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -1259,4 +1380,38 @@ watch(
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Typing indicator ─────────────────────────────────────────── */
+.typing-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 16px 2px; flex-shrink: 0;
+}
+.typing-bubble {
+    background: #ffffff; border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 18px 18px 18px 5px;
+    padding: 8px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    display: flex; align-items: center;
+}
+:global(html.dark) .typing-bubble {
+    background: #1e2d3d; border-color: rgba(255,255,255,0.06);
+}
+.typing-dots { display: flex; align-items: center; gap: 4px; }
+.typing-dots span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #009ac7; display: block;
+    animation: typing-bounce 1.2s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-5px); opacity: 1; }
+}
+.typing-label { font-size: 11px; color: var(--text-3); font-style: italic; }
+
+.typing-slide-enter-active { transition: opacity 0.2s, transform 0.2s; }
+.typing-slide-leave-active { transition: opacity 0.15s, transform 0.15s; }
+.typing-slide-enter-from { opacity: 0; transform: translateY(4px); }
+.typing-slide-leave-to { opacity: 0; transform: translateY(4px); }
 </style>

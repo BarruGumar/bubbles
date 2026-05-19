@@ -1,6 +1,8 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
+
+const emit = defineEmits(['deleted']);
 import axios from 'axios';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
@@ -73,8 +75,13 @@ async function saveEdit() {
 // ── Delete ────────────────────────────────────────────────────────
 const confirmDelete = ref(false);
 
-function doDelete() {
-    router.delete(props.deleteRoute, { preserveScroll: true });
+async function doDelete() {
+    emit('deleted', props.post.id);
+    try {
+        await axios.delete(props.deleteRoute);
+    } catch {
+        toast('Erro ao apagar. Tenta novamente.', 'error');
+    }
 }
 
 // ── Report ────────────────────────────────────────────────────────
@@ -215,7 +222,7 @@ function formatInitial(name) {
                                 fontSize: '13px',
                                 fontWeight: '800',
                                 textDecoration: 'none',
-                                color: isCreator ? accentColor : '#1a3a4a',
+                                color: isCreator ? accentColor : '#3a6478',
                             }"
                         >
                             <span v-if="isCreator" style="margin-right: 2px">✦</span>{{ author.name }}

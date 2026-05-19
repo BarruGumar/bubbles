@@ -62,15 +62,20 @@ class PostController extends Controller
         return response()->json(['content' => $post->content]);
     }
 
-    public function destroy(Post $post): RedirectResponse
+    public function destroy(Post $post): JsonResponse
     {
         Gate::authorize('delete', $post);
 
-        $this->deleteCloudinaryImage($post->image_public_id);
-        $this->deleteCloudinaryVideo($post->video_public_id);
+        $imagePid = $post->image_public_id;
+        $videoPid = $post->video_public_id;
 
         $post->delete();
 
-        return back();
+        // Defer Cloudinary cleanup until after the HTTP response is sent so the
+        // client isn't blocked waiting for an external API call.
+        app()->terminating(fn () => $this->deleteCloudinaryImage($imagePid));
+        app()->terminating(fn () => $this->deleteCloudinaryVideo($videoPid));
+
+        return response()->json(['ok' => true]);
     }
 }

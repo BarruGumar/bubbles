@@ -98,6 +98,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/messages/{message}', [ConversationController::class, 'updateMessage'])->name('messages.update');
     Route::delete('/messages/{message}', [ConversationController::class, 'destroyMessage'])->name('messages.destroy');
     Route::get('/conversations/{conversation}/poll', [ConversationController::class, 'poll'])->name('conversations.poll');
+    Route::post('/conversations/{conversation}/typing', [ConversationController::class, 'typing'])->name('conversations.typing');
 
     // Friends
     Route::get('/friends', [FriendController::class, 'index'])->name('friends.index');

@@ -1571,7 +1571,7 @@ const isMobile = window.innerWidth < 640;
                             style="
                                 font-size: 12px;
                                 font-weight: 700;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 margin: 0;
                                 white-space: nowrap;
                                 overflow: hidden;

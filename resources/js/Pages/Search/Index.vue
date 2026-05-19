@@ -76,7 +76,7 @@ const isEmpty = computed(
 
     <AuthenticatedLayout>
         <div style="max-width: 720px; margin: 0 auto; padding: 40px 20px 80px">
-            <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 20px; letter-spacing: -0.02em">
+            <h1 style="font-size: 22px; font-weight: 900; color: #3a6478; margin: 0 0 20px; letter-spacing: -0.02em">
                 Pesquisa
             </h1>
 
@@ -116,7 +116,7 @@ const isEmpty = computed(
                         border-radius: 14px;
                         padding: 13px 16px 13px 44px;
                         font-size: 14px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition:
@@ -179,7 +179,7 @@ const isEmpty = computed(
                 "
             >
                 <p style="font-size: 28px; margin: 0 0 10px">🔍</p>
-                <p style="font-size: 14px; font-weight: 700; color: #1a3a4a; margin: 0 0 4px">
+                <p style="font-size: 14px; font-weight: 700; color: #3a6478; margin: 0 0 4px">
                     Sem resultados para "{{ localQuery }}"
                 </p>
                 <p style="font-size: 12px; color: #8ba0b0; margin: 0">
@@ -274,7 +274,7 @@ const isEmpty = computed(
                                     style="
                                         font-size: 14px;
                                         font-weight: 700;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         margin: 0;
                                         overflow: hidden;
                                         text-overflow: ellipsis;
@@ -392,7 +392,7 @@ const isEmpty = computed(
                                     style="
                                         font-size: 14px;
                                         font-weight: 700;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         margin: 0;
                                         overflow: hidden;
                                         text-overflow: ellipsis;
@@ -499,7 +499,7 @@ const isEmpty = computed(
                                     {{ formatInitial(p.author.name) }}
                                 </div>
                                 <div>
-                                    <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0">
+                                    <p style="font-size: 13px; font-weight: 700; color: #3a6478; margin: 0">
                                         {{ p.author.name }}
                                     </p>
                                     <p style="font-size: 10px; color: #b0c0cc; margin: 0">{{ p.created_at }}</p>

@@ -52,7 +52,7 @@ function deleteUser(u) {
 
     <AdminLayout>
         <template #header>
-            <h1 style="font-size: 16px; font-weight: 800; color: #1a3a4a; margin: 0">Utilizadores</h1>
+            <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Utilizadores</h1>
         </template>
 
         <!-- Search -->
@@ -69,7 +69,7 @@ function deleteUser(u) {
                     border-radius: 10px;
                     padding: 10px 14px;
                     font-size: 13px;
-                    color: #1a3a4a;
+                    color: #3a6478;
                     outline: none;
                     font-family: inherit;
                     box-sizing: border-box;
@@ -213,7 +213,7 @@ function deleteUser(u) {
                                 </div>
                                 <div>
                                     <div style="display: flex; align-items: center; gap: 5px">
-                                        <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0">
+                                        <p style="font-size: 13px; font-weight: 700; color: #3a6478; margin: 0">
                                             {{ u.name }}
                                         </p>
                                         <SiteOwnerBadge v-if="u.role === 'site_owner'" size="sm" />

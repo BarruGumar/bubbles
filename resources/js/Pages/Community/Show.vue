@@ -178,6 +178,7 @@ const showEdit = ref(false);
                     :delete-route="route('community.posts.destroy', [community.id, post.id])"
                     :edit-route="post.isOwn ? route('community.posts.update', [community.id, post.id]) : null"
                     :report-route="!post.isOwn && authUser ? route('community-posts.report', post.id) : null"
+                    @deleted="localPosts = localPosts.filter(p => p.id !== $event)"
                 />
             </div>
 

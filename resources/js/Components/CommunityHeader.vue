@@ -119,7 +119,7 @@ function leaveCommunity() {
                         style="
                             font-size: 22px;
                             font-weight: 900;
-                            color: #1a3a4a;
+                            color: #3a6478;
                             margin: 0 0 3px;
                             letter-spacing: -0.02em;
                         "

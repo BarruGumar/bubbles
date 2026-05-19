@@ -119,7 +119,7 @@ const guidelineLines = computed(() =>
                             style="
                                 font-size: 18px;
                                 font-weight: 900;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 margin: 0;
                                 letter-spacing: -0.02em;
                             "
@@ -252,7 +252,7 @@ const guidelineLines = computed(() =>
                                         border-radius: 12px;
                                         padding: 11px 14px;
                                         font-size: 14px;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         outline: none;
                                         font-family: inherit;
                                         transition: border-color 0.2s;
@@ -396,7 +396,7 @@ const guidelineLines = computed(() =>
                                         border-radius: 12px;
                                         padding: 11px 14px;
                                         font-size: 13px;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         outline: none;
                                         font-family: inherit;
                                         transition: border-color 0.2s;
@@ -433,7 +433,7 @@ const guidelineLines = computed(() =>
                                         border-radius: 12px;
                                         padding: 11px 14px;
                                         font-size: 13px;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         outline: none;
                                         font-family: inherit;
                                         transition: border-color 0.2s;
@@ -479,7 +479,7 @@ const guidelineLines = computed(() =>
                                         border-radius: 12px;
                                         padding: 11px 14px;
                                         font-size: 13px;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         outline: none;
                                         font-family: inherit;
                                         resize: vertical;
@@ -535,7 +535,7 @@ const guidelineLines = computed(() =>
                                     border-radius: 12px;
                                     padding: 11px 14px;
                                     font-size: 13px;
-                                    color: #1a3a4a;
+                                    color: #3a6478;
                                     outline: none;
                                     font-family: inherit;
                                     resize: vertical;
@@ -614,7 +614,7 @@ const guidelineLines = computed(() =>
                                         style="
                                             font-size: 15px;
                                             font-weight: 800;
-                                            color: #1a3a4a;
+                                            color: #3a6478;
                                             margin: 0 0 2px;
                                             overflow: hidden;
                                             text-overflow: ellipsis;

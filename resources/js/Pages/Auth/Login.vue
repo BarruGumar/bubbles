@@ -24,7 +24,7 @@ const submit = () => {
     <GuestLayout>
         <Head title="Entrar" />
 
-        <h2 style="font-weight: 800; font-size: 18px; color: #1a3a4a; margin-bottom: 4px">Bem-vindo de volta</h2>
+        <h2 style="font-weight: 800; font-size: 18px; color: #3a6478; margin-bottom: 4px">Bem-vindo de volta</h2>
         <p style="font-size: 12px; color: #8ba0b0; margin-bottom: 28px">Entra na tua conta Bubbles</p>
 
         <div
@@ -67,7 +67,7 @@ const submit = () => {
                         border-radius: 11px;
                         padding: 11px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition: border-color 0.2s;
@@ -110,7 +110,7 @@ const submit = () => {
                         border-radius: 11px;
                         padding: 11px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition: border-color 0.2s;

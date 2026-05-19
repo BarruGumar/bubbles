@@ -41,7 +41,7 @@ defineProps({
         </div>
 
         <div style="flex: 1; min-width: 0">
-            <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 4px; letter-spacing: -0.02em">
+            <h1 style="font-size: 22px; font-weight: 900; color: #3a6478; margin: 0 0 4px; letter-spacing: -0.02em">
                 {{ community.title }}
             </h1>
             <p style="font-size: 12px; color: #5a7a8a; margin: 0 0 8px">{{ community.tagline }}</p>

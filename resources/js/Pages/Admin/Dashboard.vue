@@ -20,7 +20,7 @@ const statCards = (stats) => [
 
     <AdminLayout>
         <template #header>
-            <h1 style="font-size: 16px; font-weight: 800; color: #1a3a4a; margin: 0">Dashboard</h1>
+            <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Dashboard</h1>
         </template>
 
         <!-- Stat cards -->
@@ -89,7 +89,7 @@ const statCards = (stats) => [
                     justify-content: space-between;
                 "
             >
-                <p style="font-size: 13px; font-weight: 800; color: #1a3a4a; margin: 0">Denúncias recentes</p>
+                <p style="font-size: 13px; font-weight: 800; color: #3a6478; margin: 0">Denúncias recentes</p>
                 <Link
                     :href="route('admin.reports')"
                     style="font-size: 12px; color: #009ac7; font-weight: 600; text-decoration: none"
@@ -119,7 +119,7 @@ const statCards = (stats) => [
                         <p
                             style="
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 font-weight: 600;
                                 margin: 0;
                                 overflow: hidden;

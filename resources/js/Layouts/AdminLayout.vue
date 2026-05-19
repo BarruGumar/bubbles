@@ -121,7 +121,7 @@ const navLinks = [
                 "
             >
                 <slot name="header">
-                    <h1 style="font-size: 16px; font-weight: 800; color: #1a3a4a; margin: 0">Admin</h1>
+                    <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Admin</h1>
                 </slot>
                 <Link href="/bubbles" style="font-size: 12px; color: #009ac7; text-decoration: none; font-weight: 600"
                     >← Voltar ao site</Link

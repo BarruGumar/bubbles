@@ -126,7 +126,7 @@ function deleteCommunity() {
             >
                 <!-- Header -->
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px">
-                    <p style="font-size: 16px; font-weight: 900; color: #1a3a4a; margin: 0; letter-spacing: -0.02em">
+                    <p style="font-size: 16px; font-weight: 900; color: #3a6478; margin: 0; letter-spacing: -0.02em">
                         Editar comunidade
                     </p>
                     <button
@@ -388,7 +388,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 box-sizing: border-box;
@@ -421,7 +421,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 box-sizing: border-box;
@@ -454,7 +454,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 box-sizing: border-box;
@@ -488,7 +488,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 resize: vertical;
@@ -527,7 +527,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 resize: vertical;
