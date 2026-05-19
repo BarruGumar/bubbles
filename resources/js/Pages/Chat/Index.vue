@@ -988,10 +988,10 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
     min-width: 300px;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid rgba(0, 154, 199, 0.15);
-    background: linear-gradient(180deg, rgba(61, 73, 81, 0.858) 0%, rgba(76, 95, 108, 0.836) 100%);
+    border-right: 1px solid rgba(0, 154, 199, 0.14);
+    background: rgba(224, 241, 252, 0.88);
     backdrop-filter: blur(32px);
-    box-shadow: inset -1px 0 0 rgba(0,154,199,0.08);
+    box-shadow: inset -1px 0 0 rgba(0,154,199,0.10);
 }
 :global(html.dark) .chat-sidebar {
     background: linear-gradient(180deg, rgba(4, 10, 24, 0.97) 0%, rgba(2, 7, 16, 0.98) 100%);
