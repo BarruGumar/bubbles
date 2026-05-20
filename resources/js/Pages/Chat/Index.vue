@@ -989,12 +989,11 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
     display: flex;
     flex-direction: column;
     border-right: 1px solid rgba(0, 154, 199, 0.14);
-    background: rgba(224, 241, 252, 0.88);
+    background: var(--chat-sidebar-bg);
     backdrop-filter: blur(32px);
     box-shadow: inset -1px 0 0 rgba(0,154,199,0.10);
 }
 :global(html.dark) .chat-sidebar {
-    background: linear-gradient(180deg, rgba(4, 10, 24, 0.97) 0%, rgba(2, 7, 16, 0.98) 100%);
     border-color: rgba(0, 154, 199, 0.18);
     box-shadow: inset -1px 0 0 rgba(0,154,199,0.08), 4px 0 24px rgba(0,0,0,0.4);
 }
@@ -1069,13 +1068,14 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 .chat-header {
     height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 12px;
     padding: 0 16px;
-    background: linear-gradient(180deg, rgba(104, 123, 136, 0.75) 0%, rgba(117, 143, 162, 0.8) 100%);
-    backdrop-filter: blur(32px);
-    border-bottom: 1px solid rgba(0, 154, 199, 0.15); z-index: 10;
+    background: var(--chat-header-bg);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 154, 199, 0.13);
+    box-shadow: var(--chat-header-shadow);
+    z-index: 10;
 }
 :global(html.dark) .chat-header {
-    background: linear-gradient(180deg, rgba(4, 10, 24, 0.97) 0%, rgba(2, 7, 16, 0.98) 100%);
-    border-color: rgba(0, 154, 199, 0.18);
+    border-color: rgba(0, 154, 199, 0.15);
 }
 .header-info { flex: 1; min-width: 0; }
 .header-name { font-size: 14px; font-weight: 800; color: var(--text); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

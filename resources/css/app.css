@@ -25,6 +25,9 @@
     --input-border: rgba(0, 154, 199, 0.20);
     --input-text: #1a3a4a;
     --input-placeholder: #8ba0b0;
+    --chat-sidebar-bg: rgba(224, 241, 252, 0.88);
+    --chat-header-bg: rgba(255, 255, 255, 0.96);
+    --chat-header-shadow: 0 1px 8px rgba(0, 154, 199, 0.07);
 }
 
 html.dark {
@@ -49,6 +52,9 @@ html.dark {
     --input-border: rgba(0, 154, 199, 0.18);
     --input-text: #cce4f4;
     --input-placeholder: #5a8aa8;
+    --chat-sidebar-bg: linear-gradient(180deg, rgba(4, 10, 24, 0.97) 0%, rgba(2, 7, 16, 0.98) 100%);
+    --chat-header-bg: rgba(6, 14, 32, 0.97);
+    --chat-header-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
 }
 
 /* ── Body ──────────────────────────────────────────────────────── */

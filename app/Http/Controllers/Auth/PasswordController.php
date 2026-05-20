@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\PasswordChangeRequested;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -22,6 +23,8 @@ class PasswordController extends Controller
         ]);
 
         $user = $request->user();
+
+        AuditLogger::log('auth.password_change_requested', 'auth', $user);
 
         Cache::put("password_change_{$user->id}", Hash::make($validated['password']), now()->addMinutes(15));
 
@@ -45,8 +48,11 @@ class PasswordController extends Controller
             return redirect()->route('profile.edit')->with('status', 'password-link-expired');
         }
 
-        User::findOrFail($userId)->update(['password' => $pending]);
+        $user = User::findOrFail($userId);
+        $user->update(['password' => $pending]);
         Cache::forget("password_change_{$userId}");
+
+        AuditLogger::log('auth.password_changed', 'auth', $user);
 
         return redirect()->route('profile.edit')->with('status', 'password-changed');
     }

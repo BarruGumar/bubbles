@@ -25,6 +25,7 @@ const navLinks = [
     { label: 'Dashboard', route: 'admin.dashboard', icon: '⊞' },
     { label: 'Utilizadores', route: 'admin.users', icon: '👤' },
     { label: 'Posts', route: 'admin.posts', icon: '📝' },
+    { label: 'Posts Comunidades', route: 'admin.community-posts', icon: '💬' },
     { label: 'Comunidades', route: 'admin.communities', icon: '🫧' },
     { label: 'Denúncias', route: 'admin.reports', icon: '⚑' },
     { label: 'Punições', route: 'admin.punishments', icon: '🔒' },

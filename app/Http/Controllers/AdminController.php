@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Bubble;
+use App\Models\CommunityPost;
 use App\Models\Post;
 use App\Models\Report;
 use App\Models\User;
@@ -175,16 +176,22 @@ class AdminController extends Controller
         ]);
     }
 
-    public function destroyPost(Post $post): RedirectResponse
+    public function destroyPost(int $post): RedirectResponse
     {
+        $model = Post::withTrashed()->find($post);
+
+        if (! $model) {
+            return back()->with('error', 'Este post já foi eliminado permanentemente.');
+        }
+
         AuditLogger::log(
             'post.force_delete',
             'content',
-            $post,
-            ['content_preview' => mb_substr($post->content ?? '', 0, 200), 'author_id' => $post->user_id]
+            $model,
+            ['content_preview' => mb_substr($model->content ?? '', 0, 200), 'author_id' => $model->user_id]
         );
 
-        $post->forceDelete();
+        $model->forceDelete();
 
         return back()->with('status', 'Post eliminado permanentemente.');
     }
@@ -198,6 +205,64 @@ class AdminController extends Controller
         $post->restore();
 
         return back()->with('status', 'Post restaurado.');
+    }
+
+    // ── Community Posts ───────────────────────────────────────────
+
+    public function communityPosts(Request $request): Response
+    {
+        $q = $request->get('q');
+
+        $posts = CommunityPost::withTrashed()
+            ->with(['user', 'bubble'])
+            ->when($q, fn ($query) => $query->where('content', 'like', "%$q%"))
+            ->latest()
+            ->paginate(20)
+            ->through(fn ($p) => [
+                'id'         => $p->id,
+                'content'    => mb_substr($p->content ?? '', 0, 120) . (mb_strlen($p->content ?? '') > 120 ? '…' : ''),
+                'deleted'    => (bool) $p->deleted_at,
+                'author'     => $p->user ? ['name' => $p->user->name, 'username' => $p->user->username] : null,
+                'community'  => $p->bubble ? ['id' => $p->bubble->id, 'label' => $p->bubble->label] : null,
+                'created_at' => $p->created_at->format('d/m/Y H:i'),
+                'deleted_at' => $p->deleted_at?->diffForHumans(),
+            ]);
+
+        return Inertia::render('Admin/CommunityPosts', [
+            'posts' => $posts,
+            'query' => $q,
+        ]);
+    }
+
+    public function destroyCommunityPost(int $id): RedirectResponse
+    {
+        $post = CommunityPost::withTrashed()->find($id);
+
+        if (! $post) {
+            return back()->with('error', 'Este post já foi eliminado permanentemente.');
+        }
+
+        AuditLogger::log(
+            'community_post.force_delete',
+            'content',
+            $post,
+            ['content_preview' => mb_substr($post->content ?? '', 0, 200), 'author_id' => $post->user_id]
+        );
+
+        $post->forceDelete();
+
+        return back()->with('status', 'Post de comunidade eliminado permanentemente.');
+    }
+
+    public function restoreCommunityPost(int $id): RedirectResponse
+    {
+        $post = CommunityPost::withTrashed()->findOrFail($id);
+
+        AuditLogger::log('community_post.restore', 'content', $post, ['author_id' => $post->user_id]);
+
+        $post->restore();
+
+        return back()->with('status', 'Post de comunidade restaurado.');
     }
 
     // ── Communities ───────────────────────────────────────────────
@@ -383,6 +448,7 @@ class AdminController extends Controller
             ->through(fn ($l) => [
                 'id'          => $l->id,
                 'actor'       => $l->actor ? ['id' => $l->actor->id, 'name' => $l->actor->name, 'username' => $l->actor->username] : null,
+                'actor_role'  => $l->actor_role,
                 'action'      => $l->action,
                 'category'    => $l->category,
                 'target_type' => $l->target_type ? class_basename($l->target_type) : null,

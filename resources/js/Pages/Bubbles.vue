@@ -54,6 +54,38 @@ watch(
     },
 );
 
+// ── Punishment notification modal ─────────────────────────────────
+const newPunishment = computed(() => page.props.new_punishment ?? null);
+const punishmentModalVisible = ref(false);
+
+const punishmentConfig = {
+    warning:    { label: 'Aviso',          icon: '⚠️',  color: '#d97706' },
+    mute:       { label: 'Silenciamento',  icon: '🔇',  color: '#ea580c' },
+    suspension: { label: 'Conta Suspensa', icon: '🚫',  color: '#dc2626' },
+    ban:        { label: 'Banimento',      icon: '⛔',  color: '#991b1b' },
+};
+
+const punishmentInfo = computed(() => punishmentConfig[newPunishment.value?.type] ?? punishmentConfig.warning);
+
+function formatPunishmentDate(iso) {
+    if (!iso) return null;
+    return new Date(iso).toLocaleDateString('pt-PT', {
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+    });
+}
+
+watch(newPunishment, (p) => {
+    if (p) punishmentModalVisible.value = true;
+}, { immediate: true });
+
+function acknowledgePunishment() {
+    punishmentModalVisible.value = false;
+    router.post(route('punishment.acknowledge', newPunishment.value.id), {}, {
+        preserveScroll: true,
+    });
+}
+
 const showAdd = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref('');
@@ -1775,6 +1807,46 @@ const isMobile = window.innerWidth < 640;
                 >
                     {{ connectSource.label }} → Shift+RMB em outra
                 </span>
+            </div>
+        </Transition>
+
+        <!-- ── Punishment notification modal ─────────────────────── -->
+        <Transition name="punishment-overlay">
+            <div
+                v-if="punishmentModalVisible && newPunishment"
+                style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.55);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px"
+            >
+                <Transition name="punishment-pop" appear>
+                    <div style="background:var(--surface);border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);overflow:hidden">
+                        <div :style="{ background: punishmentInfo.color, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px' }">
+                            <span style="font-size:32px;line-height:1">{{ punishmentInfo.icon }}</span>
+                            <div>
+                                <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:0.08em;margin:0 0 2px">Punição recebida</p>
+                                <h2 style="font-size:18px;font-weight:800;color:white;margin:0">{{ punishmentInfo.label }}</h2>
+                            </div>
+                        </div>
+                        <div style="padding:24px">
+                            <p style="font-size:11px;font-weight:700;color:#8ba0b0;text-transform:uppercase;letter-spacing:0.07em;margin:0 0 8px">Motivo</p>
+                            <div style="background:rgba(0,0,0,0.06);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+                                <p style="font-size:14px;color:#3a6478;margin:0;line-height:1.55">
+                                    {{ newPunishment.reason || 'Sem motivo especificado.' }}
+                                </p>
+                            </div>
+                            <p v-if="newPunishment.ends_at" style="font-size:12px;color:#8ba0b0;margin:0 0 20px;text-align:center">
+                                Ativo até <strong style="color:#3a6478">{{ formatPunishmentDate(newPunishment.ends_at) }}</strong>
+                            </p>
+                            <p v-else-if="newPunishment.type !== 'warning'" style="font-size:12px;color:#8ba0b0;margin:0 0 20px;text-align:center">
+                                Duração: <strong style="color:#3a6478">Permanente</strong>
+                            </p>
+                            <button
+                                @click="acknowledgePunishment"
+                                :style="{ width: '100%', padding: '13px', borderRadius: '12px', background: punishmentInfo.color, border: 'none', color: 'white', fontSize: '14px', fontWeight: '700', cursor: 'pointer', boxShadow: `0 4px 16px ${punishmentInfo.color}55` }"
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                </Transition>
             </div>
         </Transition>
     </div>

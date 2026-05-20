@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePostRequest;
 use App\Models\Post;
+use App\Services\AuditLogger;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -41,12 +42,17 @@ class PostController extends Controller
             );
         }
 
-        $request->user()->posts()->create([
+        $post = $request->user()->posts()->create([
             'content' => $request->content,
             'image' => $imageUrl,
             'image_public_id' => $imagePid,
             'video' => $videoUrl,
             'video_public_id' => $videoPid,
+        ]);
+
+        AuditLogger::log('post.created', 'content', $post, [
+            'has_image' => $imageUrl !== null,
+            'has_video' => $videoUrl !== null,
         ]);
 
         return back();
@@ -59,6 +65,8 @@ class PostController extends Controller
         $data = $request->validate(['content' => 'required|string|min:1|max:1000']);
         $post->update(['content' => $data['content']]);
 
+        AuditLogger::log('post.updated', 'content', $post);
+
         return response()->json(['content' => $post->content]);
     }
 
@@ -68,6 +76,8 @@ class PostController extends Controller
 
         $imagePid = $post->image_public_id;
         $videoPid = $post->video_public_id;
+
+        AuditLogger::log('post.deleted', 'content', $post);
 
         $post->delete();
 

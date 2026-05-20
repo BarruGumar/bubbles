@@ -6,6 +6,7 @@ use App\Events\BubbleMoved;
 use App\Models\Bubble;
 use App\Models\Friend;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,10 @@ class BubbleController extends Controller
         $bubble = Bubble::create($data);
         $bubble->memberships()->attach(auth()->id());
 
+        AuditLogger::log('community.created', 'community', $bubble, [
+            'label' => $bubble->label,
+        ], $bubble->id);
+
         return response()->json(['id' => $bubble->id], 201);
     }
 
@@ -98,6 +103,11 @@ class BubbleController extends Controller
     public function destroy(Bubble $bubble): JsonResponse
     {
         Gate::authorize('delete', $bubble);
+
+        AuditLogger::log('community.deleted', 'community', null, [
+            'community_id' => $bubble->id,
+            'label' => $bubble->label,
+        ], $bubble->id);
 
         $bubble->delete();
 

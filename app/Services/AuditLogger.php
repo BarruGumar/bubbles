@@ -41,6 +41,7 @@ class AuditLogger
 
         return AuditLog::create([
             'actor_id'      => Auth::id(),
+            'actor_role'    => Auth::user()?->role,
             'action'        => $action,
             'category'      => $category,
             'target_type'   => $targetType,

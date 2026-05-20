@@ -17,15 +17,24 @@ class CheckActivePunishments
         }
 
         if ($user->isBanned()) {
+            $ban = $user->punishments()->active()->ofType('ban')->latest()->first();
+
             auth()->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login')
-                ->withErrors(['email' => 'A tua conta foi permanentemente banida.']);
+            return redirect()->route('login')->with('punishment_modal', [
+                'type'   => 'ban',
+                'reason' => $ban?->reason,
+            ]);
         }
 
-        if ($user->isSuspended()) {
+        // Suspended users can browse (GET) but cannot perform write actions.
+        // The punishment.acknowledge route is exempt so they can dismiss notifications.
+        if ($user->isSuspended()
+            && ! in_array($request->method(), ['GET', 'HEAD'])
+            && ! $request->routeIs('punishment.acknowledge')
+        ) {
             if ($request->inertia()) {
                 return back()->with('error', 'A tua conta está suspensa e não podes realizar esta ação.');
             }

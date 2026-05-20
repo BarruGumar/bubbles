@@ -43,7 +43,16 @@ Route::get('/c/{id}', [CommunityController::class, 'show'])->name('community.sho
 Route::get('/search', [SearchController::class, 'index'])->name('search.index');
 Route::get('/api/search', [SearchController::class, 'api'])->name('search.api');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+// Acknowledge punishment notification — allowed even while suspended
+Route::middleware(['auth'])->post('/punishment/{punishment}/acknowledge', function (\App\Models\UserPunishment $punishment) {
+    abort_if($punishment->user_id !== auth()->id(), 403);
+    if ($punishment->notified_at === null) {
+        $punishment->updateQuietly(['notified_at' => now()]);
+    }
+    return back();
+})->name('punishment.acknowledge');
+
+Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/password/confirm', [\App\Http\Controllers\Auth\PasswordController::class, 'confirm'])->name('profile.password.confirm')->middleware('signed');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -125,8 +134,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/users/{user}/role', [AdminController::class, 'updateUserRole'])->name('users.role');
     Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
     Route::get('/posts', [AdminController::class, 'posts'])->name('posts');
-    Route::delete('/posts/{post}/force', [AdminController::class, 'destroyPost'])->name('posts.destroy');
+    Route::delete('/posts/{id}/force', [AdminController::class, 'destroyPost'])->name('posts.destroy');
     Route::post('/posts/{id}/restore', [AdminController::class, 'restorePost'])->name('posts.restore');
+    Route::get('/community-posts', [AdminController::class, 'communityPosts'])->name('community-posts');
+    Route::delete('/community-posts/{id}/force', [AdminController::class, 'destroyCommunityPost'])->name('community-posts.destroy');
+    Route::post('/community-posts/{id}/restore', [AdminController::class, 'restoreCommunityPost'])->name('community-posts.restore');
     Route::get('/communities', [AdminController::class, 'communities'])->name('communities');
     Route::delete('/communities/{bubble}', [AdminController::class, 'destroyCommunity'])->name('communities.destroy');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');

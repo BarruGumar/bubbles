@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CommunityPost;
 use App\Models\Post;
 use App\Models\Report;
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,7 +15,7 @@ class ReportController extends Controller
     {
         $data = $request->validate(['reason' => 'required|string|min:5|max:500']);
 
-        Report::updateOrCreate(
+        $report = Report::updateOrCreate(
             [
                 'reporter_id' => auth()->id(),
                 'reportable_type' => Post::class,
@@ -23,6 +24,11 @@ class ReportController extends Controller
             ['reason' => $data['reason'], 'status' => 'pending']
         );
 
+        AuditLogger::log('report.submitted', 'moderation', $report, [
+            'reportable_type' => 'Post',
+            'post_id' => $post->id,
+        ]);
+
         return response()->json(['message' => 'Denúncia enviada.']);
     }
 
@@ -30,7 +36,7 @@ class ReportController extends Controller
     {
         $data = $request->validate(['reason' => 'required|string|min:5|max:500']);
 
-        Report::updateOrCreate(
+        $report = Report::updateOrCreate(
             [
                 'reporter_id' => auth()->id(),
                 'reportable_type' => CommunityPost::class,
@@ -38,6 +44,11 @@ class ReportController extends Controller
             ],
             ['reason' => $data['reason'], 'status' => 'pending']
         );
+
+        AuditLogger::log('report.submitted', 'moderation', $report, [
+            'reportable_type' => 'CommunityPost',
+            'post_id' => $post->id,
+        ]);
 
         return response()->json(['message' => 'Denúncia enviada.']);
     }

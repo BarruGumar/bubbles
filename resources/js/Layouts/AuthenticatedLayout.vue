@@ -289,6 +289,7 @@ onUnmounted(() => {
         </main>
 
         <ToastContainer />
+
     </div>
 </template>
 
@@ -429,4 +430,5 @@ onUnmounted(() => {
 
 .overlay-enter-active, .overlay-leave-active { transition: opacity 0.2s ease; }
 .overlay-enter-from, .overlay-leave-to { opacity: 0; }
+
 </style>

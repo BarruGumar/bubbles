@@ -12,12 +12,14 @@ class UserPunishment extends Model
         'user_id', 'issued_by', 'type', 'reason', 'notes',
         'starts_at', 'ends_at',
         'revoked_at', 'revoked_by', 'revoked_reason',
+        'notified_at',
     ];
 
     protected $casts = [
-        'starts_at'  => 'datetime',
-        'ends_at'    => 'datetime',
-        'revoked_at' => 'datetime',
+        'starts_at'   => 'datetime',
+        'ends_at'     => 'datetime',
+        'revoked_at'  => 'datetime',
+        'notified_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

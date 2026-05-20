@@ -18,6 +18,7 @@ const emit = defineEmits(['update:text', 'submit', 'cancel']);
         "
     >
         <p style="font-size: 12px; font-weight: 700; color: #e05555; margin: 0 0 8px">Denunciar post</p>
+        <p style="font-size: 11px; color: #8ba0b0; margin: 0 0 6px">A denúncia deve ter pelo menos 5 caracteres.</p>
         <textarea
             :value="text"
             placeholder="Descreve o motivo da denúncia..."
