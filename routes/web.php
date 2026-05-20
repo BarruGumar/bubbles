@@ -7,6 +7,7 @@ use App\Http\Controllers\CommunityModerationController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FriendController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
@@ -109,6 +110,17 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::delete('/messages/{message}', [ConversationController::class, 'destroyMessage'])->name('messages.destroy');
     Route::get('/conversations/{conversation}/poll', [ConversationController::class, 'poll'])->name('conversations.poll');
     Route::post('/conversations/{conversation}/typing', [ConversationController::class, 'typing'])->name('conversations.typing');
+
+    // Grupos
+    Route::get('/groups/friends', [GroupController::class, 'friends'])->name('groups.friends');
+    Route::post('/groups', [GroupController::class, 'store'])->name('groups.store');
+    Route::patch('/groups/{conversation}', [GroupController::class, 'update'])->name('groups.update');
+    Route::post('/groups/{conversation}/members', [GroupController::class, 'addMember'])->name('groups.members.add');
+    Route::delete('/groups/{conversation}/members/{user}', [GroupController::class, 'removeMember'])->name('groups.members.remove');
+    Route::delete('/groups/{conversation}/leave', [GroupController::class, 'leave'])->name('groups.leave');
+    Route::patch('/groups/{conversation}/promote', [GroupController::class, 'promoteRole'])->name('groups.members.promote');
+    Route::patch('/groups/{conversation}/demote', [GroupController::class, 'demoteRole'])->name('groups.members.demote');
+    Route::patch('/groups/{conversation}/owner', [GroupController::class, 'transferOwner'])->name('groups.owner');
 
     // Friends
     Route::get('/friends', [FriendController::class, 'index'])->name('friends.index');

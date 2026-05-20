@@ -43,6 +43,221 @@ let sentTimer = null;
 // ── Read receipts ─────────────────────────────────────────────
 const otherLastReadAt = ref(props.activeConversation?.other_last_read_at ?? null);
 
+// ── Conversation type helpers ─────────────────────────────────
+const isGroup  = computed(() => props.activeConversation?.type === 'group');
+const isDirect = computed(() => !isGroup.value);
+
+// ── Group creation modal ──────────────────────────────────────
+const showGroupModal    = ref(false);
+const groupModalName    = ref('');
+const groupModalSearch  = ref('');
+const groupModalFriends = ref([]);
+const groupModalSelected = ref([]);
+const groupModalLoading = ref(false);
+const groupModalError   = ref(null);
+const groupModalSubmitting = ref(false);
+const groupModalImage   = ref(null);
+const groupModalImagePreview = ref(null);
+const groupImageInputRef = ref(null);
+
+async function handleGroupImageChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const compressed = await compressImage(file, { maxWidth: 400, maxHeight: 400, quality: 0.88 });
+    if (groupModalImagePreview.value) URL.revokeObjectURL(groupModalImagePreview.value);
+    groupModalImage.value = compressed;
+    groupModalImagePreview.value = URL.createObjectURL(compressed);
+}
+
+async function openGroupModal() {
+    showGroupModal.value    = true;
+    groupModalName.value    = '';
+    groupModalSearch.value  = '';
+    groupModalSelected.value = [];
+    groupModalError.value   = null;
+    groupModalLoading.value = true;
+    if (groupModalImagePreview.value) URL.revokeObjectURL(groupModalImagePreview.value);
+    groupModalImage.value = null;
+    groupModalImagePreview.value = null;
+    try {
+        const res = await axios.get(route('groups.friends'));
+        groupModalFriends.value = res.data.friends ?? [];
+    } catch {
+        groupModalError.value = 'Erro ao carregar amigos.';
+    } finally {
+        groupModalLoading.value = false;
+    }
+}
+
+const groupModalFiltered = computed(() => {
+    const q = groupModalSearch.value.trim().toLowerCase();
+    if (!q) return groupModalFriends.value;
+    return groupModalFriends.value.filter(
+        f => f.name.toLowerCase().includes(q) || f.username?.toLowerCase().includes(q)
+    );
+});
+
+function toggleGroupMember(user) {
+    const idx = groupModalSelected.value.findIndex(u => u.id === user.id);
+    if (idx === -1) groupModalSelected.value.push(user);
+    else groupModalSelected.value.splice(idx, 1);
+}
+
+function isGroupMemberSelected(user) {
+    return groupModalSelected.value.some(u => u.id === user.id);
+}
+
+async function submitCreateGroup() {
+    if (!groupModalName.value.trim() || groupModalSelected.value.length < 2 || groupModalSubmitting.value) return;
+    groupModalSubmitting.value = true;
+    const fd = new FormData();
+    fd.append('name', groupModalName.value.trim());
+    groupModalSelected.value.forEach(u => fd.append('participant_ids[]', u.id));
+    if (groupModalImage.value) fd.append('image', groupModalImage.value, 'group-avatar.jpg');
+    router.post(route('groups.store'), fd, {
+        onFinish: () => { groupModalSubmitting.value = false; },
+        onSuccess: () => { showGroupModal.value = false; },
+    });
+}
+
+// ── Group details panel ───────────────────────────────────────
+const showGroupDetails    = ref(false);
+const groupDetailsParticipants = computed(() => props.activeConversation?.participants ?? []);
+const groupUserRole       = computed(() => props.activeConversation?.user_role ?? 'member');
+const groupActionLoading  = ref(false);
+
+// Edit group info (avatar + name)
+const groupEditImageFile    = ref(null);
+const groupEditImagePreview = ref(null);
+const groupEditImageInputRef = ref(null);
+const groupEditName         = ref('');
+const groupEditSaving       = ref(false);
+const canEditGroup          = computed(() => ['owner', 'admin'].includes(groupUserRole.value));
+
+// Add member to group
+const showAddMember    = ref(false);
+const addMemberSearch  = ref('');
+const addMemberFriends = ref([]);
+const addMemberLoading = ref(false);
+
+const currentMemberIds = computed(() => new Set(groupDetailsParticipants.value.map(p => p.id)));
+
+const addMemberFiltered = computed(() => {
+    const q = addMemberSearch.value.trim().toLowerCase();
+    return addMemberFriends.value.filter(f => {
+        if (currentMemberIds.value.has(f.id)) return false;
+        if (!q) return true;
+        return f.name.toLowerCase().includes(q) || f.username?.toLowerCase().includes(q);
+    });
+});
+
+async function openAddMember() {
+    showAddMember.value = !showAddMember.value;
+    if (!showAddMember.value) return;
+    addMemberSearch.value = '';
+    addMemberLoading.value = true;
+    try {
+        const res = await axios.get(route('groups.friends'));
+        addMemberFriends.value = res.data.friends ?? [];
+    } catch {} finally { addMemberLoading.value = false; }
+}
+
+async function addMemberToGroup(userId) {
+    if (groupActionLoading.value) return;
+    groupActionLoading.value = true;
+    try {
+        await axios.post(route('groups.members.add', props.activeConversation.id), { user_id: userId });
+        router.reload({ only: ['activeConversation'] });
+    } catch (e) {
+        alert(e?.response?.data?.message ?? 'Erro ao adicionar membro.');
+    } finally { groupActionLoading.value = false; }
+}
+
+watch(showGroupDetails, (open) => {
+    if (open) {
+        groupEditName.value = props.activeConversation?.group_name ?? '';
+        showAddMember.value = false;
+        addMemberFriends.value = [];
+    }
+    if (groupEditImagePreview.value) URL.revokeObjectURL(groupEditImagePreview.value);
+    groupEditImageFile.value = null;
+    groupEditImagePreview.value = null;
+});
+
+async function handleGroupEditImageChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const compressed = await compressImage(file, { maxWidth: 400, maxHeight: 400, quality: 0.88 });
+    if (groupEditImagePreview.value) URL.revokeObjectURL(groupEditImagePreview.value);
+    groupEditImageFile.value = compressed;
+    groupEditImagePreview.value = URL.createObjectURL(compressed);
+}
+
+async function saveGroupInfo() {
+    if (groupEditSaving.value || !props.activeConversation) return;
+    const nameTrimmed = groupEditName.value.trim();
+    if (!nameTrimmed && !groupEditImageFile.value) return;
+    groupEditSaving.value = true;
+    try {
+        const fd = new FormData();
+        if (nameTrimmed) fd.append('name', nameTrimmed);
+        if (groupEditImageFile.value) fd.append('image', groupEditImageFile.value, 'group-avatar.jpg');
+        fd.append('_method', 'PATCH');
+        await axios.post(route('groups.update', props.activeConversation.id), fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        router.reload({ only: ['activeConversation', 'conversations'] });
+        if (groupEditImagePreview.value) URL.revokeObjectURL(groupEditImagePreview.value);
+        groupEditImageFile.value = null;
+        groupEditImagePreview.value = null;
+    } catch (e) {
+        alert(e?.response?.data?.message ?? 'Erro ao guardar.');
+    } finally { groupEditSaving.value = false; }
+}
+
+async function removeMember(userId) {
+    if (groupActionLoading.value || !props.activeConversation) return;
+    groupActionLoading.value = true;
+    try {
+        await axios.delete(route('groups.members.remove', { conversation: props.activeConversation.id, user: userId }));
+        router.reload({ only: ['activeConversation'] });
+    } catch {} finally { groupActionLoading.value = false; }
+}
+
+async function promoteToAdmin(userId) {
+    if (groupActionLoading.value || !props.activeConversation) return;
+    groupActionLoading.value = true;
+    try {
+        await axios.patch(route('groups.members.promote', props.activeConversation.id), { user_id: userId });
+        router.reload({ only: ['activeConversation'] });
+    } catch {} finally { groupActionLoading.value = false; }
+}
+
+async function demoteToMember(userId) {
+    if (groupActionLoading.value || !props.activeConversation) return;
+    groupActionLoading.value = true;
+    try {
+        await axios.patch(route('groups.members.demote', props.activeConversation.id), { user_id: userId });
+        router.reload({ only: ['activeConversation'] });
+    } catch {} finally { groupActionLoading.value = false; }
+}
+
+async function leaveGroup() {
+    if (groupActionLoading.value || !props.activeConversation) return;
+    groupActionLoading.value = true;
+    try {
+        const res = await axios.delete(route('groups.leave', props.activeConversation.id));
+        if (res.data?.deleted) {
+            router.visit(route('conversations.index'));
+        } else {
+            router.visit(route('conversations.index'));
+        }
+    } catch (e) {
+        const msg = e?.response?.data?.message ?? 'Erro ao sair do grupo.';
+        alert(msg);
+    } finally { groupActionLoading.value = false; }
+}
+
 // ── Reply ─────────────────────────────────────────────────────
 const replyingTo = ref(null);
 
@@ -644,11 +859,19 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                             {{ totalUnread }} não {{ totalUnread === 1 ? 'lida' : 'lidas' }}
                         </p>
                     </div>
-                    <Link :href="route('friends.index')" class="new-conv-btn" title="Nova conversa">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 5v14M5 12h14"/>
-                        </svg>
-                    </Link>
+                    <div style="display:flex;gap:6px;align-items:center">
+                        <button @click="openGroupModal" class="new-conv-btn" title="Novo grupo" style="background:linear-gradient(135deg,#4ebcff,#009ac7)">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </button>
+                        <Link :href="route('friends.index')" class="new-conv-btn" title="Nova conversa">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </Link>
+                    </div>
                 </div>
 
                 <div class="sidebar-list">
@@ -684,17 +907,30 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                         :class="{ 'is-active': activeConversation?.id === conv.id }"
                     >
                         <div style="position:relative;flex-shrink:0">
-                            <img v-if="conv.other_user?.avatar" :src="clImg(conv.other_user.avatar, 88, 88, 'fill', 'face')" class="s-avatar" :style="{ border: `2px solid ${conv.other_user.avatar_color}`, boxShadow: `0 2px 8px ${conv.other_user.avatar_color}33` }" loading="lazy" />
-                            <div v-else class="s-avatar-init" :style="{ background: conv.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(conv.other_user?.name) }}</div>
+                            <!-- Group avatar -->
+                            <template v-if="conv.type === 'group'">
+                                <img v-if="conv.group_avatar" :src="clImg(conv.group_avatar, 88, 88, 'fill')" class="s-avatar" style="border:2px solid #009ac7;box-shadow:0 2px 8px #009ac733" loading="lazy" />
+                                <div v-else class="s-avatar-init" style="background:linear-gradient(135deg,#009ac7,#4ebcff);font-size:11px">
+                                    {{ avatarInitial(conv.group_name) }}
+                                </div>
+                            </template>
+                            <!-- Direct avatar -->
+                            <template v-else>
+                                <img v-if="conv.other_user?.avatar" :src="clImg(conv.other_user.avatar, 88, 88, 'fill', 'face')" class="s-avatar" :style="{ border: `2px solid ${conv.other_user.avatar_color}`, boxShadow: `0 2px 8px ${conv.other_user.avatar_color}33` }" loading="lazy" />
+                                <div v-else class="s-avatar-init" :style="{ background: conv.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(conv.other_user?.name) }}</div>
+                            </template>
                         </div>
                         <div class="conv-info">
                             <div class="conv-row">
-                                <p class="conv-name" :style="{ fontWeight: conv.unread_count > 0 ? '800' : '700' }">{{ conv.other_user?.name ?? '—' }}</p>
+                                <p class="conv-name" :style="{ fontWeight: conv.unread_count > 0 ? '800' : '700' }">
+                                    {{ conv.type === 'group' ? (conv.group_name ?? 'Grupo') : (conv.other_user?.name ?? '—') }}
+                                </p>
                                 <span class="conv-time" :style="{ color: conv.unread_count > 0 ? '#009ac7' : 'var(--text-4)', fontWeight: conv.unread_count > 0 ? '700' : '400' }">{{ formatTime(conv.last_message?.created_at) }}</span>
                             </div>
                             <p class="conv-sub" :style="{ color: conv.unread_count > 0 ? '#009ac7' : 'var(--text-3)', fontWeight: conv.unread_count > 0 ? '600' : '400' }">
                                 <span v-if="conv.last_message?.is_own" style="color:var(--text-4)">Eu: </span>
                                 {{ conv.last_message?.content ?? (conv.last_message ? '📷 Imagem' : 'Sem mensagens.') }}
+                                <span v-if="conv.type === 'group' && conv.participants_count" style="color:var(--text-4);font-size:10px"> · {{ conv.participants_count }} membros</span>
                             </p>
                         </div>
                         <span v-if="conv.unread_count > 0" class="unread-badge">{{ conv.unread_count }}</span>
@@ -740,12 +976,27 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                     <!-- Header -->
                     <div class="chat-header">
                         <button v-if="isMobile" @click="showSidebar = true" class="back-btn">←</button>
-                        <img v-if="activeConversation.other_user?.avatar" :src="clImg(activeConversation.other_user.avatar, 80, 80, 'fill', 'face')" class="h-avatar" :style="{ border: `2px solid ${activeConversation.other_user.avatar_color}`, boxShadow: `0 2px 8px ${activeConversation.other_user.avatar_color}44` }" />
-                        <div v-else class="h-avatar-init" :style="{ background: activeConversation.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(activeConversation.other_user?.name) }}</div>
-                        <div class="header-info">
-                            <p class="header-name">{{ activeConversation.other_user?.name }}</p>
-                            <p v-if="activeConversation.other_user?.username" class="header-username">@{{ activeConversation.other_user.username }}</p>
-                        </div>
+
+                        <!-- Group header -->
+                        <template v-if="isGroup">
+                            <img v-if="activeConversation.group_avatar" :src="clImg(activeConversation.group_avatar, 80, 80, 'fill')" class="h-avatar" style="border:2px solid #009ac7;box-shadow:0 2px 8px #009ac744" />
+                            <div v-else class="h-avatar-init" style="background:linear-gradient(135deg,#009ac7,#4ebcff);font-size:13px">{{ avatarInitial(activeConversation.group_name) }}</div>
+                            <div class="header-info">
+                                <p class="header-name">{{ activeConversation.group_name }}</p>
+                                <p class="header-username">{{ activeConversation.participants_count }} membros</p>
+                            </div>
+                        </template>
+
+                        <!-- Direct header -->
+                        <template v-else>
+                            <img v-if="activeConversation.other_user?.avatar" :src="clImg(activeConversation.other_user.avatar, 80, 80, 'fill', 'face')" class="h-avatar" :style="{ border: `2px solid ${activeConversation.other_user.avatar_color}`, boxShadow: `0 2px 8px ${activeConversation.other_user.avatar_color}44` }" />
+                            <div v-else class="h-avatar-init" :style="{ background: activeConversation.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(activeConversation.other_user?.name) }}</div>
+                            <div class="header-info">
+                                <p class="header-name">{{ activeConversation.other_user?.name }}</p>
+                                <p v-if="activeConversation.other_user?.username" class="header-username">@{{ activeConversation.other_user.username }}</p>
+                            </div>
+                        </template>
+
                         <!-- Background picker -->
                         <div ref="bgPickerEl" style="position:relative;flex-shrink:0">
                             <button @click.stop="bgPickerOpen = !bgPickerOpen" class="icon-btn" :class="{ 'is-active': bgPickerOpen }" title="Fundo da conversa">
@@ -779,8 +1030,147 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                                 </div>
                             </div>
                         </div>
-                        <Link v-if="activeConversation.other_user?.username" :href="route('profile.show', activeConversation.other_user.username)" class="btn-outline">Ver perfil</Link>
+
+                        <button v-if="isGroup" @click="showGroupDetails = !showGroupDetails" class="btn-outline">Detalhes</button>
+                        <Link v-else-if="activeConversation.other_user?.username" :href="route('profile.show', activeConversation.other_user.username)" class="btn-outline">Ver perfil</Link>
                     </div>
+
+                    <!-- Group details panel -->
+                    <Transition name="slide-panel">
+                        <div v-if="isGroup && showGroupDetails" class="group-details-panel">
+                            <div class="group-details-header">
+                                <p class="group-details-title">Detalhes do grupo</p>
+                                <button @click="showGroupDetails = false" class="group-details-close">×</button>
+                            </div>
+
+                            <!-- Group info / edit section -->
+                            <div class="gd-info-section">
+                                <div class="gd-avatar-wrap">
+                                    <template v-if="canEditGroup">
+                                        <button type="button" class="gd-avatar-btn" @click="groupEditImageInputRef.click()" title="Alterar foto">
+                                            <img v-if="groupEditImagePreview" :src="groupEditImagePreview" class="gd-avatar-img" />
+                                            <img v-else-if="activeConversation.group_avatar" :src="clImg(activeConversation.group_avatar, 80, 80, 'fill', 'face')" class="gd-avatar-img" />
+                                            <div v-else class="gd-avatar-placeholder">
+                                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                                </svg>
+                                            </div>
+                                            <div class="gd-avatar-overlay">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+                                                </svg>
+                                            </div>
+                                        </button>
+                                        <input ref="groupEditImageInputRef" type="file" accept="image/*" style="display:none" @change="handleGroupEditImageChange" />
+                                    </template>
+                                    <template v-else>
+                                        <img v-if="activeConversation.group_avatar" :src="clImg(activeConversation.group_avatar, 80, 80, 'fill', 'face')" class="gd-avatar-img gd-avatar-static" />
+                                        <div v-else class="gd-avatar-placeholder gd-avatar-static">
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                            </svg>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div class="gd-name-wrap">
+                                    <input
+                                        v-if="canEditGroup"
+                                        v-model="groupEditName"
+                                        type="text"
+                                        maxlength="100"
+                                        class="gd-name-input"
+                                        placeholder="Nome do grupo"
+                                    />
+                                    <p v-else class="gd-name-static">{{ activeConversation.group_name }}</p>
+                                    <p class="gd-members-count">{{ activeConversation.participants_count }} membros</p>
+                                </div>
+
+                                <button
+                                    v-if="canEditGroup && (groupEditImageFile || groupEditName.trim() !== (activeConversation.group_name ?? ''))"
+                                    @click="saveGroupInfo"
+                                    :disabled="groupEditSaving"
+                                    class="gd-save-btn"
+                                >{{ groupEditSaving ? '…' : 'Guardar' }}</button>
+                            </div>
+
+                            <div class="gd-divider"></div>
+
+                            <!-- Members section header -->
+                            <div class="gd-section-row">
+                                <p class="gd-section-label">Membros ({{ activeConversation.participants_count }})</p>
+                                <button v-if="canEditGroup" @click="openAddMember" class="gd-add-btn" :class="{ active: showAddMember }" title="Adicionar membro">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Adicionar
+                                </button>
+                            </div>
+
+                            <!-- Add member panel -->
+                            <Transition name="gd-expand">
+                                <div v-if="showAddMember && canEditGroup" class="gd-add-section">
+                                    <input
+                                        v-model="addMemberSearch"
+                                        type="text"
+                                        placeholder="Pesquisar amigos…"
+                                        class="gd-add-search"
+                                        autofocus
+                                    />
+                                    <div class="gd-add-list">
+                                        <p v-if="addMemberLoading" class="gd-add-empty">A carregar…</p>
+                                        <p v-else-if="addMemberFiltered.length === 0" class="gd-add-empty">Nenhum amigo disponível.</p>
+                                        <div v-else v-for="f in addMemberFiltered" :key="f.id" class="gd-friend-row">
+                                            <img v-if="f.avatar" :src="clImg(f.avatar, 40, 40, 'fill', 'face')" class="gd-friend-avatar" />
+                                            <div v-else class="gd-friend-avatar-init" :style="{ background: f.avatar_color ?? '#009ac7' }">{{ avatarInitial(f.name) }}</div>
+                                            <div style="flex:1;min-width:0">
+                                                <p class="gd-friend-name">{{ f.name }}</p>
+                                                <p class="gd-friend-user">@{{ f.username }}</p>
+                                            </div>
+                                            <button @click="addMemberToGroup(f.id)" :disabled="groupActionLoading" class="gd-friend-add-btn">Adicionar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Transition>
+
+                            <!-- Members list -->
+                            <div class="group-details-list">
+                                <div v-for="member in groupDetailsParticipants" :key="member.id" class="group-member-row">
+                                    <img v-if="member.avatar" :src="clImg(member.avatar, 40, 40, 'fill', 'face')" class="gm-avatar" :style="{ border: `1.5px solid ${member.avatar_color}` }" loading="lazy" />
+                                    <div v-else class="gm-avatar-init" :style="{ background: member.avatar_color }">{{ avatarInitial(member.name) }}</div>
+                                    <div style="flex:1;min-width:0">
+                                        <p class="gm-name">{{ member.name }}</p>
+                                        <span class="gm-role" :class="`role-${member.role}`">{{ { owner: 'Dono', admin: 'Admin', member: 'Membro' }[member.role] }}</span>
+                                    </div>
+                                    <div v-if="member.id !== authUser?.id" class="gm-actions">
+                                        <template v-if="groupUserRole === 'owner'">
+                                            <button v-if="member.role === 'member'" @click="promoteToAdmin(member.id)" :disabled="groupActionLoading" class="gm-btn" title="Promover a admin">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                                            </button>
+                                            <button v-if="member.role === 'admin'" @click="demoteToMember(member.id)" :disabled="groupActionLoading" class="gm-btn" title="Rebaixar a membro">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                            </button>
+                                            <button @click="removeMember(member.id)" :disabled="groupActionLoading" class="gm-btn gm-btn-danger" title="Remover do grupo">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                            </button>
+                                        </template>
+                                        <template v-else-if="groupUserRole === 'admin' && member.role === 'member'">
+                                            <button @click="removeMember(member.id)" :disabled="groupActionLoading" class="gm-btn gm-btn-danger" title="Remover do grupo">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="group-details-footer">
+                                <button @click="leaveGroup" :disabled="groupActionLoading" class="btn-leave-group">
+                                    {{ groupUserRole === 'owner' ? 'Transferir e sair' : 'Sair do grupo' }}
+                                </button>
+                            </div>
+                        </div>
+                    </Transition>
 
                     <!-- Messages area -->
                     <div ref="messagesEl" class="messages-area" :class="{ 'chat-dark': isDarkBg }" :style="chatBgStyle">
@@ -815,6 +1205,12 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 
                                 <!-- Bubble + actions row -->
                                 <div class="bubble-row" :style="{ flexDirection: item.is_own ? 'row-reverse' : 'row' }">
+                                    <!-- Group sender avatar (received only) -->
+                                    <template v-if="isGroup && !item.is_own">
+                                        <img v-if="item.isFirst && item.author?.avatar" :src="clImg(item.author.avatar, 30, 30, 'fill', 'face')" class="gm-sender-av" :style="{ border: `1.5px solid ${item.author?.avatar_color ?? '#009ac7'}` }" />
+                                        <div v-else-if="item.isFirst" class="gm-sender-av gm-sender-av-init" :style="{ background: item.author?.avatar_color ?? '#009ac7' }">{{ avatarInitial(item.author?.name) }}</div>
+                                        <div v-else class="gm-sender-av-space"></div>
+                                    </template>
                                     <!-- Action buttons (beside bubble) — hidden while message is in flight -->
                                     <div v-if="editingId !== item.id && confirmDeleteId !== item.id && !item._sending" class="msg-actions">
                                         <button @click.stop="startReply(item)" class="action-btn" title="Responder">
@@ -859,6 +1255,8 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 
                                         <!-- Normal display -->
                                         <template v-else>
+                                            <!-- Sender name inside bubble — group received, first in run -->
+                                            <p v-if="isGroup && !item.is_own && item.isFirst" class="bubble-sender-name" :style="{ color: item.author?.avatar_color ?? '#009ac7' }">{{ item.author?.name }}</p>
                                             <!-- Reply quote -->
                                             <div v-if="item.reply_to" class="reply-quote" :class="item.is_own ? 'reply-own' : 'reply-recv'">
                                                 <p class="reply-author">{{ item.reply_to.author_name }}</p>
@@ -872,7 +1270,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                                             <div v-if="!item.image_url || item.content || item.reply_to" class="msg-meta">
                                                 <span class="msg-ts">{{ formatTime(item.created_at) }}</span>
                                                 <span v-if="item.is_edited" class="msg-ts-edited">editado</span>
-                                                <span v-if="item.is_own && item.id === lastSeenMessageId" class="msg-seen">
+                                                <span v-if="isDirect && item.is_own && item.id === lastSeenMessageId" class="msg-seen">
                                                     <img v-if="activeConversation.other_user?.avatar" :src="clImg(activeConversation.other_user.avatar, 32, 32, 'fill', 'face')" class="seen-avatar" :style="{ border: `1px solid ${activeConversation.other_user.avatar_color}` }" />
                                                     <div v-else class="seen-initial" :style="{ background: activeConversation.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(activeConversation.other_user?.name) }}</div>
                                                 </span>
@@ -909,7 +1307,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                                     <span></span><span></span><span></span>
                                 </div>
                             </div>
-                            <span class="typing-label">{{ activeConversation.other_user?.name }} está a digitar…</span>
+                            <span class="typing-label">{{ isGroup ? 'Alguém está a digitar…' : `${activeConversation.other_user?.name} está a digitar…` }}</span>
                         </div>
                     </Transition>
 
@@ -972,6 +1370,100 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
     </AuthenticatedLayout>
 
     <PostImageLightbox v-if="lightboxUrl" :image-url="lightboxUrl" :open="!!lightboxUrl" @close="lightboxUrl = null" />
+
+    <!-- ═══ GROUP CREATION MODAL ══════════════════════════════════ -->
+    <Transition name="modal-fade">
+        <div v-if="showGroupModal" class="modal-backdrop" @click.self="showGroupModal = false">
+            <div class="modal-box group-modal">
+                <div class="modal-header">
+                    <p class="modal-title">Novo grupo</p>
+                    <button @click="showGroupModal = false" class="modal-close">×</button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Group avatar picker -->
+                    <div class="group-avatar-picker-wrap">
+                        <button type="button" class="group-avatar-picker" @click="groupImageInputRef.click()" :title="groupModalImagePreview ? 'Alterar foto' : 'Adicionar foto'">
+                            <img v-if="groupModalImagePreview" :src="groupModalImagePreview" class="group-avatar-preview" alt="Foto do grupo" />
+                            <span v-else class="group-avatar-placeholder">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                    <circle cx="12" cy="13" r="4"/>
+                                </svg>
+                                <span style="font-size:10px;margin-top:4px;display:block;line-height:1.1">Foto<br>do grupo</span>
+                            </span>
+                        </button>
+                        <button v-if="groupModalImagePreview" type="button" class="group-avatar-remove" @click="groupModalImage=null; groupModalImagePreview=null; groupImageInputRef.value=''" title="Remover foto">×</button>
+                        <input ref="groupImageInputRef" type="file" accept="image/*" style="display:none" @change="handleGroupImageChange" />
+                    </div>
+
+                    <!-- Group name -->
+                    <label class="modal-label">Nome do grupo</label>
+                    <input
+                        v-model="groupModalName"
+                        type="text"
+                        maxlength="100"
+                        placeholder="Ex: Equipa de projeto"
+                        class="modal-input"
+                    />
+
+                    <!-- Participant search -->
+                    <label class="modal-label" style="margin-top:16px">Adicionar participantes <span style="color:#8ba0b0;font-weight:400">(mín. 2)</span></label>
+                    <input
+                        v-model="groupModalSearch"
+                        type="text"
+                        placeholder="Pesquisar amigos…"
+                        class="modal-input"
+                        style="margin-bottom:10px"
+                    />
+
+                    <!-- Selected chips -->
+                    <div v-if="groupModalSelected.length > 0" class="modal-chips">
+                        <span v-for="u in groupModalSelected" :key="u.id" class="modal-chip">
+                            {{ u.name }}
+                            <button @click="toggleGroupMember(u)" class="chip-remove">×</button>
+                        </span>
+                    </div>
+
+                    <!-- Friends list -->
+                    <div class="modal-friends-list">
+                        <p v-if="groupModalLoading" style="font-size:13px;color:#8ba0b0;text-align:center;padding:16px 0">A carregar…</p>
+                        <p v-else-if="groupModalError" style="font-size:13px;color:#e05555;text-align:center;padding:12px 0">{{ groupModalError }}</p>
+                        <p v-else-if="groupModalFiltered.length === 0" style="font-size:13px;color:#8ba0b0;text-align:center;padding:12px 0">Nenhum amigo encontrado.</p>
+                        <button
+                            v-else
+                            v-for="f in groupModalFiltered"
+                            :key="f.id"
+                            @click="toggleGroupMember(f)"
+                            class="modal-friend-row"
+                            :class="{ 'is-selected': isGroupMemberSelected(f) }"
+                        >
+                            <img v-if="f.avatar" :src="clImg(f.avatar, 64, 64, 'fill', 'face')" class="mf-avatar" :style="{ border: `1.5px solid ${f.avatar_color}` }" />
+                            <div v-else class="mf-avatar-init" :style="{ background: f.avatar_color }">{{ avatarInitial(f.name) }}</div>
+                            <div style="flex:1;min-width:0">
+                                <p class="mf-name">{{ f.name }}</p>
+                                <p v-if="f.username" class="mf-username">@{{ f.username }}</p>
+                            </div>
+                            <div class="mf-check" :class="{ 'is-checked': isGroupMemberSelected(f) }">
+                                <svg v-if="isGroupMemberSelected(f)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button @click="showGroupModal = false" class="btn-cancel-modal">Cancelar</button>
+                    <button
+                        @click="submitCreateGroup"
+                        :disabled="!groupModalName.trim() || groupModalSelected.length < 2 || groupModalSubmitting"
+                        class="btn-create-group"
+                    >
+                        {{ groupModalSubmitting ? 'A criar…' : `Criar grupo (${groupModalSelected.length + 1})` }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Transition>
 </template>
 
 <style scoped>
@@ -1417,4 +1909,281 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 .typing-slide-leave-active { transition: opacity 0.15s, transform 0.15s; }
 .typing-slide-enter-from { opacity: 0; transform: translateY(4px); }
 .typing-slide-leave-to { opacity: 0; transform: translateY(4px); }
+
+/* ── Sender avatar + name (group chats) ─────────────────────── */
+.gm-sender-av {
+    width: 30px; height: 30px; border-radius: 50%; object-fit: cover;
+    flex-shrink: 0; align-self: flex-end; display: block;
+}
+.gm-sender-av-init {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+}
+.gm-sender-av-space { width: 30px; flex-shrink: 0; }
+.bubble-sender-name {
+    font-size: 11px; font-weight: 700; margin: 0 0 5px; padding: 0; line-height: 1;
+}
+
+/* ── Group details panel ─────────────────────────────────────── */
+.group-details-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 280px;
+    height: 100%;
+    background: var(--bg-1, #fff);
+    border-left: 1px solid #009ac712;
+    box-shadow: -4px 0 24px #009ac70a;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+.group-details-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid #009ac710;
+}
+.group-details-title { font-size: 13px; font-weight: 800; color: #3a6478; margin: 0; }
+.group-details-close {
+    width: 26px; height: 26px; border-radius: 50%; border: none;
+    background: #009ac710; color: #5a7a8a; font-size: 16px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.group-details-list { flex: 1; overflow-y: auto; padding: 10px 0; }
+.group-member-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 18px;
+}
+.gm-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.gm-avatar-init {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: white;
+}
+.gm-name { font-size: 13px; font-weight: 700; color: #3a6478; margin: 0; }
+.gm-role { font-size: 10px; font-weight: 600; margin: 1px 0 0; text-transform: uppercase; letter-spacing: .03em; }
+.role-owner { color: #f59e0b; }
+.role-admin  { color: #009ac7; }
+.role-member { color: #8ba0b0; }
+.gm-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.gm-btn {
+    width: 24px; height: 24px; border-radius: 50%; border: none;
+    background: #009ac710; color: #009ac7; font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+}
+.gm-btn:hover { background: #009ac720; }
+.gm-btn-danger { background: #e0555510; color: #e05555; }
+.gm-btn-danger:hover { background: #e0555520; }
+.gd-info-section {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; padding: 20px 18px 16px;
+}
+.gd-avatar-wrap { position: relative; flex-shrink: 0; }
+.gd-avatar-btn {
+    width: 76px; height: 76px; border-radius: 50%; border: none; padding: 0;
+    cursor: pointer; overflow: hidden; position: relative;
+    background: #e6f5fb; display: flex; align-items: center; justify-content: center;
+}
+.gd-avatar-img { width: 76px; height: 76px; object-fit: cover; border-radius: 50%; display: block; }
+.gd-avatar-static { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; display: block; }
+.gd-avatar-placeholder {
+    width: 76px; height: 76px; border-radius: 50%; background: #dff0f8;
+    display: flex; align-items: center; justify-content: center; color: #5a9ab5;
+}
+.gd-avatar-overlay {
+    position: absolute; inset: 0; border-radius: 50%; background: rgba(0,0,0,.35);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .18s;
+}
+.gd-avatar-btn:hover .gd-avatar-overlay { opacity: 1; }
+.gd-name-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; }
+.gd-name-input {
+    width: 100%; text-align: center; font-size: 14px; font-weight: 700; color: #3a6478;
+    border: 1.5px solid transparent; border-radius: 8px; padding: 5px 10px;
+    background: transparent; outline: none; transition: border-color .15s, background .15s;
+    box-sizing: border-box;
+}
+.gd-name-input:hover { border-color: #009ac730; background: #f5f9fb; }
+.gd-name-input:focus { border-color: #009ac760; background: #fff; }
+.gd-name-static { font-size: 14px; font-weight: 700; color: #3a6478; margin: 0; text-align: center; }
+.gd-members-count { font-size: 11px; color: #8ba0b0; margin: 0; }
+.gd-save-btn {
+    padding: 6px 18px; border-radius: 20px; border: none;
+    background: #009ac7; color: #fff; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: background .15s;
+}
+.gd-save-btn:hover:not(:disabled) { background: #007fa8; }
+.gd-save-btn:disabled { opacity: .5; cursor: default; }
+.gd-divider { height: 1px; background: #009ac710; margin: 0 18px; }
+.gd-section-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 18px 4px;
+}
+.gd-section-label {
+    font-size: 10px; font-weight: 800; color: #5a7a8a; text-transform: uppercase;
+    letter-spacing: .06em; margin: 0; padding: 0;
+}
+.gd-add-btn {
+    display: flex; align-items: center; gap: 4px; padding: 4px 10px;
+    border-radius: 20px; border: 1.5px solid #009ac730; background: transparent;
+    color: #009ac7; font-size: 11px; font-weight: 700; cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+.gd-add-btn:hover, .gd-add-btn.active { background: #009ac712; border-color: #009ac760; }
+.gd-add-section {
+    margin: 4px 18px 6px; border: 1.5px solid #009ac720;
+    border-radius: 12px; overflow: hidden; background: #f8fcfe;
+}
+.gd-add-search {
+    width: 100%; padding: 9px 14px; border: none; border-bottom: 1px solid #009ac715;
+    font-size: 13px; color: #3a6478; background: transparent; outline: none;
+    box-sizing: border-box;
+}
+.gd-add-list { max-height: 180px; overflow-y: auto; }
+.gd-add-empty { font-size: 12px; color: #8ba0b0; text-align: center; padding: 12px; margin: 0; }
+.gd-friend-row {
+    display: flex; align-items: center; gap: 9px; padding: 7px 12px;
+    border-bottom: 1px solid #009ac708;
+}
+.gd-friend-row:last-child { border-bottom: none; }
+.gd-friend-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.gd-friend-avatar-init {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+}
+.gd-friend-name { font-size: 12px; font-weight: 700; color: #3a6478; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gd-friend-user { font-size: 11px; color: #8ba0b0; margin: 0; }
+.gd-friend-add-btn {
+    padding: 4px 10px; border-radius: 20px; border: none;
+    background: #009ac7; color: #fff; font-size: 11px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; transition: background .15s; flex-shrink: 0;
+}
+.gd-friend-add-btn:hover:not(:disabled) { background: #007fa8; }
+.gd-friend-add-btn:disabled { opacity: .5; cursor: default; }
+.gd-expand-enter-active, .gd-expand-leave-active { transition: max-height .22s ease, opacity .18s ease; max-height: 300px; overflow: hidden; }
+.gd-expand-enter-from, .gd-expand-leave-to { max-height: 0; opacity: 0; }
+.group-details-footer {
+    padding: 14px 18px;
+    border-top: 1px solid #009ac710;
+}
+.btn-leave-group {
+    width: 100%; padding: 10px; border: none; border-radius: 10px;
+    background: #e0555510; color: #e05555; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: background .15s;
+}
+.btn-leave-group:hover { background: #e0555520; }
+
+/* slide panel transition */
+.slide-panel-enter-active, .slide-panel-leave-active { transition: transform .2s ease; }
+.slide-panel-enter-from, .slide-panel-leave-to { transform: translateX(100%); }
+
+/* ── Group creation modal ─────────────────────────────────────── */
+.modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    display: flex; align-items: center; justify-content: center; z-index: 200;
+}
+.modal-box {
+    background: #fff; border-radius: 20px; width: 440px; max-width: 95vw;
+    max-height: 85vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+.modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px 14px; border-bottom: 1px solid #009ac710;
+}
+.modal-title { font-size: 15px; font-weight: 800; color: #3a6478; margin: 0; }
+.modal-close {
+    width: 28px; height: 28px; border-radius: 50%; border: none;
+    background: #009ac710; color: #5a7a8a; font-size: 18px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.modal-body { padding: 18px 22px; flex: 1; overflow-y: auto; }
+.modal-label { font-size: 11px; font-weight: 700; color: #5a7a8a; text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 6px; }
+.modal-input {
+    width: 100%; padding: 10px 14px; border: 1.5px solid #009ac720; border-radius: 10px;
+    font-size: 13.5px; color: #3a6478; background: #f5f9fb; outline: none;
+    box-sizing: border-box; transition: border-color .15s;
+}
+.modal-input:focus { border-color: #009ac750; background: #fff; }
+
+.group-avatar-picker-wrap {
+    display: flex; align-items: center; justify-content: center;
+    position: relative; margin: 0 auto 20px; width: fit-content;
+}
+.group-avatar-picker {
+    width: 82px; height: 82px; border-radius: 50%; border: 2px dashed #009ac740;
+    background: #f0f8fc; cursor: pointer; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .2s, background .2s; padding: 0;
+    color: #5a9ab5;
+}
+.group-avatar-picker:hover { border-color: #009ac7; background: #e6f5fb; }
+.group-avatar-preview { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.group-avatar-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.group-avatar-remove {
+    position: absolute; top: -2px; right: -2px;
+    width: 22px; height: 22px; border-radius: 50%; border: none;
+    background: #e05555; color: #fff; font-size: 15px; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    padding: 0; transition: background .15s;
+}
+.group-avatar-remove:hover { background: #c03030; }
+
+.modal-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.modal-chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 99px;
+    background: #009ac715; color: #009ac7; font-size: 12px; font-weight: 700;
+}
+.chip-remove {
+    border: none; background: none; color: #009ac7; font-size: 14px;
+    cursor: pointer; padding: 0; line-height: 1; display: flex; align-items: center;
+}
+
+.modal-friends-list { max-height: 280px; overflow-y: auto; margin: 0 -22px; padding: 0 22px; }
+.modal-friend-row {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border: none; background: transparent; cursor: pointer;
+    border-bottom: 1px solid #009ac708; text-align: left; transition: background .12s;
+    border-radius: 10px; margin: 1px 0; padding: 9px 10px;
+}
+.modal-friend-row:hover { background: #009ac708; }
+.modal-friend-row.is-selected { background: #009ac710; }
+.mf-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.mf-avatar-init {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; color: white;
+}
+.mf-name { font-size: 13.5px; font-weight: 700; color: #3a6478; margin: 0; }
+.mf-username { font-size: 11px; color: #009ac7; margin: 1px 0 0; }
+.mf-check {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid #009ac730; display: flex; align-items: center; justify-content: center;
+    transition: background .15s, border-color .15s;
+}
+.mf-check.is-checked { background: #009ac7; border-color: #009ac7; }
+
+.modal-footer {
+    display: flex; gap: 10px; padding: 14px 22px; border-top: 1px solid #009ac710;
+}
+.btn-cancel-modal {
+    flex: 1; padding: 10px; border: 1.5px solid #009ac720; border-radius: 10px;
+    background: transparent; color: #5a7a8a; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.btn-create-group {
+    flex: 2; padding: 10px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, #009ac7, #4ebcff); color: white;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 14px #009ac730; transition: opacity .15s;
+}
+.btn-create-group:disabled { opacity: .5; cursor: default; }
+
+/* modal transition */
+.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity .18s; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
 </style>

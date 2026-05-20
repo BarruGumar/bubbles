@@ -46,10 +46,6 @@ class ConversationController extends Controller
             'last_read_at' => now(),
         ]);
 
-        $other = $conversation->participants()
-            ->where('users.id', '!=', auth()->id())
-            ->first();
-
         // Load last PER_PAGE messages; support paging older ones via ?before=id
         $query = $conversation->messages()->with(['user', 'replyTo.user'])->orderByDesc('id');
 
@@ -70,23 +66,11 @@ class ConversationController extends Controller
         $skipConversations = !empty($requestedProps) && !in_array('conversations', $requestedProps);
 
         return Inertia::render('Chat/Index', [
-            'conversations' => $skipConversations ? [] : $this->listConversations(),
-            'activeConversation' => [
-                'id' => $conversation->id,
-                'other_last_read_at' => $other?->pivot?->last_read_at
-                    ? \Carbon\Carbon::parse($other->pivot->last_read_at)->toISOString()
-                    : null,
-                'other_user' => $other ? [
-                    'id' => $other->id,
-                    'name' => $other->name,
-                    'username' => $other->username,
-                    'avatar' => $other->avatar,
-                    'avatar_color' => $other->avatar_color ?? '#009ac7',
-                ] : null,
-            ],
-            'messages' => $mapped->values(),
-            'hasMoreMessages' => $hasMore,
-            'friends' => [],
+            'conversations'      => $skipConversations ? [] : $this->listConversations(),
+            'activeConversation' => $this->formatConversation($conversation),
+            'messages'           => $mapped->values(),
+            'hasMoreMessages'    => $hasMore,
+            'friends'            => [],
         ]);
     }
 
@@ -146,18 +130,15 @@ class ConversationController extends Controller
             'last_read_at' => now(),
         ]);
 
-        // Notify the other participant (not the sender)
-        $recipient = $conversation->participants()
+        // Notify all other participants (supports both direct and group)
+        $conversation->participants()
             ->where('users.id', '!=', auth()->id())
-            ->first();
-
-        if ($recipient) {
-            $recipient->notify(new MessageReceived(
+            ->get()
+            ->each(fn ($p) => $p->notify(new MessageReceived(
                 auth()->user(),
                 $conversation,
                 $message->content ?? '[imagem]',
-            ));
-        }
+            )));
 
         $message->load(['user', 'replyTo.user']);
 
@@ -197,11 +178,15 @@ class ConversationController extends Controller
                 ->update(['last_read_at' => now()]);
         }
 
-        // Direct pivot query — avoids JOIN with users table
-        $otherReadAt = DB::table('conversation_user')
-            ->where('conversation_id', $conversation->id)
-            ->where('user_id', '!=', $userId)
-            ->value('last_read_at');
+        // For direct conversations only: return the other participant's last_read_at
+        // For groups this is always null (per-user read state shown differently in UI)
+        $otherReadAt = null;
+        if ($conversation->isDirect()) {
+            $otherReadAt = DB::table('conversation_user')
+                ->where('conversation_id', $conversation->id)
+                ->where('user_id', '!=', $userId)
+                ->value('last_read_at');
+        }
 
         // Read typing state for other participants from cache (no DB query)
         $otherUserIds = DB::table('conversation_user')
@@ -267,6 +252,59 @@ class ConversationController extends Controller
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    private function formatConversation(Conversation $conversation): array
+    {
+        $userId = auth()->id();
+
+        if ($conversation->isDirect()) {
+            $other = $conversation->participants()
+                ->where('users.id', '!=', $userId)
+                ->first();
+
+            return [
+                'id'                => $conversation->id,
+                'type'              => 'direct',
+                'other_last_read_at' => $other?->pivot?->last_read_at
+                    ? \Carbon\Carbon::parse($other->pivot->last_read_at)->toISOString()
+                    : null,
+                'other_user'        => $other ? [
+                    'id'           => $other->id,
+                    'name'         => $other->name,
+                    'username'     => $other->username,
+                    'avatar'       => $other->avatar,
+                    'avatar_color' => $other->avatar_color ?? '#009ac7',
+                ] : null,
+            ];
+        }
+
+        // Group conversation
+        $participants = $conversation->participants()
+            ->get()
+            ->map(fn ($p) => [
+                'id'           => $p->id,
+                'name'         => $p->name,
+                'username'     => $p->username,
+                'avatar'       => $p->avatar,
+                'avatar_color' => $p->avatar_color ?? '#009ac7',
+                'role'         => $p->pivot->role,
+            ])
+            ->values();
+
+        $userRole = $participants->firstWhere('id', $userId)['role'] ?? 'member';
+
+        return [
+            'id'                 => $conversation->id,
+            'type'               => 'group',
+            'group_name'         => $conversation->name,
+            'group_avatar'       => $conversation->avatar,
+            'group_description'  => $conversation->description,
+            'owner_id'           => $conversation->owner_id,
+            'user_role'          => $userRole,
+            'participants_count' => $participants->count(),
+            'participants'       => $participants,
+        ];
     }
 
     private function formatMessage($m): array
@@ -352,24 +390,37 @@ class ConversationController extends Controller
             ->pluck('cnt', 'conversation_id');
 
         return $convList->map(function ($conv) use ($userId, $unreadCounts) {
-            $other = $conv->participants->firstWhere('id', '!=', $userId);
-
-            return [
-                'id' => $conv->id,
+            $base = [
+                'id'           => $conv->id,
+                'type'         => $conv->type ?? 'direct',
                 'unread_count' => (int) ($unreadCounts->get($conv->id, 0)),
                 'last_message' => $conv->lastMessage ? [
-                    'content' => $conv->lastMessage->content,
+                    'content'    => $conv->lastMessage->content,
                     'created_at' => $conv->lastMessage->created_at->toISOString(),
-                    'is_own' => $conv->lastMessage->user_id === $userId,
-                ] : null,
-                'other_user' => $other ? [
-                    'id' => $other->id,
-                    'name' => $other->name,
-                    'username' => $other->username,
-                    'avatar' => $other->avatar,
-                    'avatar_color' => $other->avatar_color ?? '#009ac7',
+                    'is_own'     => $conv->lastMessage->user_id === $userId,
                 ] : null,
             ];
+
+            if (($conv->type ?? 'direct') === 'group') {
+                return array_merge($base, [
+                    'group_name'         => $conv->name,
+                    'group_avatar'       => $conv->avatar,
+                    'participants_count' => $conv->participants->count(),
+                    'other_user'         => null,
+                ]);
+            }
+
+            $other = $conv->participants->firstWhere('id', '!=', $userId);
+
+            return array_merge($base, [
+                'other_user' => $other ? [
+                    'id'           => $other->id,
+                    'name'         => $other->name,
+                    'username'     => $other->username,
+                    'avatar'       => $other->avatar,
+                    'avatar_color' => $other->avatar_color ?? '#009ac7',
+                ] : null,
+            ]);
         })->values()->toArray();
     }
 }
