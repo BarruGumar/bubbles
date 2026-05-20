@@ -126,6 +126,7 @@ function submitPost() {
             if (uploadProgress.value >= 100) uploadingServer.value = true;
         },
         onSuccess: () => {
+            if (usePage().props.flash?.error) return;
             postForm.reset('content', 'image', 'video');
             removeMedia();
             uploadProgress.value = 0;

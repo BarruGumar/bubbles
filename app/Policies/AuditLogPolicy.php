@@ -10,4 +10,14 @@ class AuditLogPolicy
     {
         return $user->hasAdminAccess();
     }
+
+    public function delete(User $user): bool
+    {
+        return $user->isSiteOwner();
+    }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->isSiteOwner();
+    }
 }

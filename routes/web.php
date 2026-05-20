@@ -152,6 +152,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Audit Logs
     Route::get('/audit-logs', [AdminController::class, 'auditLogs'])->name('audit-logs');
+    Route::delete('/audit-logs', [AdminController::class, 'destroyAllAuditLogs'])->name('audit-logs.destroy-all');
+    Route::delete('/audit-logs/{log}', [AdminController::class, 'destroyAuditLog'])->name('audit-logs.destroy');
 });
 
 require __DIR__.'/auth.php';

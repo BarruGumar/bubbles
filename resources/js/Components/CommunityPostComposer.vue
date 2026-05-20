@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onUnmounted } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import { useToast } from '@/Composables/useToast';
 import { useClipboardImage } from '@/Composables/useClipboardImage';
 import { compressImage } from '@/Composables/useImageCompressor';
@@ -75,6 +75,7 @@ function submitPost() {
             if (uploadProgress.value >= 100) uploadingServer.value = true;
         },
         onSuccess: () => {
+            if (usePage().props.flash?.error) return;
             postForm.reset('content', 'image', 'video');
             removeMedia();
             uploadProgress.value = 0;

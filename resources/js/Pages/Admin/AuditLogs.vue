@@ -4,8 +4,9 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
-    logs: { type: Object, required: true },
-    filters: { type: Object, default: () => ({}) },
+    logs:         { type: Object, required: true },
+    filters:      { type: Object, default: () => ({}) },
+    isSiteOwner:  { type: Boolean, default: false },
 });
 
 const f = ref({
@@ -51,6 +52,17 @@ function clearFilters() {
     f.value = { user_id: '', ip: '', action: '', category: '', community_id: '', from: '', to: '' };
     router.get(route('admin.audit-logs'), {}, { preserveState: true, replace: true });
 }
+
+function deleteLog(id) {
+    if (!confirm('Eliminar este log de auditoria? Esta ação é irreversível.')) return;
+    router.delete(route('admin.audit-logs.destroy', id), {}, { preserveScroll: true });
+}
+
+function deleteAllLogs() {
+    if (!confirm('Tens a certeza? Isto vai apagar TODOS os logs de auditoria permanentemente.')) return;
+    if (!confirm('Última confirmação — esta ação não pode ser desfeita. Continuar?')) return;
+    router.delete(route('admin.audit-logs.destroy-all'), {}, { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -61,7 +73,7 @@ function clearFilters() {
             <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Audit Log</h1>
         </template>
 
-        <!-- Filters -->
+        <!-- Filters + Apagar todos -->
         <div style="background:white; border-radius:14px; border:1px solid #eef2f8; padding:16px 20px; margin-bottom:18px; display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
             <div style="display:flex; flex-direction:column; gap:4px;">
                 <label style="font-size:10px; font-weight:700; color:#8ba0b0; text-transform:uppercase; letter-spacing:.05em;">User ID</label>
@@ -103,6 +115,11 @@ function clearFilters() {
                 style="background:#f0f4f8; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:700; color:#5a7a8a; cursor:pointer; font-family:inherit;">
                 Limpar
             </button>
+            <div style="flex:1;"></div>
+            <button v-if="isSiteOwner" @click="deleteAllLogs"
+                style="background:#fef2f2; border:1.5px solid #fca5a5; border-radius:9px; padding:8px 14px; font-size:12px; font-weight:700; color:#dc2626; cursor:pointer; font-family:inherit;">
+                Apagar todos
+            </button>
         </div>
 
         <!-- Log table -->
@@ -143,12 +160,18 @@ function clearFilters() {
                             <span v-else-if="l.target_type" style="color:#b0c0cc; font-size:11px;">{{ l.target_type }}</span>
                         </td>
                         <td style="padding:10px 14px; font-size:11px; color:#8ba0b0; font-family:monospace;">{{ l.ip_address }}</td>
-                        <td style="padding:10px 14px; text-align:right;">
-                            <button v-if="l.metadata && Object.keys(l.metadata).length"
-                                @click="detailLog = l"
-                                style="font-size:11px; color:#009ac7; background:none; border:1px solid #009ac733; border-radius:6px; padding:3px 9px; cursor:pointer; font-weight:600;">
-                                Detalhe
-                            </button>
+                        <td style="padding:10px 14px; text-align:right; white-space:nowrap;">
+                            <div style="display:inline-flex; gap:6px; align-items:center;">
+                                <button v-if="l.metadata && Object.keys(l.metadata).length"
+                                    @click="detailLog = l"
+                                    style="font-size:11px; color:#009ac7; background:none; border:1px solid #009ac733; border-radius:6px; padding:3px 9px; cursor:pointer; font-weight:600;">
+                                    Detalhe
+                                </button>
+                                <button v-if="isSiteOwner" @click="deleteLog(l.id)"
+                                    style="font-size:11px; color:#dc2626; background:none; border:1px solid #dc262633; border-radius:6px; padding:3px 9px; cursor:pointer; font-weight:600;">
+                                    Apagar
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 </tbody>

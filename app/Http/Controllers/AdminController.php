@@ -425,6 +425,24 @@ class AdminController extends Controller
 
     // ── Audit Logs ────────────────────────────────────────────────
 
+    public function destroyAuditLog(AuditLog $log): RedirectResponse
+    {
+        abort_unless(auth()->user()->isSiteOwner(), 403);
+
+        $log->delete();
+
+        return back()->with('status', 'Log eliminado.');
+    }
+
+    public function destroyAllAuditLogs(): RedirectResponse
+    {
+        abort_unless(auth()->user()->isSiteOwner(), 403);
+
+        AuditLog::truncate();
+
+        return back()->with('status', 'Todos os logs foram eliminados.');
+    }
+
     public function auditLogs(Request $request): Response
     {
         $userId      = $request->get('user_id');
@@ -464,6 +482,7 @@ class AdminController extends Controller
         return Inertia::render('Admin/AuditLogs', [
             'logs'        => $logs,
             'filters'     => compact('userId', 'ip', 'action', 'category', 'communityId', 'from', 'to'),
+            'isSiteOwner' => auth()->user()->isSiteOwner(),
         ]);
     }
 }
