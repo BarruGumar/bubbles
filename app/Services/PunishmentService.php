@@ -27,6 +27,12 @@ class PunishmentService
             'ends_at'   => $data['ends_at'] ?? null,
         ]);
 
+        if ($data['type'] === 'ban') {
+            $target->update(['role' => 'banned']);
+        } elseif ($data['type'] === 'suspension') {
+            $target->update(['role' => 'suspended']);
+        }
+
         AuditLogger::log(
             'user.punish',
             'moderation',
@@ -51,6 +57,10 @@ class PunishmentService
             'revoked_by'     => $admin->id,
             'revoked_reason' => $reason,
         ]);
+
+        if (in_array($punishment->type, ['ban', 'suspension'])) {
+            $punishment->user->update(['role' => 'user']);
+        }
 
         AuditLogger::log(
             'user.punish.revoke',

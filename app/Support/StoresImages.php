@@ -24,7 +24,7 @@ trait StoresImages
     {
         if ($this->cloudinaryIsConfigured()) {
             $response = Cloudinary::uploadApi()->upload($file->getRealPath(), array_merge(
-                ['folder' => $folder, 'fetch_format' => 'auto', 'quality' => 'auto'],
+                ['folder' => $folder, 'fetch_format' => 'auto', 'quality' => 'auto:good'],
                 $cloudinaryOptions
             ));
 

@@ -16,7 +16,7 @@ use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/bubbles', [FeedController::class, 'home'])->middleware(['auth', 'verified'])->name('bubbles');
+Route::get('/bubbles', [FeedController::class, 'home'])->middleware(['auth', 'verified', 'punishments'])->name('bubbles');
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -24,8 +24,9 @@ Route::get('/', function () {
     }
 
     return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
+        'canLogin'        => Route::has('login'),
+        'canRegister'     => Route::has('register'),
+        'punishmentModal' => session('punishment_modal'),
     ]);
 });
 

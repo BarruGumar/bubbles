@@ -89,8 +89,8 @@ class AdminController extends Controller
         $actor = auth()->user();
 
         $allowedRoles = $actor->isSiteOwner()
-            ? ['user', 'moderator', 'admin', 'site_owner', 'suspended']
-            : ['user', 'moderator', 'admin', 'suspended'];
+            ? ['user', 'moderator', 'admin', 'site_owner', 'suspended', 'banned']
+            : ['user', 'moderator', 'admin', 'suspended', 'banned'];
 
         $data = $request->validate([
             'role' => 'required|in:' . implode(',', $allowedRoles),

@@ -6,6 +6,7 @@ use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Friend;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -184,11 +185,11 @@ class ProfileController extends Controller
         $user = $request->user();
         $this->deleteCloudinaryImage($user->avatar_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('avatar'), 'bubbles/avatars', [
-            'public_id' => 'user_'.$user->id,
-            'overwrite' => true,
-            'transformation' => ['width' => 300, 'height' => 300, 'crop' => 'fill', 'gravity' => 'face', 'fetch_format' => 'auto', 'quality' => 'auto'],
-        ]);
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
+            $request->file('avatar'),
+            'bubbles/avatars',
+            ImageUploadPresets::avatar($user->id)
+        );
 
         $user->update(['avatar' => $url, 'avatar_public_id' => $pid]);
 
@@ -206,11 +207,11 @@ class ProfileController extends Controller
         $user = $request->user();
         $this->deleteCloudinaryImage($user->banner_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('banner'), 'bubbles/banners', [
-            'public_id' => 'banner_'.$user->id,
-            'overwrite' => true,
-            'transformation' => ['width' => 1200, 'height' => 400, 'crop' => 'fill', 'fetch_format' => 'auto', 'quality' => 'auto'],
-        ]);
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
+            $request->file('banner'),
+            'bubbles/banners',
+            ImageUploadPresets::profileBanner($user->id)
+        );
 
         $user->update(['banner' => $url, 'banner_public_id' => $pid]);
 

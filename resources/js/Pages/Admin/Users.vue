@@ -13,7 +13,7 @@ const props = defineProps({
 
 const search = ref(props.query ?? '');
 
-const baseRoles = { user: 'Utilizador', moderator: 'Moderador', admin: 'Admin', suspended: 'Suspenso' };
+const baseRoles = { user: 'Utilizador', moderator: 'Moderador', admin: 'Admin', suspended: 'Suspenso', banned: 'Banido' };
 const ownerRoles = { site_owner: '👑 Dono do Site', ...baseRoles };
 const roleMap = props.isSiteOwner ? ownerRoles : baseRoles;
 
@@ -23,6 +23,7 @@ const roleColor = {
     moderator: '#9b6bdf',
     admin: '#009ac7',
     suspended: '#e05555',
+    banned: '#7f1d1d',
 };
 
 let timer = null;

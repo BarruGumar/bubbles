@@ -23,7 +23,7 @@ class CheckActivePunishments
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login')->with('punishment_modal', [
+            return redirect('/')->with('punishment_modal', [
                 'type'   => 'ban',
                 'reason' => $ban?->reason,
             ]);

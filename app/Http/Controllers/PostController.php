@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePostRequest;
 use App\Models\Post;
 use App\Services\AuditLogger;
+use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +32,7 @@ class PostController extends Controller
             ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
                 $request->file('image'),
                 'bubbles/profile-posts',
-                ['transformation' => ['width' => 1200, 'height' => 800, 'crop' => 'limit', 'fetch_format' => 'auto', 'quality' => 'auto']]
+                ImageUploadPresets::post()
             );
         }
 

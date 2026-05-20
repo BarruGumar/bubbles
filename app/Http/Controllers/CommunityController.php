@@ -8,6 +8,7 @@ use App\Models\Bubble;
 use App\Models\CommunityPost;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -206,7 +207,7 @@ class CommunityController extends Controller
             ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
                 $request->file('image'),
                 'bubbles/posts',
-                ['transformation' => ['width' => 1200, 'height' => 800, 'crop' => 'limit', 'fetch_format' => 'auto', 'quality' => 'auto']]
+                ImageUploadPresets::post()
             );
         }
 
@@ -271,11 +272,11 @@ class CommunityController extends Controller
 
         $this->deleteCloudinaryImage($bubble->community_image_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('image'), 'bubbles/communities', [
-            'public_id' => 'community_img_'.$id,
-            'overwrite' => true,
-            'transformation' => ['width' => 300, 'height' => 300, 'crop' => 'fill', 'fetch_format' => 'auto', 'quality' => 'auto'],
-        ]);
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
+            $request->file('image'),
+            'bubbles/communities',
+            ImageUploadPresets::communityImage($id)
+        );
 
         $bubble->update(['community_image' => $url, 'community_image_public_id' => $pid]);
 
@@ -290,11 +291,11 @@ class CommunityController extends Controller
 
         $this->deleteCloudinaryImage($bubble->community_banner_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('banner'), 'bubbles/communities', [
-            'public_id' => 'community_banner_'.$id,
-            'overwrite' => true,
-            'transformation' => ['width' => 1400, 'height' => 500, 'crop' => 'fill', 'fetch_format' => 'auto', 'quality' => 'auto'],
-        ]);
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
+            $request->file('banner'),
+            'bubbles/communities',
+            ImageUploadPresets::communityBanner($id)
+        );
 
         $bubble->update(['community_banner' => $url, 'community_banner_public_id' => $pid]);
 

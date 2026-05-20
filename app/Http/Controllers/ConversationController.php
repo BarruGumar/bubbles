@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\Friend;
 use App\Models\Message;
 use App\Notifications\MessageReceived;
+use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -125,7 +126,11 @@ class ConversationController extends Controller
 
         $imageUrl = null;
         if ($request->hasFile('image')) {
-            $imageUrl = $this->storeImage($request->file('image'), 'messages');
+            ['url' => $imageUrl] = $this->storeImageWithMeta(
+                $request->file('image'),
+                'messages',
+                ImageUploadPresets::message()
+            );
         }
 
         $message = $conversation->messages()->create([

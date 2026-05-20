@@ -112,11 +112,15 @@ class User extends Authenticatable implements MustVerifyEmail
             ->exists();
     }
 
-    /** Active global ban via user_punishments. site_owner is immune. */
+    /** Active global ban via role='banned' or user_punishments. site_owner is immune. */
     public function isBanned(): bool
     {
         if ($this->isSiteOwner()) {
             return false;
+        }
+
+        if ($this->role === 'banned') {
+            return true;
         }
 
         return $this->punishments()
