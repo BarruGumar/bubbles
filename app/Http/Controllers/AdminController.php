@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Announcement;
 use App\Models\AuditLog;
 use App\Models\Bubble;
 use App\Models\CommunityPost;
@@ -484,5 +485,59 @@ class AdminController extends Controller
             'filters'     => compact('userId', 'ip', 'action', 'category', 'communityId', 'from', 'to'),
             'isSiteOwner' => auth()->user()->isSiteOwner(),
         ]);
+    }
+
+    // ── Announcements ─────────────────────────────────────────────
+
+    public function announcements(): Response
+    {
+        $announcements = Announcement::with('creator:id,name')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($a) => [
+                'id'         => $a->id,
+                'title'      => $a->title,
+                'body'       => $a->body,
+                'type'       => $a->type,
+                'is_active'  => $a->is_active,
+                'expires_at' => $a->expires_at?->toIso8601String(),
+                'created_at' => $a->created_at->toIso8601String(),
+                'creator'    => ['name' => $a->creator->name],
+            ]);
+
+        return Inertia::render('Admin/Announcements', ['announcements' => $announcements]);
+    }
+
+    public function storeAnnouncement(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'title'      => 'required|string|max:200',
+            'body'       => 'required|string|max:2000',
+            'type'       => 'required|in:info,update,warning,maintenance',
+            'expires_at' => 'nullable|date|after:now',
+        ]);
+
+        Announcement::create([...$data, 'created_by' => auth()->id(), 'is_active' => true]);
+
+        AuditLogger::log('announcement.create', 'admin', null, ['title' => $data['title']]);
+
+        return back()->with('status', 'Aviso criado com sucesso.');
+    }
+
+    public function toggleAnnouncement(Announcement $announcement): RedirectResponse
+    {
+        $announcement->update(['is_active' => ! $announcement->is_active]);
+
+        $msg = $announcement->is_active ? 'Aviso ativado.' : 'Aviso desativado.';
+
+        return back()->with('status', $msg);
+    }
+
+    public function destroyAnnouncement(Announcement $announcement): RedirectResponse
+    {
+        AuditLogger::log('announcement.delete', 'admin', null, ['title' => $announcement->title]);
+        $announcement->delete();
+
+        return back()->with('status', 'Aviso eliminado.');
     }
 }

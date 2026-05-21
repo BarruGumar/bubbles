@@ -2,11 +2,14 @@
 import { computed, ref } from 'vue';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
 import ImageCropper from '@/Components/ImageCropper.vue';
+import { useAudio } from '@/Composables/useAudio';
 
 defineProps({
     mustVerifyEmail: Boolean,
     status: String,
 });
+
+const { playSfx } = useAudio();
 
 const user = usePage().props.auth.user;
 const COLORS = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b', '#e0a040', '#6b9bdf'];
@@ -87,6 +90,7 @@ function onCropCancel() {
 }
 
 function submitAvatar() {
+    playSfx('send');
     avatarForm.post(route('profile.avatar'), {
         forceFormData: true,
         onSuccess: () => {
@@ -97,10 +101,16 @@ function submitAvatar() {
 }
 
 function submitBanner() {
+    playSfx('send');
     bannerForm.post(route('profile.banner'), {
         forceFormData: true,
         onSuccess: () => bannerForm.reset(),
     });
+}
+
+function submitProfile() {
+    playSfx('send');
+    form.patch(route('profile.update'));
 }
 </script>
 
@@ -395,7 +405,7 @@ function submitBanner() {
 
         <!-- ── TEXT FIELDS ── -->
         <form
-            @submit.prevent="form.patch(route('profile.update'))"
+            @submit.prevent="submitProfile"
             style="display: flex; flex-direction: column; gap: 18px"
         >
             <div style="display: flex; flex-direction: column; gap: 6px">

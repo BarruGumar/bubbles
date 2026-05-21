@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     comments: { type: Array, required: true },
@@ -10,10 +11,12 @@ const props = defineProps({
 });
 
 const commentText = ref('');
+const { playSfx } = useAudio();
 
 function submitComment() {
     const text = commentText.value.trim();
     if (!text) return;
+    playSfx('send');
     router.post(
         props.commentRoute,
         { content: text },
@@ -28,6 +31,7 @@ function submitComment() {
 }
 
 function deleteComment(commentId) {
+    playSfx('off');
     router.delete(route('comments.destroy', commentId), {
         preserveScroll: true,
         preserveState: true,

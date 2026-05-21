@@ -6,6 +6,7 @@ import PostImageLightbox from '@/Components/PostImageLightbox.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useClipboardImage } from '@/Composables/useClipboardImage';
 import { compressImage } from '@/Composables/useImageCompressor';
+import { useAudio } from '@/Composables/useAudio';
 import axios from 'axios';
 
 const props = defineProps({
@@ -18,6 +19,7 @@ const props = defineProps({
 
 const page = usePage();
 const authUser = computed(() => page.props.auth?.user);
+const { playSfx, playClick } = useAudio();
 
 // ── Refs ──────────────────────────────────────────────────────
 const messagesEl = ref(null);
@@ -163,7 +165,7 @@ async function openAddMember() {
 }
 
 async function addMemberToGroup(userId) {
-    if (groupActionLoading.value) return;
+    if (groupActionLoading.value || !props.activeConversation) return;
     groupActionLoading.value = true;
     try {
         await axios.post(route('groups.members.add', props.activeConversation.id), { user_id: userId });
@@ -215,43 +217,29 @@ async function saveGroupInfo() {
     } finally { groupEditSaving.value = false; }
 }
 
-async function removeMember(userId) {
+async function runGroupAction(fn) {
     if (groupActionLoading.value || !props.activeConversation) return;
     groupActionLoading.value = true;
-    try {
-        await axios.delete(route('groups.members.remove', { conversation: props.activeConversation.id, user: userId }));
-        router.reload({ only: ['activeConversation'] });
-    } catch {} finally { groupActionLoading.value = false; }
+    try { await fn(); router.reload({ only: ['activeConversation'] }); }
+    catch {} finally { groupActionLoading.value = false; }
 }
 
-async function promoteToAdmin(userId) {
-    if (groupActionLoading.value || !props.activeConversation) return;
-    groupActionLoading.value = true;
-    try {
-        await axios.patch(route('groups.members.promote', props.activeConversation.id), { user_id: userId });
-        router.reload({ only: ['activeConversation'] });
-    } catch {} finally { groupActionLoading.value = false; }
+function removeMember(userId) {
+    runGroupAction(() => axios.delete(route('groups.members.remove', { conversation: props.activeConversation.id, user: userId })));
 }
-
-async function demoteToMember(userId) {
-    if (groupActionLoading.value || !props.activeConversation) return;
-    groupActionLoading.value = true;
-    try {
-        await axios.patch(route('groups.members.demote', props.activeConversation.id), { user_id: userId });
-        router.reload({ only: ['activeConversation'] });
-    } catch {} finally { groupActionLoading.value = false; }
+function promoteToAdmin(userId) {
+    runGroupAction(() => axios.patch(route('groups.members.promote', props.activeConversation.id), { user_id: userId }));
+}
+function demoteToMember(userId) {
+    runGroupAction(() => axios.patch(route('groups.members.demote', props.activeConversation.id), { user_id: userId }));
 }
 
 async function leaveGroup() {
     if (groupActionLoading.value || !props.activeConversation) return;
     groupActionLoading.value = true;
     try {
-        const res = await axios.delete(route('groups.leave', props.activeConversation.id));
-        if (res.data?.deleted) {
-            router.visit(route('conversations.index'));
-        } else {
-            router.visit(route('conversations.index'));
-        }
+        await axios.delete(route('groups.leave', props.activeConversation.id));
+        router.visit(route('conversations.index'));
     } catch (e) {
         const msg = e?.response?.data?.message ?? 'Erro ao sair do grupo.';
         alert(msg);
@@ -267,18 +255,15 @@ const lightboxUrl = ref(null);
 // ── Smart scroll ──────────────────────────────────────────────
 const isNearBottom = ref(true);
 const NEAR_BOTTOM_THRESHOLD = 160;
+const unreadBelowCount = ref(0);
+const messagesReady = ref(false);
+let pendingImageCount = 0;
+let messagesReadyTimer = null;
 
 // ── Polling ───────────────────────────────────────────────────
 let pollTimer = null;   // null = stopped, -1 = running (no timer scheduled yet), N = setTimeout ID
 let pollFailures = 0;
-
-// ── Typing indicator ──────────────────────────────────────────
-const isOtherTyping = ref(false);
-let typingExpireTimer = null;  // fail-safe: clears indicator if poll stops arriving
-let typingStopTimer = null;    // debounce: sends typing_stop after 2.5s of no input
-let lastTypingSentAt = 0;      // timestamp of last typing_start sent (for 3s throttle)
-// Scan from the end and return the last confirmed (numeric) ID, skipping temp IDs
-// that exist while an optimistic message is in flight.
+// Scan from end, skip temp string IDs (optimistic messages in flight), return last confirmed ID.
 const lastMsgId = computed(() => {
     for (let i = localMessages.value.length - 1; i >= 0; i--) {
         const id = localMessages.value[i].id;
@@ -286,6 +271,12 @@ const lastMsgId = computed(() => {
     }
     return 0;
 });
+
+// ── Typing indicator ──────────────────────────────────────────
+const isOtherTyping = ref(false);
+let typingExpireTimer = null;  // fail-safe: clears indicator if poll stops arriving
+let typingStopTimer = null;    // debounce: sends typing_stop after 2.5s of no input
+let lastTypingSentAt = 0;      // timestamp of last typing_start sent (for 3s throttle)
 
 // ── Chat background ───────────────────────────────────────────
 const BG_PRESETS = [
@@ -461,17 +452,48 @@ function checkNearBottom() {
     if (!messagesEl.value) return;
     const el = messagesEl.value;
     isNearBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_THRESHOLD;
+    if (isNearBottom.value) unreadBelowCount.value = 0;
 }
 
-function scrollToBottom(smooth = true) {
+function scrollToBottom() {
+    unreadBelowCount.value = 0;
     nextTick(() => {
         requestAnimationFrame(() => {
             if (messagesEl.value) {
                 messagesEl.value.scrollTop = messagesEl.value.scrollHeight;
                 isNearBottom.value = true;
+                // Count lazy images that haven't finished loading yet.
+                // Keep content hidden until they settle so the scroll position is stable.
+                const pending = [...messagesEl.value.querySelectorAll('img.msg-img')]
+                    .filter(img => !img.complete);
+                pendingImageCount = pending.length;
+                if (pendingImageCount === 0) {
+                    messagesReady.value = true;
+                } else {
+                    // Fallback: reveal after 1s even if images are still loading
+                    clearTimeout(messagesReadyTimer);
+                    messagesReadyTimer = setTimeout(() => { messagesReady.value = true; }, 1000);
+                }
+            } else {
+                messagesReady.value = true;
             }
         });
     });
+}
+
+// Called on image load OR error — corrects scroll position and tracks pending count.
+// Synchronous so the correction happens before the browser paints.
+function onMsgImageSettle() {
+    if (isNearBottom.value && messagesEl.value) {
+        messagesEl.value.scrollTop = messagesEl.value.scrollHeight;
+    }
+    if (!messagesReady.value && pendingImageCount > 0) {
+        pendingImageCount--;
+        if (pendingImageCount === 0) {
+            clearTimeout(messagesReadyTimer);
+            messagesReady.value = true;
+        }
+    }
 }
 
 // ── Load older ────────────────────────────────────────────────
@@ -534,10 +556,23 @@ function clearTypingState() {
 }
 
 // ── Polling ───────────────────────────────────────────────────
+function bumpConversation(convId, lastMessage) {
+    const ci = localConversations.value.findIndex(c => c.id === convId);
+    if (ci === -1) return;
+    const updated = { ...localConversations.value[ci], last_message: lastMessage, unread_count: 0 };
+    const arr = [...localConversations.value];
+    arr.splice(ci, 1);
+    arr.unshift(updated);
+    localConversations.value = arr;
+}
+
 async function poll() {
     if (!props.activeConversation) { pollTimer = null; return; }
 
-    if (!document.hidden) {
+    const isHidden = document.hidden;
+    let gotNewMessages = false;
+
+    if (!isHidden) {
         try {
             const res = await axios.get(route('conversations.poll', props.activeConversation.id), {
                 params: { after: lastMsgId.value },
@@ -548,19 +583,20 @@ async function poll() {
                 const existingIds = new Set(localMessages.value.map(m => m.id));
                 const fresh = newMsgs.filter(m => !existingIds.has(m.id));
                 if (fresh.length) {
+                    gotNewMessages = true;
                     localMessages.value = [...localMessages.value, ...fresh];
-                    if (isNearBottom.value) scrollToBottom(true);
-                    if (props.activeConversation) {
-                        const lastFresh = fresh[fresh.length - 1];
-                        const ci = localConversations.value.findIndex(c => c.id === props.activeConversation.id);
-                        if (ci !== -1) {
-                            const upd = { ...localConversations.value[ci], last_message: { content: lastFresh.content, created_at: lastFresh.created_at, is_own: lastFresh.is_own }, unread_count: 0 };
-                            const arr = [...localConversations.value];
-                            arr.splice(ci, 1);
-                            arr.unshift(upd);
-                            localConversations.value = arr;
-                        }
+                    if (isNearBottom.value) {
+                        scrollToBottom();
+                    } else {
+                        const fromOthers = fresh.filter(m => !m.is_own).length;
+                        if (fromOthers > 0) unreadBelowCount.value += fromOthers;
                     }
+                    const lastFresh = fresh[fresh.length - 1];
+                    bumpConversation(props.activeConversation.id, {
+                        content: lastFresh.content,
+                        created_at: lastFresh.created_at,
+                        is_own: lastFresh.is_own,
+                    });
                 }
             }
             if (res.data?.other_last_read_at) otherLastReadAt.value = res.data.other_last_read_at;
@@ -579,7 +615,16 @@ async function poll() {
 
     // Reschedule only if polling is still active (not stopped by stopPolling)
     if (pollTimer !== null) {
-        const delay = pollFailures === 0 ? 3_000 : Math.min(3_000 * (2 ** pollFailures), 30_000);
+        let delay;
+        if (isHidden) {
+            delay = 30_000; // 30s when tab is hidden — no point hammering the server
+        } else if (pollFailures > 0) {
+            delay = Math.min(2_000 * (2 ** pollFailures), 30_000);
+        } else if (gotNewMessages) {
+            delay = 1_500; // quick follow-up: there may be more messages incoming
+        } else {
+            delay = 2_000; // base interval (down from 3s)
+        }
         pollTimer = setTimeout(poll, delay);
     }
 }
@@ -630,6 +675,7 @@ async function send() {
 
     stopTyping();
     sendState.value = 'sending';
+    playSfx('send');
     clearTimeout(sentTimer);
 
     // Capture values before clearing (image File must stay alive for FormData)
@@ -668,7 +714,7 @@ async function send() {
             },
         },
     ];
-    scrollToBottom(true);
+    scrollToBottom();
 
     // Clear form immediately so the user can type the next message
     msgContent.value = '';
@@ -700,18 +746,23 @@ async function send() {
         if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
         sendState.value = 'sent';
         sentTimer = setTimeout(() => { sendState.value = 'idle'; }, 2000);
-        const ci = localConversations.value.findIndex(c => c.id === props.activeConversation?.id);
-        if (ci !== -1) {
-            const upd = { ...localConversations.value[ci], last_message: { content: confirmed.content, created_at: confirmed.created_at, is_own: true }, unread_count: 0 };
-            const arr = [...localConversations.value];
-            arr.splice(ci, 1);
-            arr.unshift(upd);
-            localConversations.value = arr;
+        if (props.activeConversation) {
+            bumpConversation(props.activeConversation.id, {
+                content: confirmed.content,
+                created_at: confirmed.created_at,
+                is_own: true,
+            });
         }
     } catch {
-        // Rollback: remove optimistic message so the user sees the failure clearly
+        // Rollback optimistic message and restore input so user can retry without retyping
         localMessages.value = localMessages.value.filter((m) => m.id !== tempId);
-        if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
+        msgContent.value = content;
+        if (imageFile) {
+            msgImage.value = imageFile;
+            imagePreview.value = tempPreviewUrl; // reuse ObjectURL — not revoked yet
+        } else if (tempPreviewUrl) {
+            URL.revokeObjectURL(tempPreviewUrl);
+        }
         sendState.value = 'error';
         sentTimer = setTimeout(() => { sendState.value = 'idle'; }, 3000);
     }
@@ -805,7 +856,7 @@ onMounted(() => {
     document.addEventListener('visibilitychange', onVisibilityChange);
     document.addEventListener('click', onDocClick);
     if (messagesEl.value) messagesEl.value.addEventListener('scroll', checkNearBottom);
-    scrollToBottom(false);
+    scrollToBottom();
     if (props.activeConversation) startPolling();
 });
 
@@ -829,9 +880,13 @@ watch(
         hasMore.value = props.hasMoreMessages;
         sendState.value = 'idle';
         replyingTo.value = null;
+        unreadBelowCount.value = 0;
+        messagesReady.value = false;
+        pendingImageCount = 0;
+        clearTimeout(messagesReadyTimer);
         otherLastReadAt.value = props.activeConversation?.other_last_read_at ?? null;
         loadChatBg();
-        scrollToBottom(false);
+        scrollToBottom();
         if (newId) startPolling();
     },
     { flush: 'post' },
@@ -860,13 +915,13 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                         </p>
                     </div>
                     <div style="display:flex;gap:6px;align-items:center">
-                        <button @click="openGroupModal" class="new-conv-btn" title="Novo grupo" style="background:linear-gradient(135deg,#4ebcff,#009ac7)">
+                        <button @click="openGroupModal(); playClick()" class="new-conv-btn" title="Novo grupo" style="background:linear-gradient(135deg,#4ebcff,#009ac7)">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
                                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                             </svg>
                         </button>
-                        <Link :href="route('friends.index')" class="new-conv-btn" title="Nova conversa">
+                        <Link :href="route('friends.index')" class="new-conv-btn" title="Nova conversa" @click="playClick()">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 5v14M5 12h14"/>
                             </svg>
@@ -878,7 +933,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                     <!-- Friends (no conversations yet) -->
                     <template v-if="localConversations.length === 0 && friends.length > 0">
                         <p class="sidebar-label">Os teus amigos</p>
-                        <button v-for="f in friends" :key="f.id" @click="startWith(f.id)" class="sidebar-item">
+                        <button v-for="f in friends" :key="f.id" @click="startWith(f.id); playClick()" class="sidebar-item">
                             <img v-if="f.avatar" :src="clImg(f.avatar, 80, 80, 'fill', 'face')" class="s-avatar" :style="{ border: `2px solid ${f.avatar_color}` }" loading="lazy" />
                             <div v-else class="s-avatar-init" :style="{ background: f.avatar_color }">{{ avatarInitial(f.name) }}</div>
                             <div class="conv-info">
@@ -951,7 +1006,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                                 <p style="font-size:13px;color:#8ba0b0;margin:0;line-height:1.5">Escolhe um amigo para começar a conversar.</p>
                             </div>
                             <div style="background:rgba(255,255,255,0.8);backdrop-filter:blur(20px);border:1px solid #009ac714;border-radius:20px;box-shadow:0 4px 20px #009ac70a;overflow:hidden">
-                                <button v-for="(f, i) in friends" :key="f.id" @click="startWith(f.id)" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;border:none;background:transparent;cursor:pointer;text-align:left;transition:background 0.15s" :style="{ borderTop: i > 0 ? '1px solid #009ac70c' : 'none' }" @mouseenter="$event.currentTarget.style.background='rgba(0,154,199,0.05)'" @mouseleave="$event.currentTarget.style.background='transparent'">
+                                <button v-for="(f, i) in friends" :key="f.id" @click="startWith(f.id); playClick()" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;border:none;background:transparent;cursor:pointer;text-align:left;transition:background 0.15s" :style="{ borderTop: i > 0 ? '1px solid #009ac70c' : 'none' }" @mouseenter="$event.currentTarget.style.background='rgba(0,154,199,0.05)'" @mouseleave="$event.currentTarget.style.background='transparent'">
                                     <img v-if="f.avatar" :src="clImg(f.avatar, 96, 96, 'fill', 'face')" :style="{ width:'46px',height:'46px',borderRadius:'50%',objectFit:'cover',flexShrink:'0',border:`2.5px solid ${f.avatar_color}`,boxShadow:`0 2px 10px ${f.avatar_color}33` }" />
                                     <div v-else :style="{ width:'46px',height:'46px',borderRadius:'50%',flexShrink:'0',background:f.avatar_color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'17px',fontWeight:'800',color:'white' }">{{ avatarInitial(f.name) }}</div>
                                     <div style="flex:1;min-width:0">
@@ -1173,7 +1228,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                     </Transition>
 
                     <!-- Messages area -->
-                    <div ref="messagesEl" class="messages-area" :class="{ 'chat-dark': isDarkBg }" :style="chatBgStyle">
+                    <div ref="messagesEl" class="messages-area" :class="{ 'chat-dark': isDarkBg }" :style="[chatBgStyle, messagesReady ? {} : { visibility: 'hidden' }]">
                         <!-- Load older -->
                         <div v-if="hasMore" style="text-align:center;margin-bottom:12px;flex-shrink:0">
                             <button @click="loadOlderMessages" :disabled="loadingOlder" class="load-older-btn">
@@ -1263,7 +1318,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                                                 <p class="reply-text">{{ item.reply_to.content ?? '[imagem]' }}</p>
                                             </div>
                                             <!-- Image -->
-                                            <img v-if="item.image_url" :src="clImg(item.image_url, 520, 0, 'limit')" loading="lazy" class="msg-img" style="cursor:zoom-in" @click.stop="lightboxUrl = item.image_url" />
+                                            <img v-if="item.image_url" :src="clImg(item.image_url, 520, 0, 'limit')" loading="lazy" class="msg-img" style="cursor:zoom-in" @load="onMsgImageSettle" @error="onMsgImageSettle" @click.stop="lightboxUrl = item.image_url" />
                                             <!-- Text -->
                                             <span v-if="item.content" :class="item.image_url ? 'text-after-img' : ''">{{ item.content }}</span>
                                             <!-- Meta inside bubble (only when has content/reply) -->
@@ -1295,7 +1350,10 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                     <!-- Scroll to bottom -->
                     <Transition name="fade">
                         <div v-if="!isNearBottom" class="scroll-btn-wrap">
-                            <button @click="scrollToBottom(true)" class="scroll-btn">↓</button>
+                            <button @click="scrollToBottom()" class="scroll-btn">
+                                <span v-if="unreadBelowCount > 0" class="scroll-unread-badge">{{ unreadBelowCount > 99 ? '99+' : unreadBelowCount }}</span>
+                                ↓
+                            </button>
                         </div>
                     </Transition>
 
@@ -1361,7 +1419,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                             </button>
                         </div>
 
-                        <p v-if="sendState === 'error'" class="send-error">Erro ao enviar. Tenta novamente.</p>
+                        <p v-if="sendState === 'error'" class="send-error">Erro ao enviar. A mensagem foi restaurada — tenta novamente.</p>
                         <p v-if="pasteError" class="send-error">{{ pasteError }}</p>
                     </div>
                 </template>
@@ -1793,12 +1851,20 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 /* ── Scroll to bottom ─────────────────────────────────────────── */
 .scroll-btn-wrap { position: absolute; bottom: 90px; right: 20px; z-index: 10; }
 .scroll-btn {
+    position: relative;
     width: 38px; height: 38px; border-radius: 50%; border: none;
     background: #009ac7; color: white; font-size: 16px; cursor: pointer;
     box-shadow: 0 4px 16px #009ac740; display: flex; align-items: center; justify-content: center;
     transition: transform 0.2s;
 }
 .scroll-btn:hover { transform: scale(1.1); }
+.scroll-unread-badge {
+    position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+    background: #e05555; color: white; font-size: 9px; font-weight: 800;
+    min-width: 18px; height: 18px; border-radius: 99px; padding: 0 4px;
+    display: flex; align-items: center; justify-content: center;
+    white-space: nowrap; box-shadow: 0 2px 6px #e0555540;
+}
 
 /* ── Input bar ────────────────────────────────────────────────── */
 .input-bar {

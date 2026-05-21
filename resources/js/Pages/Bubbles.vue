@@ -16,6 +16,10 @@ import { useDrag } from '@/Composables/useDrag';
 import { useToast } from '@/Composables/useToast';
 import { useTheme } from '@/Composables/useTheme';
 import { useSearch } from '@/Composables/useSearch';
+import { useAudio } from '@/Composables/useAudio';
+import AudioControls from '@/Components/AudioControls.vue';
+import AnnouncementBanner from '@/Components/AnnouncementBanner.vue';
+import AnnouncementModal from '@/Components/AnnouncementModal.vue';
 
 const props = defineProps({
     feed: { type: Array, default: () => [] },
@@ -29,6 +33,8 @@ const { connections, friendConnections, load: loadConnections, loadFriendConnect
 const { step } = usePhysics();
 const { show: toast } = useToast();
 const { isDark, toggle: toggleTheme } = useTheme();
+const { playSfx, playClick, playHoverBubble, playBgm, stopBgm } = useAudio();
+playBgm('home');
 
 const page = usePage();
 const authUser = computed(() => page.props.auth?.user);
@@ -326,6 +332,18 @@ async function handleCreate(data) {
 
 const selectedBubble = computed(() => bubbles.value.find((b) => b.selected) ?? null);
 
+// ── Audio SFX ─────────────────────────────────────────────────────
+watch(selectedBubble, (newVal, oldVal) => {
+    if (!!newVal !== !!oldVal) playSfx('bubbleExpand');
+});
+watch(feedOpen, () => {
+    playSfx('feedBox');
+});
+function onBubbleEnter(id) {
+    hoveredId.value = id;
+    playHoverBubble();
+}
+
 const trends = computed(() => [...bubbles.value].sort((a, b) => b.members - a.members).slice(0, 6));
 
 const trendsOpen = ref(window.innerWidth >= 640);
@@ -402,9 +420,12 @@ const isMobile = window.innerWidth < 640;
             >
 
             <div :style="{ display: 'flex', alignItems: 'center', gap: isMobile ? '1px' : '4px' }">
+                <!-- Áudio -->
+                <AudioControls v-if="authUser" />
+
                 <!-- Pesquisa -->
                 <button
-                    @click.stop="openSearch"
+                    @click.stop="openSearch(); playClick()"
                     :style="{
                         width: '36px',
                         height: '36px',
@@ -439,7 +460,7 @@ const isMobile = window.innerWidth < 640;
 
                 <!-- Feed toggle -->
                 <button
-                    @click.stop="feedOpen = !feedOpen"
+                    @click.stop="feedOpen = !feedOpen; playClick()"
                     :style="{
                         width: '36px',
                         height: '36px',
@@ -473,7 +494,7 @@ const isMobile = window.innerWidth < 640;
 
                 <!-- Hamburger → Nova bolha -->
                 <button
-                    @click.stop="showAdd = !showAdd"
+                    @click.stop="showAdd = !showAdd; playClick()"
                     :style="{
                         width: '36px',
                         height: '36px',
@@ -517,6 +538,7 @@ const isMobile = window.innerWidth < 640;
                     @mouseenter="$event.currentTarget.style.background = '#009ac714'"
                     @mouseleave="$event.currentTarget.style.background = 'transparent'"
                     title="Mensagens"
+                    @click="playClick()"
                 >
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                         <path
@@ -570,6 +592,7 @@ const isMobile = window.innerWidth < 640;
                     @mouseenter="$event.currentTarget.style.background = '#009ac714'"
                     @mouseleave="$event.currentTarget.style.background = 'transparent'"
                     title="Notificações"
+                    @click="playClick()"
                 >
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                         <path
@@ -629,6 +652,7 @@ const isMobile = window.innerWidth < 640;
                     @mouseenter="$event.currentTarget.style.background = '#009ac714'"
                     @mouseleave="$event.currentTarget.style.background = 'transparent'"
                     title="Amigos"
+                    @click="playClick()"
                 >
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                         <circle cx="6.5" cy="5.5" r="2.3" stroke="currentColor" stroke-width="1.4" />
@@ -671,7 +695,7 @@ const isMobile = window.innerWidth < 640;
                 <!-- Menu de definições (gear) -->
                 <div ref="menuEl" v-if="authUser && !isMobile" style="position: relative">
                     <button
-                        @click.stop="menuOpen = !menuOpen"
+                        @click.stop="menuOpen = !menuOpen; playClick()"
                         :style="{
                             width: '36px',
                             height: '36px',
@@ -715,7 +739,7 @@ const isMobile = window.innerWidth < 640;
                             <!-- O meu perfil -->
                             <Link
                                 :href="authUser.username ? route('profile.show', authUser.username) : route('profile.edit')"
-                                @click="menuOpen = false"
+                                @click="menuOpen = false; playClick()"
                                 role="menuitem"
                                 style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: var(--text); font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer;"
                                 @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
@@ -728,7 +752,7 @@ const isMobile = window.innerWidth < 640;
                             <!-- Definições -->
                             <Link
                                 :href="route('profile.edit')"
-                                @click="menuOpen = false"
+                                @click="menuOpen = false; playClick()"
                                 role="menuitem"
                                 style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: var(--text); font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer;"
                                 @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
@@ -743,7 +767,7 @@ const isMobile = window.innerWidth < 640;
 
                             <!-- Tema -->
                             <button
-                                @click.stop="toggleTheme(); menuOpen = false"
+                                @click.stop="toggleTheme(); menuOpen = false; playClick()"
                                 role="menuitem"
                                 style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--text); font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer; border: none; background: transparent; width: 100%; font-family: inherit; text-align: left;"
                                 @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
@@ -757,7 +781,7 @@ const isMobile = window.innerWidth < 640;
                             <Link
                                 v-if="isAdmin"
                                 :href="route('admin.dashboard')"
-                                @click="menuOpen = false"
+                                @click="menuOpen = false; playClick()"
                                 role="menuitem"
                                 style="display: block; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: #9b6bdf; font-size: 13px; font-weight: 700; transition: background .12s; cursor: pointer;"
                                 @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
@@ -774,7 +798,7 @@ const isMobile = window.innerWidth < 640;
                                 :href="route('logout')"
                                 method="post"
                                 as="button"
-                                @click="menuOpen = false"
+                                @click="stopBgm(); menuOpen = false; playClick()"
                                 role="menuitem"
                                 style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: #e05555; font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer; border: none; background: transparent; width: 100%; font-family: inherit; text-align: left;"
                                 @mouseenter="$event.currentTarget.style.background = 'var(--item-hover-red)'"
@@ -794,6 +818,7 @@ const isMobile = window.innerWidth < 640;
                 <Link
                     v-if="authUser && authUser.username"
                     :href="route('profile.show', authUser.username)"
+                    @click="playClick()"
                     style="
                         display: flex;
                         align-items: center;
@@ -1303,7 +1328,7 @@ const isMobile = window.innerWidth < 640;
             :isConnectSource="connectSource?.id === b.id"
             @mousedown="startDrag(b, $event)"
             @touchstart="startTouch(b, $event)"
-            @mouseenter="hoveredId = b.id"
+            @mouseenter="onBubbleEnter(b.id)"
             @mouseleave="onBubbleLeave(b.id)"
             @contextmenu="handleContextMenu(b, $event)"
         />
@@ -1496,7 +1521,7 @@ const isMobile = window.innerWidth < 640;
                     }"
                     @mouseenter="$event.currentTarget.style.background = 'rgba(255,255,255,0.34)'"
                     @mouseleave="$event.currentTarget.style.background = 'rgba(255,255,255,0.20)'"
-                    @click.stop
+                    @click.stop="playSfx('back')"
                     >Entrar na comunidade →</Link
                 >
                 <span
@@ -1723,6 +1748,7 @@ const isMobile = window.innerWidth < 640;
                             :can-edit="item.can_edit"
                             :can-delete="item.can_delete"
                             :like-route="item.like_route"
+                            :reactors-route="item._type === 'post' ? route('posts.reactors', item.id) : route('community-posts.reactors', item.id)"
                             :comment-route="item.comment_route"
                             :delete-route="item.delete_route"
                             :edit-route="item.can_edit ? item.edit_route : null"
@@ -1741,6 +1767,12 @@ const isMobile = window.innerWidth < 640;
         </Transition>
 
         <ToastContainer />
+        <AnnouncementModal />
+
+        <!-- ANNOUNCEMENT BANNER — strip below top bar -->
+        <div style="position: absolute; top: 58px; left: 0; right: 0; z-index: 39">
+            <AnnouncementBanner />
+        </div>
 
         <!-- FLOOR GRADIENT -->
         <div

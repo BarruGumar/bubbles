@@ -3,10 +3,14 @@ import { computed, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import { useToast } from '@/Composables/useToast';
+import { useAudio } from '@/Composables/useAudio';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const { show: toast } = useToast();
+const { playBgm } = useAudio();
+
+playBgm('admin');
 
 watch(
     () => page.props.flash?.status,
@@ -29,6 +33,7 @@ const navLinks = [
     { label: 'Comunidades', route: 'admin.communities', icon: '🫧' },
     { label: 'Denúncias', route: 'admin.reports', icon: '⚑' },
     { label: 'Punições', route: 'admin.punishments', icon: '🔒' },
+    { label: 'Avisos', route: 'admin.announcements', icon: '📢' },
     { label: 'Audit Log', route: 'admin.audit-logs', icon: '📋' },
 ];
 </script>

@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import { clImg } from '@/Composables/useCloudinary';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     community: { type: Object, required: true },
@@ -14,6 +15,7 @@ const props = defineProps({
     bannerPreview: { type: String, default: null },
 });
 const emit = defineEmits(['open-edit']);
+const { playSfx } = useAudio();
 
 const activityLevel = computed(() => {
     const n = props.community.recent_posts_count ?? 0;
@@ -24,6 +26,7 @@ const activityLevel = computed(() => {
 });
 
 function joinCommunity() {
+    playSfx('join');
     router.post(route('community.join', props.community.id), {}, { preserveScroll: true });
 }
 

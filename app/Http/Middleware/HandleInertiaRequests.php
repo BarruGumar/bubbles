@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Announcement;
 use App\Models\Friend;
 use App\Models\Message;
 use Illuminate\Http\Request;
@@ -46,6 +47,23 @@ class HandleInertiaRequests extends Middleware
                     'reason'  => $p->reason,
                     'ends_at' => $p->ends_at?->toIso8601String(),
                 ];
+            },
+            'active_announcements' => function () use ($user) {
+                if (! $user) {
+                    return [];
+                }
+
+                return Announcement::active()
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(fn ($a) => [
+                        'id'         => $a->id,
+                        'title'      => $a->title,
+                        'body'       => $a->body,
+                        'type'       => $a->type,
+                        'created_at' => $a->created_at->toIso8601String(),
+                    ])
+                    ->all();
             },
             'auth' => [
                 'user' => $user,

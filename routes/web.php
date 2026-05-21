@@ -80,8 +80,10 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
 
     // Likes e comentários
     Route::post('/posts/{post}/like', [LikeController::class, 'togglePost'])->middleware('throttle:reactions')->name('posts.like');
+    Route::get('/posts/{post}/reactors', [LikeController::class, 'reactorsPost'])->name('posts.reactors');
     Route::post('/posts/{post}/comments', [CommentController::class, 'storePost'])->middleware('throttle:reactions')->name('posts.comments.store');
     Route::post('/community-posts/{post}/like', [LikeController::class, 'toggleCommunityPost'])->middleware('throttle:reactions')->name('community-posts.like');
+    Route::get('/community-posts/{post}/reactors', [LikeController::class, 'reactorsCommunityPost'])->name('community-posts.reactors');
     Route::post('/community-posts/{post}/comments', [CommentController::class, 'storeCommunityPost'])->middleware('throttle:reactions')->name('community-posts.comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
@@ -167,6 +169,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/audit-logs', [AdminController::class, 'auditLogs'])->name('audit-logs');
     Route::delete('/audit-logs', [AdminController::class, 'destroyAllAuditLogs'])->name('audit-logs.destroy-all');
     Route::delete('/audit-logs/{log}', [AdminController::class, 'destroyAuditLog'])->name('audit-logs.destroy');
+
+    // Announcements
+    Route::get('/announcements', [AdminController::class, 'announcements'])->name('announcements');
+    Route::post('/announcements', [AdminController::class, 'storeAnnouncement'])->name('announcements.store');
+    Route::patch('/announcements/{announcement}/toggle', [AdminController::class, 'toggleAnnouncement'])->name('announcements.toggle');
+    Route::delete('/announcements/{announcement}', [AdminController::class, 'destroyAnnouncement'])->name('announcements.destroy');
 });
 
 require __DIR__.'/auth.php';

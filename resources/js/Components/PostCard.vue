@@ -6,6 +6,7 @@ const emit = defineEmits(['deleted']);
 import axios from 'axios';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
+import { useAudio } from '@/Composables/useAudio';
 import PostImageLightbox from '@/Components/PostImageLightbox.vue';
 import PostReactionBar from '@/Components/PostReactionBar.vue';
 import PostComments from '@/Components/PostComments.vue';
@@ -21,6 +22,7 @@ const props = defineProps({
     canDelete: { type: Boolean, default: false },
     isCreator: { type: Boolean, default: false },
     likeRoute: { type: String, required: true },
+    reactorsRoute: { type: String, default: null },
     commentRoute: { type: String, required: true },
     deleteRoute: { type: String, required: true },
     editRoute: { type: String, default: null },
@@ -30,6 +32,7 @@ const props = defineProps({
 });
 
 const { show: toast } = useToast();
+const { playSfx } = useAudio();
 
 // ── Edit ──────────────────────────────────────────────────────────
 const localContent = ref(props.post.content);
@@ -60,6 +63,7 @@ async function saveEdit() {
         return;
     }
     editLoading.value = true;
+    playSfx('send');
     try {
         await axios.patch(props.editRoute, { content: trimmed });
         localContent.value = trimmed;
@@ -76,6 +80,7 @@ async function saveEdit() {
 const confirmDelete = ref(false);
 
 async function doDelete() {
+    playSfx('off');
     emit('deleted', props.post.id);
     try {
         await axios.delete(props.deleteRoute);
@@ -438,6 +443,7 @@ function formatInitial(name) {
             :post="post"
             :auth-user="authUser"
             :like-route="likeRoute"
+            :reactors-route="reactorsRoute"
             :accent-color="accentColor"
             :comments-expanded="expandedComments"
             @toggle-comments="expandedComments = !expandedComments"

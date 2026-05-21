@@ -4,6 +4,7 @@ import { useForm, usePage } from '@inertiajs/vue3';
 import { useToast } from '@/Composables/useToast';
 import { useClipboardImage } from '@/Composables/useClipboardImage';
 import { compressImage } from '@/Composables/useImageCompressor';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     authUser: { type: Object, required: true },
@@ -11,6 +12,7 @@ const props = defineProps({
 });
 
 const { show: toast } = useToast();
+const { playSfx } = useAudio();
 
 const postForm = useForm({ content: '', image: null, video: null });
 const uploadProgress = ref(0);
@@ -65,6 +67,7 @@ const { handlePaste: handlePostPaste } = useClipboardImage({
 
 function submitPost() {
     if (!postForm.content.trim()) return;
+    playSfx('send');
     uploadProgress.value = 0;
     uploadingServer.value = false;
     postForm.post(route('community.posts.store', props.community.id), {

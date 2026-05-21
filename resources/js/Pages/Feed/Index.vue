@@ -75,6 +75,7 @@ const authUser = computed(() => usePage().props.auth?.user);
                     :can-edit="item.can_edit"
                     :can-delete="item.can_delete"
                     :like-route="item.like_route"
+                    :reactors-route="item._type === 'post' ? route('posts.reactors', item.id) : route('community-posts.reactors', item.id)"
                     :comment-route="item.comment_route"
                     :delete-route="item.delete_route"
                     :edit-route="item.can_edit ? item.edit_route : null"

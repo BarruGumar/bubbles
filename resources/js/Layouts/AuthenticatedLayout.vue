@@ -3,15 +3,35 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
+import AudioControls from '@/Components/AudioControls.vue';
+import AnnouncementBanner from '@/Components/AnnouncementBanner.vue';
+import AnnouncementModal from '@/Components/AnnouncementModal.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
 import { useTheme } from '@/Composables/useTheme';
-import { useSearch } from '@/Composables/useSearch';
+import { useAudio } from '@/Composables/useAudio';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const { show: toast } = useToast();
 const { isDark, toggle: toggleTheme } = useTheme();
+const { playBgm, playClick, stopBgm } = useAudio();
+
+// ── BGM: change track whenever the Inertia page URL changes ───────
+const BGM_ROUTES = {
+    '/bubbles': 'home',
+    '/feed':    'feed',
+    '/admin':   'admin',
+};
+const bgmKeyForUrl = computed(() => {
+    const url = page.url ?? '';
+    if (url.startsWith('/bubbles') || url === '/') return 'home';
+    if (url.startsWith('/feed'))          return 'feed';
+    if (url.startsWith('/conversations')) return 'chat';
+    if (url.startsWith('/admin'))         return 'admin';
+    return null; // community/profile/search — keep current BGM
+});
+watch(bgmKeyForUrl, (key) => { if (key) playBgm(key); }, { immediate: true });
 
 // Flash messages → toasts
 watch(
@@ -29,30 +49,7 @@ const unreadNotifications = computed(() => page.props.auth?.unread_notifications
 const open = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref('');
-const activeSearchIdx = ref(-1);
 const isMobile = ref(window.innerWidth < 640);
-
-const { results: searchResults, loading: searchLoading, error: searchError, search: doSearch, clear: clearSearch } = useSearch();
-
-const hasSearchResults = computed(() =>
-    searchResults.value &&
-    (searchResults.value.users?.length ||
-        searchResults.value.communities?.length ||
-        searchResults.value.posts?.length),
-);
-
-const searchOffsets = computed(() => {
-    const u = Math.min(searchResults.value?.users?.length ?? 0, 4);
-    const c = Math.min(searchResults.value?.communities?.length ?? 0, 4);
-    const p = Math.min(searchResults.value?.posts?.length ?? 0, 3);
-    return { users: 0, communities: u, posts: u + c, all: u + c + p };
-});
-
-watch(searchQuery, (q) => {
-    activeSearchIdx.value = -1;
-    if (!q.trim()) { clearSearch(); return; }
-    doSearch(q);
-});
 
 function onResize() { isMobile.value = window.innerWidth < 640; }
 
@@ -61,8 +58,6 @@ function avatarInitial(name) { return (name ?? '?')[0].toUpperCase(); }
 function closeSearchOverlay() {
     searchOpen.value = false;
     searchQuery.value = '';
-    clearSearch();
-    activeSearchIdx.value = -1;
 }
 
 function submitSearch(e) {
@@ -73,44 +68,8 @@ function submitSearch(e) {
     router.visit(route('search.index', { q }));
 }
 
-function viewAllSearchResults() {
-    const q = searchQuery.value.trim();
-    if (!q) return;
-    closeSearchOverlay();
-    router.visit(route('search.index', { q }));
-}
-
-function handleSearchKey(e) {
-    if (!hasSearchResults.value) return;
-    const total = searchOffsets.value.all + 1;
-    if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        activeSearchIdx.value = Math.min(activeSearchIdx.value + 1, total - 1);
-    } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        activeSearchIdx.value = Math.max(activeSearchIdx.value - 1, -1);
-    } else if (e.key === 'Enter' && activeSearchIdx.value >= 0) {
-        e.preventDefault();
-        if (activeSearchIdx.value === searchOffsets.value.all) {
-            viewAllSearchResults();
-            return;
-        }
-        const urls = [
-            ...(searchResults.value?.users?.slice(0, 4) ?? []).map(u =>
-                u.username ? route('profile.show', u.username) : null),
-            ...(searchResults.value?.communities?.slice(0, 4) ?? []).map(c =>
-                route('community.show', c.id)),
-            ...(searchResults.value?.posts?.slice(0, 3) ?? []).map(p =>
-                p.author.username ? route('profile.show', p.author.username) : null),
-        ];
-        const url = urls[activeSearchIdx.value];
-        if (url) { closeSearchOverlay(); router.visit(url); }
-    }
-}
-
 function openSearch() {
     searchOpen.value = true;
-    activeSearchIdx.value = -1;
     setTimeout(() => { document.getElementById('global-search-input')?.focus(); }, 50);
 }
 
@@ -150,13 +109,13 @@ onUnmounted(() => {
                     <Link href="/bubbles" style="text-decoration:none">
                         <span style="font-weight:900;font-size:20px;color:#009ac7;letter-spacing:-1px">bubbles</span>
                     </Link>
-                    <Link v-if="!isMobile" href="/bubbles" class="nav-link">Explorar</Link>
-                    <Link v-if="user && !isMobile" :href="route('friends.index')" class="nav-link" style="position:relative;display:inline-flex;align-items:center;gap:6px">
+                    <Link v-if="!isMobile" href="/bubbles" class="nav-link" @click="playClick()">Explorar</Link>
+                    <Link v-if="user && !isMobile" :href="route('friends.index')" class="nav-link" style="position:relative;display:inline-flex;align-items:center;gap:6px" @click="playClick()">
                         Amigos
                         <span v-if="pendingFriends > 0" class="badge-red">{{ pendingFriends }}</span>
                     </Link>
-                    <Link v-if="user && !isMobile" :href="route('feed.index')" class="nav-link">Feed</Link>
-                    <Link v-if="user && !isMobile" :href="route('conversations.index')" class="nav-link" style="position:relative;display:inline-flex;align-items:center;gap:6px">
+                    <Link v-if="user && !isMobile" :href="route('feed.index')" class="nav-link" @click="playClick()">Feed</Link>
+                    <Link v-if="user && !isMobile" :href="route('conversations.index')" class="nav-link" style="position:relative;display:inline-flex;align-items:center;gap:6px" @click="playClick()">
                         Mensagens
                         <span v-if="unreadMessages > 0" class="badge-blue">{{ unreadMessages }}</span>
                     </Link>
@@ -164,6 +123,9 @@ onUnmounted(() => {
 
                 <!-- Right: search + notifications + user -->
                 <div style="display:flex;align-items:center;gap:8px">
+
+                    <!-- Audio controls -->
+                    <AudioControls v-if="user" />
 
                     <!-- Search button -->
                     <button @click.stop="openSearch" class="icon-btn-nav" title="Pesquisar (Ctrl+K)">
@@ -225,7 +187,6 @@ onUnmounted(() => {
                                 <div style="padding:6px">
                                     <Link v-if="user.username" :href="route('profile.show', user.username)" @click="open = false" class="dropdown-link">O meu perfil</Link>
                                     <Link :href="route('profile.edit')" @click="open = false" class="dropdown-link">Definições</Link>
-                                    <Link v-if="user.role === 'admin' || user.role === 'site_owner'" href="/admin" @click="open = false" class="dropdown-link" style="color:#9b6bdf;font-weight:700">⊞ Painel Admin</Link>
                                     <!-- Theme toggle -->
                                     <button @click="toggleTheme(); open = false" class="dropdown-link dropdown-theme-btn">
                                         <span>{{ isDark ? '☀️ Tema claro' : '🌙 Tema escuro' }}</span>
@@ -239,8 +200,9 @@ onUnmounted(() => {
                                         Notificações
                                         <span v-if="unreadNotifications > 0" class="badge-red">{{ unreadNotifications }}</span>
                                     </Link>
+                                    <Link v-if="user.role === 'admin' || user.role === 'site_owner'" href="/admin" @click="open = false" class="dropdown-link" style="color:#9b6bdf;font-weight:700">⊞ Painel Admin</Link>
                                     <div class="dropdown-sep" />
-                                    <Link :href="route('logout')" method="post" as="button" @click="open = false" class="dropdown-link dropdown-logout">Sair</Link>
+                                    <Link :href="route('logout')" method="post" as="button" @click="stopBgm(); open = false" class="dropdown-link dropdown-logout">Sair</Link>
                                 </div>
                             </div>
                         </Transition>
@@ -276,6 +238,10 @@ onUnmounted(() => {
                 </form>
             </div>
         </Transition>
+
+        <!-- Announcements -->
+        <AnnouncementBanner />
+        <AnnouncementModal />
 
         <!-- Ambient orbs -->
         <div class="absolute inset-0 pointer-events-none overflow-hidden" style="z-index:0">

@@ -1,15 +1,26 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import ReactorsModal from '@/Components/ReactorsModal.vue';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     post: { type: Object, required: true },
     authUser: { type: Object, default: null },
     likeRoute: { type: String, required: true },
+    reactorsRoute: { type: String, default: null },
     accentColor: { type: String, default: '#009ac7' },
     commentsExpanded: { type: Boolean, default: false },
 });
 const emit = defineEmits(['toggle-comments']);
+
+const reactorsModal = ref(null);
+const { playClick } = useAudio();
+
+function openReactorsModal() {
+    if (!props.reactorsRoute || localLikeCount.value === 0) return;
+    reactorsModal.value?.open();
+}
 
 const REACTIONS = [
     { type: 'like', emoji: '👍', label: 'Curtir' },
@@ -71,6 +82,7 @@ function cancelHide() {
 function setReaction(type) {
     if (!props.authUser || likeLoading.value) return;
     showReactionPicker.value = false;
+    playClick();
 
     const prevReaction = localUserReaction.value;
     const isSame = prevReaction === type;
@@ -192,8 +204,20 @@ function toggleLike() {
                         d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
                     />
                 </svg>
-                {{ localLikeCount }} {{ localLikeCount === 1 ? 'Reação' : 'Reações' }}
+                <span
+                    v-if="reactorsRoute && localLikeCount > 0"
+                    @click.stop="openReactorsModal"
+                    :style="{
+                        textDecoration: 'underline',
+                        textUnderlineOffset: '2px',
+                        cursor: 'pointer',
+                    }"
+                    >{{ localLikeCount }} {{ localLikeCount === 1 ? 'Reação' : 'Reações' }}</span
+                >
+                <span v-else>{{ localLikeCount }} {{ localLikeCount === 1 ? 'Reação' : 'Reações' }}</span>
             </button>
+
+            <ReactorsModal v-if="reactorsRoute" ref="reactorsModal" :reactors-route="reactorsRoute" />
         </div>
 
         <div style="width: 1px; background: rgba(0, 154, 199, 0.08); margin: 6px 0" />

@@ -9,8 +9,10 @@ import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
 import { useClipboardImage } from '@/Composables/useClipboardImage';
 import { compressImage } from '@/Composables/useImageCompressor';
+import { useAudio } from '@/Composables/useAudio';
 
 const { show: toast } = useToast();
+const { playSfx } = useAudio();
 
 const props = defineProps({
     profileUser: Object,
@@ -116,6 +118,7 @@ onUnmounted(() => {
 
 function submitPost() {
     if (!postForm.content.trim()) return;
+    playSfx('send');
     uploadProgress.value = 0;
     uploadingServer.value = false;
     postForm.post(route('posts.store'), {
@@ -1089,6 +1092,7 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                     :can-edit="isOwn"
                     :can-delete="isOwn"
                     :like-route="route('posts.like', post.id)"
+                    :reactors-route="route('posts.reactors', post.id)"
                     :comment-route="route('posts.comments.store', post.id)"
                     :delete-route="route('posts.destroy', post.id)"
                     :edit-route="route('posts.update', post.id)"

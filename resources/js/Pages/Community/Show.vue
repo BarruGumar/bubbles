@@ -174,6 +174,7 @@ const showEdit = ref(false);
                     :is-creator="post.isCreator"
                     :accent-color="community.color"
                     :like-route="route('community-posts.like', post.id)"
+                    :reactors-route="route('community-posts.reactors', post.id)"
                     :comment-route="route('community-posts.comments.store', post.id)"
                     :delete-route="route('community.posts.destroy', [community.id, post.id])"
                     :edit-route="post.isOwn ? route('community.posts.update', [community.id, post.id]) : null"
