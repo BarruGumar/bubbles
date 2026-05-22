@@ -31,6 +31,7 @@ function joinCommunity() {
 }
 
 function leaveCommunity() {
+    playSfx('leave');
     router.delete(route('community.leave', props.community.id), { preserveScroll: true });
 }
 </script>

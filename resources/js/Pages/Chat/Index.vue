@@ -237,6 +237,7 @@ function demoteToMember(userId) {
 async function leaveGroup() {
     if (groupActionLoading.value || !props.activeConversation) return;
     groupActionLoading.value = true;
+    playSfx('leave');
     try {
         await axios.delete(route('groups.leave', props.activeConversation.id));
         router.visit(route('conversations.index'));
@@ -675,7 +676,6 @@ async function send() {
 
     stopTyping();
     sendState.value = 'sending';
-    playSfx('send');
     clearTimeout(sentTimer);
 
     // Capture values before clearing (image File must stay alive for FormData)

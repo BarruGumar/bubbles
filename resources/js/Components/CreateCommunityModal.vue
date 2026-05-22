@@ -1,7 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue';
+import { useAudio } from '@/Composables/useAudio';
 
 const emit = defineEmits(['create', 'cancel']);
+
+const { playSfx } = useAudio();
 
 const PALETTE = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b', '#e0a040', '#6b9bdf'];
 
@@ -42,11 +45,17 @@ function validateStep1() {
 
 function next() {
     if (step.value === 1 && !validateStep1()) return;
-    if (step.value < STEPS) step.value++;
+    if (step.value < STEPS) {
+        playSfx('pageChange');
+        step.value++;
+    }
 }
 
 function prev() {
-    if (step.value > 1) step.value--;
+    if (step.value > 1) {
+        playSfx('pageChange');
+        step.value--;
+    }
 }
 
 function submit() {
@@ -70,6 +79,7 @@ function submit() {
 }
 
 function cancel() {
+    playSfx('off');
     emit('cancel');
 }
 

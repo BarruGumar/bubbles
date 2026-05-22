@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     modelValue: { type: Boolean, required: true },
@@ -9,6 +10,8 @@ const props = defineProps({
     communityBannerPreview: { type: String, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'image-file-selected', 'banner-file-selected']);
+
+const { playSfx } = useAudio();
 
 const PALETTE = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b', '#e0a040', '#6b9bdf'];
 
@@ -61,6 +64,7 @@ function onBannerChange(e) {
 }
 
 function saveSettings() {
+    playSfx('send');
     editSaving.value = true;
     router.put(
         route('community.update', props.community.id),

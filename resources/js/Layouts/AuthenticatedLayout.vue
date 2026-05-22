@@ -15,23 +15,30 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const { show: toast } = useToast();
 const { isDark, toggle: toggleTheme } = useTheme();
-const { playBgm, playClick, stopBgm } = useAudio();
+const { playBgm, playClick, stopBgm, playSfx, currentBgmKey } = useAudio();
 
 // ── BGM: change track whenever the Inertia page URL changes ───────
-const BGM_ROUTES = {
-    '/bubbles': 'home',
-    '/feed':    'feed',
-    '/admin':   'admin',
-};
 const bgmKeyForUrl = computed(() => {
-    const url = page.url ?? '';
-    if (url.startsWith('/bubbles') || url === '/') return 'home';
-    if (url.startsWith('/feed'))          return 'feed';
-    if (url.startsWith('/conversations')) return 'chat';
-    if (url.startsWith('/admin'))         return 'admin';
-    return null; // community/profile/search — keep current BGM
+    const raw = page.url ?? '';
+    // page.url can be a full URL or a relative path depending on the Inertia version
+    let path;
+    try { path = raw.startsWith('http') ? new URL(raw).pathname : raw; } catch { path = raw; }
+    if (path.startsWith('/bubbles') || path === '/') return 'home';
+    if (path.startsWith('/feed'))          return 'feed';
+    if (path.startsWith('/conversations')) return 'chat';
+    if (path.startsWith('/admin'))         return 'admin';
+    if (path.startsWith('/c/'))            return 'community';
+    if (path.startsWith('/friends'))       return 'friends';
+    if (path.startsWith('/u/'))            return page.props.isOwn ? 'profile_own' : 'profile_other';
+    return null;
 });
-watch(bgmKeyForUrl, (key) => { if (key) playBgm(key); }, { immediate: true });
+watch(bgmKeyForUrl, (key) => {
+    if (key) {
+        playBgm(key);
+    } else if (currentBgmKey.value === 'profile_own' || currentBgmKey.value === 'profile_other') {
+        stopBgm();
+    }
+}, { immediate: true });
 
 // Flash messages → toasts
 watch(
@@ -46,6 +53,9 @@ watch(
 const pendingFriends = computed(() => page.props.auth?.pending_friends_count ?? 0);
 const unreadMessages = computed(() => page.props.auth?.unread_messages_count ?? 0);
 const unreadNotifications = computed(() => page.props.auth?.unread_notifications_count ?? 0);
+watch(unreadNotifications, (newVal, oldVal) => {
+    if (newVal > oldVal) playSfx('notification');
+});
 const open = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref('');
@@ -86,7 +96,7 @@ onMounted(() => {
     if (page.props.auth?.user) {
         pollTimer = setInterval(() => {
             router.reload({ only: ['auth'], preserveScroll: true, preserveState: true });
-        }, 60000);
+        }, 15000);
     }
 });
 
@@ -98,7 +108,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="layout-shell" style="font-family: 'Segoe UI', system-ui, sans-serif" @click="open && (open = false)">
+    <div :class="['layout-shell', user && isMobile ? 'has-bottom-nav' : '']" style="font-family: 'Segoe UI', system-ui, sans-serif" @click="open && (open = false)">
 
         <!-- ── Topbar ─────────────────────────────────────────────── -->
         <nav class="topbar">
@@ -254,6 +264,36 @@ onUnmounted(() => {
             <slot />
         </main>
 
+        <!-- Mobile bottom nav -->
+        <nav v-if="user && isMobile" class="bottom-nav">
+            <Link href="/bubbles" class="bnav-item" @click="playClick()">
+                <span class="bnav-icon-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </span>
+                <span class="bnav-label">Explorar</span>
+            </Link>
+            <Link :href="route('friends.index')" class="bnav-item" @click="playClick()">
+                <span class="bnav-icon-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span v-if="pendingFriends > 0" class="bnav-badge">{{ pendingFriends }}</span>
+                </span>
+                <span class="bnav-label">Amigos</span>
+            </Link>
+            <Link :href="route('feed.index')" class="bnav-item" @click="playClick()">
+                <span class="bnav-icon-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </span>
+                <span class="bnav-label">Feed</span>
+            </Link>
+            <Link :href="route('conversations.index')" class="bnav-item" @click="playClick()">
+                <span class="bnav-icon-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span v-if="unreadMessages > 0" class="bnav-badge bnav-badge-blue">{{ unreadMessages }}</span>
+                </span>
+                <span class="bnav-label">Mensagens</span>
+            </Link>
+        </nav>
+
         <ToastContainer />
 
     </div>
@@ -261,7 +301,8 @@ onUnmounted(() => {
 
 <style scoped>
 /* ── Shell ─────────────────────────────────────────────────────── */
-.layout-shell { min-height: 100vh; background: var(--layout-bg); }
+.layout-shell { min-height: 100dvh; background: var(--layout-bg); }
+.has-bottom-nav { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
 
 /* ── Topbar ────────────────────────────────────────────────────── */
 .topbar {
@@ -294,11 +335,12 @@ onUnmounted(() => {
 
 /* ── Icon buttons (search, bell) ───────────────────────────────── */
 .icon-btn-nav {
-    width: 34px; height: 34px; border-radius: 50%;
+    width: 44px; height: 44px; border-radius: 50%;
     border: 1.5px solid var(--nav-border);
     background: transparent; color: var(--text-3);
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
 }
 .icon-btn-nav:hover {
     background: rgba(0, 154, 199, 0.08); color: #009ac7;
@@ -371,7 +413,7 @@ onUnmounted(() => {
     background: rgba(0, 0, 0, 0.32);
     backdrop-filter: blur(4px);
     display: flex; align-items: flex-start; justify-content: center;
-    padding-top: 80px;
+    padding-top: clamp(16px, 10svh, 80px);
 }
 .search-input {
     width: 100%; box-sizing: border-box;
@@ -396,5 +438,35 @@ onUnmounted(() => {
 
 .overlay-enter-active, .overlay-leave-active { transition: opacity 0.2s ease; }
 .overlay-enter-from, .overlay-leave-to { opacity: 0; }
+
+/* ── Mobile bottom nav ─────────────────────────────────────────── */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+    background: var(--nav-bg);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--nav-border);
+    display: flex;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.bnav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; height: 56px; min-width: 44px;
+    color: var(--text-3); text-decoration: none;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+.bnav-item:active { color: #009ac7; }
+.bnav-icon-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.bnav-label { font-size: 10px; font-weight: 600; }
+.bnav-badge {
+    position: absolute; top: -6px; right: -8px;
+    min-width: 15px; height: 15px; padding: 0 4px;
+    background: #c74a6b; color: white; border-radius: 99px;
+    font-size: 9px; font-weight: 800; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+}
+.bnav-badge-blue { background: #009ac7; }
 
 </style>

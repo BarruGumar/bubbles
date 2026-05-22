@@ -8,10 +8,10 @@ defineProps({
 });
 
 const statCards = (stats) => [
-    { label: 'Utilizadores', value: stats.users, color: '#009ac7', icon: '👤' },
-    { label: 'Posts', value: stats.posts, color: '#2ea87e', icon: '📝' },
-    { label: 'Comunidades', value: stats.communities, color: '#9b6bdf', icon: '🫧' },
-    { label: 'Denúncias pendentes', value: stats.reports, color: '#e05555', icon: '⚑' },
+    { label: 'Utilizadores', value: stats.users, color: '#009ac7', icon: '👤', href: route('admin.users') },
+    { label: 'Posts', value: stats.posts, color: '#2ea87e', icon: '📝', href: route('admin.posts') },
+    { label: 'Comunidades', value: stats.communities, color: '#9b6bdf', icon: '🫧', href: route('admin.communities') },
+    { label: 'Denúncias pendentes', value: stats.reports, color: '#e05555', icon: '⚑', href: route('admin.reports') },
 ];
 </script>
 
@@ -32,16 +32,22 @@ const statCards = (stats) => [
                 margin-bottom: 28px;
             "
         >
-            <div
+            <Link
                 v-for="card in statCards(stats)"
                 :key="card.label"
+                :href="card.href"
                 style="
                     background: white;
                     border-radius: 14px;
                     padding: 20px;
                     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
                     border: 1px solid #eef2f8;
+                    text-decoration: none;
+                    display: block;
+                    transition: box-shadow 0.15s, transform 0.15s;
                 "
+                @mouseenter="$event.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.10)'; $event.currentTarget.style.transform = 'translateY(-2px)'"
+                @mouseleave="$event.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; $event.currentTarget.style.transform = 'translateY(0)'"
             >
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px">
                     <span
@@ -67,7 +73,7 @@ const statCards = (stats) => [
                 >
                     {{ card.value.toLocaleString() }}
                 </p>
-            </div>
+            </Link>
         </div>
 
         <!-- Recent reports -->

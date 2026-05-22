@@ -60,7 +60,7 @@ html.dark {
 /* ── Body ──────────────────────────────────────────────────────── */
 body {
     background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%);
-    min-height: 100vh;
+    min-height: 100dvh;
     transition: background 0.35s ease;
 }
 
@@ -94,7 +94,7 @@ html.dark { --floor-gradient: #060e1c; }
 #app {
     position: relative;
     z-index: 1;
-    min-height: 100vh;
+    min-height: 100dvh;
 }
 
 /* ── Dark mode native input color-scheme ───────────────────────── */

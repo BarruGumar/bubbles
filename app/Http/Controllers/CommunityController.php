@@ -301,4 +301,26 @@ class CommunityController extends Controller
 
         return back();
     }
+
+    public function userCommunities(): Response
+    {
+        $user = auth()->user();
+
+        $communities = $user->communities()
+            ->withCount('memberships')
+            ->get()
+            ->map(fn ($b) => [
+                'id'      => $b->id,
+                'label'   => $b->label,
+                'title'   => $b->community_title ?: $b->label,
+                'color'   => $b->color ?? '#009ac7',
+                'image'   => $b->community_image,
+                'members' => $b->memberships_count,
+            ])
+            ->values();
+
+        return Inertia::render('Communities/Index', [
+            'communities' => $communities,
+        ]);
+    }
 }

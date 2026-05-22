@@ -2,6 +2,9 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { clImg } from '@/Composables/useCloudinary';
+import { useAudio } from '@/Composables/useAudio';
+
+const { playSfx } = useAudio();
 
 defineProps({
     friends: Array,
@@ -412,7 +415,7 @@ function startConversation(friend) {
                         </button>
 
                         <button
-                            @click="reject(friend.friendId)"
+                            @click="playSfx('leave'); reject(friend.friendId)"
                             style="
                                 padding: 7px 14px;
                                 border-radius: 99px;

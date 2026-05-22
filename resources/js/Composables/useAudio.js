@@ -5,7 +5,7 @@ import { BGM as BGM_MAP, SFX as SFX_MAP } from '@/Constants/audioMap';
 // All state lives here so every component shares the same instance.
 
 const bgmVolume  = ref(0.30);
-const sfxVolume  = ref(0.30);
+const sfxVolume  = ref(0.45);
 const bgmEnabled = ref(true);
 const sfxEnabled = ref(true);
 const muted      = ref(false);
@@ -20,8 +20,9 @@ let sfxCache   = {};        // key → <audio>
 let clickState = 0;         // alternates click1/click2
 let hoverLocked = false;    // cooldown flag for bubble hover
 
-// ── localStorage ──────────────────────────────────────────────────
-const LS_KEY = 'bubbles_audio_prefs';
+// ── localStorage / sessionStorage ─────────────────────────────────
+const LS_KEY      = 'bubbles_audio_prefs';
+const SESSION_KEY = 'bubbles_bgm_key';
 
 function loadPrefs() {
     try {
@@ -49,6 +50,15 @@ function savePrefs() {
 
 loadPrefs();
 
+// Restore BGM from previous page load (survives F5)
+try {
+    const savedKey = sessionStorage.getItem(SESSION_KEY);
+    if (savedKey && BGM_MAP[savedKey]) {
+        currentBgmKey.value = savedKey;
+        if (bgmEnabled.value) _startBgm(savedKey);
+    }
+} catch { /* ignore */ }
+
 // ── Autoplay unlock ───────────────────────────────────────────────
 // Browsers block audio.play() until a real user interaction fires.
 function onFirstInteraction() {
@@ -70,6 +80,24 @@ if (typeof document !== 'undefined') {
     ['click', 'touchstart', 'keydown'].forEach(evt =>
         document.addEventListener(evt, onFirstInteraction, { passive: true, capture: true }),
     );
+
+    // Play persons.mp3 on clicks that navigate to a profile/friends/members page.
+    // Direct click listener guarantees we're inside a user gesture (audio.play allowed).
+    document.addEventListener('click', (e) => {
+        if (e.button !== 0) return;
+        const a = e.target.closest('a[href]');
+        if (!a) return;
+        const raw = a.getAttribute('href') ?? '';
+        let path = raw;
+        try { if (raw.startsWith('http')) path = new URL(raw).pathname; } catch { path = raw; }
+        if (path.startsWith('/u/') || path === '/friends' || /^\/c\/[^/]+\/members/.test(path)) {
+            const keys = ['persons', 'persons2', 'persons3'];
+            playSfx(keys[Math.floor(Math.random() * keys.length)]);
+        } else if (/^\/c\/[^/]+/.test(path)) {
+            const keys = ['enterCommunity1', 'enterCommunity2'];
+            playSfx(keys[Math.floor(Math.random() * keys.length)]);
+        }
+    }, { capture: true });
 }
 
 // ── Fade helpers ──────────────────────────────────────────────────
@@ -83,7 +111,7 @@ function fadeOut(audio, ms, onDone) {
     const t0 = performance.now();
     function tick(now) {
         const p = Math.min((now - t0) / ms, 1);
-        audio.volume = startVol * (1 - p);
+        audio.volume = Math.max(0, Math.min(1, startVol * (1 - p)));
         if (p < 1) requestAnimationFrame(tick);
         else { audio.pause(); audio.currentTime = 0; audio.volume = startVol; onDone?.(); }
     }
@@ -95,7 +123,7 @@ function fadeIn(audio, targetVol, ms) {
     const t0 = performance.now();
     function tick(now) {
         const p = Math.min((now - t0) / ms, 1);
-        audio.volume = targetVol * p;
+        audio.volume = Math.max(0, Math.min(1, targetVol * p));
         if (p < 1) requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
@@ -123,13 +151,14 @@ function _startBgm(key) {
     const audio = new Audio(src);
     audio.loop = true;
     audio.preload = 'auto';
+    audio.volume = 0; // muted start — browsers allow autoplay when silent
     bgmAudio = audio;
     bgmPlayingKey = key;
 
     audio.play()
         .then(() => fadeIn(audio, effectiveVol(bgmVolume.value), 800))
         .catch(() => {
-            // Autoplay blocked — queue to retry on first user interaction
+            // Still blocked (strict browser) — retry on first interaction
             bgmAudio = null;
             bgmPlayingKey = '';
             pendingBgmKey = key;
@@ -139,13 +168,23 @@ function _startBgm(key) {
 function playBgm(key) {
     if (!key) return;
     currentBgmKey.value = key;
-    if (!bgmEnabled.value) return;
+    try { sessionStorage.setItem(SESSION_KEY, key); } catch { /* ignore */ }
+    if (!bgmEnabled.value) {
+        if (bgmAudio) {
+            const old = bgmAudio;
+            bgmAudio = null;
+            bgmPlayingKey = '';
+            fadeOut(old, 500, () => { old.src = ''; });
+        }
+        return;
+    }
     _startBgm(key);
 }
 
 function stopBgm() {
     currentBgmKey.value = null;
     pendingBgmKey = null;
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
     if (bgmAudio) {
         const old = bgmAudio;
         bgmAudio = null;
@@ -213,7 +252,7 @@ function setBgmEnabled(v) {
             bgmPlayingKey = '';
             fadeOut(old, 500, () => { old.src = ''; });
         }
-    } else if (currentBgmKey.value && hasInteracted) {
+    } else if (currentBgmKey.value) {
         _startBgm(currentBgmKey.value);
     }
     savePrefs();

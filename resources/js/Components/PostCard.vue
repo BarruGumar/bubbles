@@ -146,7 +146,14 @@ function formatInitial(name) {
             :href="route('community.show', community.id)"
             style="display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; text-decoration: none"
         >
+            <img
+                v-if="community.image"
+                :src="community.image"
+                :alt="community.title"
+                style="width: 18px; height: 18px; border-radius: 50%; object-fit: cover; flex-shrink: 0;"
+            />
             <div
+                v-else
                 :style="{
                     width: '18px',
                     height: '18px',

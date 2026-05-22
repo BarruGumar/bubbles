@@ -124,6 +124,9 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::patch('/groups/{conversation}/demote', [GroupController::class, 'demoteRole'])->name('groups.members.demote');
     Route::patch('/groups/{conversation}/owner', [GroupController::class, 'transferOwner'])->name('groups.owner');
 
+    // Communities list (auth user)
+    Route::get('/communities', [CommunityController::class, 'userCommunities'])->name('communities.index');
+
     // Friends
     Route::get('/friends', [FriendController::class, 'index'])->name('friends.index');
     Route::post('/friends/{username}', [FriendController::class, 'send'])->middleware('throttle:friends')->name('friends.send');

@@ -178,6 +178,8 @@ function handleSearchKey(e) {
     }
 }
 
+let selectGuard = false;
+
 const {
     dragging,
     startDrag,
@@ -185,7 +187,13 @@ const {
     onMouseMove: moveDrag,
     onTouchMove: moveDragTouch,
     stopDrag,
-} = useDrag((id) => toggleSelect(id));
+} = useDrag((id) => {
+    if (isMobile) {
+        selectGuard = true;
+        setTimeout(() => { selectGuard = false; }, 300);
+    }
+    toggleSelect(id);
+});
 
 function onWindowMouseMove(e) {
     moveDrag(e, bubbles.value);
@@ -220,6 +228,7 @@ function onBubbleLeave(id) {
 }
 
 function clearSelection() {
+    if (selectGuard) return;
     bubbles.value.forEach((b) => {
         b.selected = false;
     });
@@ -324,6 +333,7 @@ async function handleCreate(data) {
     });
     showAdd.value = false;
     if (newBubble?.persisted) {
+        playSfx('created');
         router.visit(route('community.show', newBubble.id));
     } else if (newBubble === null) {
         toast('Não foi possível criar a bolha. Tenta novamente.', 'error');
@@ -334,7 +344,10 @@ const selectedBubble = computed(() => bubbles.value.find((b) => b.selected) ?? n
 
 // ── Audio SFX ─────────────────────────────────────────────────────
 watch(selectedBubble, (newVal, oldVal) => {
-    if (!!newVal !== !!oldVal) playSfx('bubbleExpand');
+    if (!!newVal !== !!oldVal) {
+        const keys = ['bubbleExpand', 'bubbleExpand2', 'bubbleExpand3'];
+        playSfx(keys[Math.floor(Math.random() * keys.length)]);
+    }
 });
 watch(feedOpen, () => {
     playSfx('feedBox');
@@ -347,6 +360,10 @@ function onBubbleEnter(id) {
 const trends = computed(() => [...bubbles.value].sort((a, b) => b.members - a.members).slice(0, 6));
 
 const trendsOpen = ref(window.innerWidth >= 640);
+function toggleTrends() {
+    trendsOpen.value = !trendsOpen.value;
+    playSfx(trendsOpen.value ? 'openGlobal' : 'closeGlobal');
+}
 const isMobile = window.innerWidth < 640;
 </script>
 
@@ -355,7 +372,7 @@ const isMobile = window.innerWidth < 640;
         class="w-screen h-screen overflow-hidden relative select-none"
         style="background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none"
         @click.self="clearSelection"
-        @touchstart.self="clearSelection"
+        @touchend.self="clearSelection"
     >
         <!-- BACKGROUND GRID -->
         <svg class="absolute inset-0 w-full h-full pointer-events-none" style="opacity: 0.04">
@@ -1364,6 +1381,8 @@ const isMobile = window.innerWidth < 640;
                 }"
                 @click.stop
                 @mousedown.stop
+                @touchstart.stop
+                @touchend.stop
             >
                 <!-- Glass highlight -->
                 <div
@@ -1541,6 +1560,16 @@ const isMobile = window.innerWidth < 640;
             </div>
         </Transition>
 
+        <!-- Mobile overlay: absorbs the synthetic click Chrome fires after touchend.
+             By then Vue has flushed (bubble has pointer-events:none), so without this
+             the click hits the root div and @click.self fires clearSelection.
+             z-index 35 intercepts it; panel at z-index 36 stays on top. -->
+        <div
+            v-if="selectedBubble && isMobile"
+            style="position: fixed; inset: 0; z-index: 35;"
+            @touchend.prevent="clearSelection"
+        />
+
         <!-- GLOBAL TRENDS SIDEBAR -->
         <div
             :style="{
@@ -1573,8 +1602,8 @@ const isMobile = window.innerWidth < 640;
                     cursor: pointer;
                     user-select: none;
                 "
-                @click="trendsOpen = !trendsOpen"
-                @touchend.prevent="trendsOpen = !trendsOpen"
+                @click="toggleTrends"
+                @touchend.prevent="toggleTrends"
             >
                 <p
                     style="

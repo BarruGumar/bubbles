@@ -63,17 +63,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
                 v-if="panelOpen"
                 ref="panelEl"
                 @click.stop
-                style="
-                    position: absolute; right: 0; top: calc(100% + 10px);
-                    width: 230px;
-                    background: var(--dropdown-bg);
-                    backdrop-filter: blur(20px);
-                    border: 1px solid var(--nav-border);
-                    border-radius: 14px;
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-                    padding: 12px 14px 14px;
-                    z-index: 60;
-                "
+                class="audio-panel-popup"
             >
                 <!-- Header row: mute toggle -->
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -191,6 +181,29 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
     background: #009ac7;
     border: 2px solid white;
     cursor: pointer;
+}
+
+.audio-panel-popup {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    width: 230px;
+    background: var(--dropdown-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--nav-border);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 12px 14px 14px;
+    z-index: 60;
+}
+@media (max-width: 639px) {
+    .audio-panel-popup {
+        position: fixed;
+        top: 66px;
+        left: 8px;
+        right: 8px;
+        width: auto;
+    }
 }
 
 .audio-panel-enter-active { transition: opacity 0.18s ease, transform 0.2s cubic-bezier(0.2,0.8,0.2,1); }

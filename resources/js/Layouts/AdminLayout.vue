@@ -2,13 +2,20 @@
 import { computed, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import ToastContainer from '@/Components/ToastContainer.vue';
+import AudioControls from '@/Components/AudioControls.vue';
 import { useToast } from '@/Composables/useToast';
 import { useAudio } from '@/Composables/useAudio';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const { show: toast } = useToast();
-const { playBgm } = useAudio();
+const { playBgm, playSfx } = useAudio();
+
+const adminClickKeys = ['buttonAdmin', 'buttonAdmin2', 'buttonAdmin3'];
+function onAdminClick(e) {
+    if (e.target.closest('button, a[href]'))
+        playSfx(adminClickKeys[Math.floor(Math.random() * adminClickKeys.length)]);
+}
 
 playBgm('admin');
 
@@ -39,7 +46,7 @@ const navLinks = [
 </script>
 
 <template>
-    <div style="min-height: 100vh; background: #f0f4f8; font-family: 'Segoe UI', system-ui, sans-serif; display: flex">
+    <div style="min-height: 100vh; background: #f0f4f8; font-family: 'Segoe UI', system-ui, sans-serif; display: flex" @click.capture="onAdminClick">
         <!-- Sidebar -->
         <aside
             style="
@@ -129,9 +136,10 @@ const navLinks = [
                 <slot name="header">
                     <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Admin</h1>
                 </slot>
-                <Link href="/bubbles" style="font-size: 12px; color: #009ac7; text-decoration: none; font-weight: 600"
-                    >← Voltar ao site</Link
-                >
+                <div style="display:flex;align-items:center;gap:12px">
+                    <AudioControls />
+                    <Link href="/bubbles" style="font-size: 12px; color: #009ac7; text-decoration: none; font-weight: 600">← Voltar ao site</Link>
+                </div>
             </header>
 
             <main style="padding: 28px">

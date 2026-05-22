@@ -161,6 +161,7 @@ function acceptFriendRequest() {
 }
 
 function removeFriend() {
+    playSfx('leave');
     router.delete(route('friends.reject', props.friendId), { preserveScroll: true });
 }
 
@@ -168,28 +169,6 @@ function startConversation() {
     router.post(route('conversations.store'), { recipient_id: props.profileUser.id });
 }
 
-// ── Community network layout ───────────────────────────────────────
-// All coordinates live in a 580×auto virtual canvas (matches card inner width).
-const BUBBLE_R = 32; // community bubble radius in the virtual canvas
-
-function ringR(n) {
-    if (n === 0) return 80;
-    const minArc = 2 * BUBBLE_R + 20; // min arc between adjacent bubble edges
-    return Math.max(80, Math.min((minArc * n) / (2 * Math.PI), 290 - BUBBLE_R - 16));
-}
-
-const communityPos = computed(() => {
-    const n = props.communities.length;
-    const rR = ringR(n);
-    const cy = rR + BUBBLE_R + 24; // vertical center of the ring
-    return props.communities.map((c, i) => {
-        const angle = (i / n) * 2 * Math.PI - Math.PI / 2; // start from top
-        return { ...c, bx: 290 + Math.cos(angle) * rR, by: cy + Math.sin(angle) * rR };
-    });
-});
-
-const hubPos = computed(() => ({ x: 290, y: ringR(props.communities.length) + BUBBLE_R + 24 }));
-const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 2 + 16);
 </script>
 
 <template>
@@ -592,155 +571,68 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                     Comunidades · {{ communities.length }}
                 </p>
 
-                <div style="position: relative; width: 100%" :style="{ paddingTop: (netH / 580) * 100 + '%' }">
-                    <svg
-                        :viewBox="`0 0 580 ${netH}`"
-                        preserveAspectRatio="xMidYMid meet"
-                        style="
-                            position: absolute;
-                            inset: 0;
-                            width: 100%;
-                            height: 100%;
-                            pointer-events: none;
-                            overflow: visible;
-                        "
-                    >
-                        <line
-                            v-for="c in communityPos"
-                            :key="'h-' + c.id"
-                            :x1="hubPos.x"
-                            :y1="hubPos.y"
-                            :x2="c.bx"
-                            :y2="c.by"
-                            :stroke="c.color"
-                            stroke-opacity="0.28"
-                            stroke-width="1.5"
-                            stroke-dasharray="5 4"
-                        />
-                        <template v-if="communityPos.length >= 3">
-                            <line
-                                v-for="(c, i) in communityPos"
-                                :key="'r-' + c.id"
-                                :x1="c.bx"
-                                :y1="c.by"
-                                :x2="communityPos[(i + 1) % communityPos.length].bx"
-                                :y2="communityPos[(i + 1) % communityPos.length].by"
-                                :stroke="c.color"
-                                stroke-opacity="0.14"
-                                stroke-width="1"
-                            />
-                        </template>
-                    </svg>
-
-                    <div
-                        style="position: absolute; transform: translate(-50%, -50%); z-index: 2"
-                        :style="{ left: (hubPos.x / 580) * 100 + '%', top: (hubPos.y / netH) * 100 + '%' }"
-                    >
-                        <img
-                            v-if="profileUser.avatar"
-                            :src="profileUser.avatar"
-                            :style="{
-                                width: '46px',
-                                height: '46px',
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                                border: '3px solid white',
-                                display: 'block',
-                                boxShadow: `0 4px 14px ${profileUser.avatar_color}55`,
-                            }"
-                        />
-                        <div
-                            v-else
-                            :style="{
-                                width: '46px',
-                                height: '46px',
-                                borderRadius: '50%',
-                                background: `radial-gradient(circle at 38% 32%, ${profileUser.avatar_color}ee, ${profileUser.avatar_color})`,
-                                border: '3px solid white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '17px',
-                                fontWeight: '900',
-                                color: 'white',
-                                boxShadow: `0 4px 14px ${profileUser.avatar_color}55`,
-                            }"
-                        >
-                            {{ formatInitial(profileUser.name) }}
-                        </div>
-                    </div>
-
+                <div style="display: flex; padding-top: 12px; gap: 6px;">
                     <Link
-                        v-for="c in communityPos"
+                        v-for="c in communities.slice(0, 4)"
                         :key="c.id"
                         :href="route('community.show', c.id)"
-                        style="position: absolute; transform: translate(-50%, -50%); text-decoration: none; z-index: 3"
-                        :style="{ left: (c.bx / 580) * 100 + '%', top: (c.by / netH) * 100 + '%' }"
+                        style="flex: 1; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0;"
                     >
                         <div
                             :title="c.title !== c.label ? c.title : undefined"
                             :style="{
-                                width: '64px',
-                                height: '64px',
+                                width: '68px',
+                                height: '68px',
                                 borderRadius: '50%',
                                 backgroundImage: c.image
                                     ? `radial-gradient(circle at 38% 32%, ${c.color}55 0%, ${c.color}99 100%), url('${c.image}')`
                                     : `radial-gradient(circle at 38% 32%, ${c.color}ee 0%, ${c.color} 60%)`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
                                 position: 'relative',
                                 overflow: 'hidden',
-                                cursor: 'pointer',
-                                boxShadow: `0 6px 20px ${c.color}55, 0 2px 6px ${c.color}33`,
+                                boxShadow: `0 4px 16px ${c.color}44, 0 2px 6px ${c.color}22`,
                                 transition: 'transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s',
+                                flexShrink: '0',
                             }"
-                            @mouseenter="
-                                (e) => {
-                                    e.currentTarget.style.transform = 'scale(1.13)';
-                                    e.currentTarget.style.boxShadow = `0 10px 30px ${c.color}77, 0 4px 12px ${c.color}44`;
-                                }
-                            "
-                            @mouseleave="
-                                (e) => {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                    e.currentTarget.style.boxShadow = `0 6px 20px ${c.color}55, 0 2px 6px ${c.color}33`;
-                                }
-                            "
+                            @mouseenter="e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = `0 8px 24px ${c.color}66, 0 3px 8px ${c.color}33`; }"
+                            @mouseleave="e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = `0 4px 16px ${c.color}44, 0 2px 6px ${c.color}22`; }"
                         >
-                            <div
-                                style="
-                                    position: absolute;
-                                    top: 7px;
-                                    left: 14%;
-                                    width: 72%;
-                                    height: 36%;
-                                    border-radius: 50%;
-                                    background: rgba(255, 255, 255, 0.22);
-                                    transform: rotate(-10deg);
-                                    pointer-events: none;
-                                "
-                            />
-                            <!-- Label -->
-                            <span
-                                style="
-                                    position: relative;
-                                    font-size: 9px;
-                                    font-weight: 800;
-                                    color: white;
-                                    text-align: center;
-                                    padding: 0 5px;
-                                    line-height: 1.25;
-                                    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-                                    word-break: break-word;
-                                    max-width: 100%;
-                                "
-                                >{{ c.label }}</span
-                            >
+                            <div style="position:absolute;top:7px;left:14%;width:72%;height:34%;border-radius:50%;background:rgba(255,255,255,0.22);transform:rotate(-10deg);pointer-events:none;" />
+                            <span style="position:relative;font-size:9px;font-weight:800;color:white;text-align:center;padding:0 5px;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.35);word-break:break-word;max-width:100%;display:flex;align-items:center;justify-content:center;height:100%;">{{ c.label }}</span>
                         </div>
+                        <span style="font-size: 11px; font-weight: 700; color: #5a7a8a; text-align: center; line-height: 1.2; word-break: break-word; width: 100%; display: block;">
+                            {{ c.title ?? c.label }}
+                        </span>
+                    </Link>
+
+                    <!-- Ver mais -->
+                    <Link
+                        v-if="communities.length > 4"
+                        :href="route('communities.index')"
+                        style="flex: 1; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0;"
+                    >
+                        <div
+                            style="
+                                width: 68px;
+                                height: 68px;
+                                border-radius: 50%;
+                                background: rgba(0,154,199,0.10);
+                                border: 2px dashed #009ac755;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 15px;
+                                color: #009ac7;
+                                font-weight: 800;
+                                transition: background .2s, transform .22s cubic-bezier(.34,1.56,.64,1);
+                                cursor: pointer;
+                                flex-shrink: 0;
+                            "
+                            @mouseenter="e => { e.currentTarget.style.background = 'rgba(0,154,199,0.18)'; e.currentTarget.style.transform = 'scale(1.08)'; }"
+                            @mouseleave="e => { e.currentTarget.style.background = 'rgba(0,154,199,0.10)'; e.currentTarget.style.transform = 'scale(1)'; }"
+                        >+{{ communities.length - 4 }}</div>
+                        <span style="font-size: 11px; font-weight: 700; color: #009ac7; text-align: center; line-height: 1.2;">Ver mais</span>
                     </Link>
                 </div>
             </div>
@@ -770,54 +662,55 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                 >
                     Amigos · {{ profileFriends.length }}
                 </p>
-                <div style="display: flex; flex-wrap: wrap; gap: 12px">
+                <div style="display: flex; gap: 6px;">
                     <Link
-                        v-for="f in profileFriends"
+                        v-for="f in profileFriends.slice(0, 4)"
                         :key="f.id"
                         :href="route('profile.show', f.username)"
-                        style="
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            gap: 6px;
-                            text-decoration: none;
-                            width: 60px;
-                        "
+                        style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; min-width: 0;"
                     >
                         <img
                             v-if="f.avatar"
                             :src="f.avatar"
                             :style="{
-                                width: '46px',
-                                height: '46px',
+                                width: '62px',
+                                height: '62px',
                                 borderRadius: '50%',
                                 objectFit: 'cover',
-                                border: `2px solid ${f.avatar_color}`,
-                                boxShadow: `0 2px 8px ${f.avatar_color}44`,
+                                border: `2.5px solid ${f.avatar_color}`,
+                                boxShadow: `0 3px 12px ${f.avatar_color}44`,
                                 display: 'block',
+                                flexShrink: '0',
+                                transition: 'transform .22s cubic-bezier(.34,1.56,.64,1)',
                             }"
+                            @mouseenter="$event.currentTarget.style.transform = 'scale(1.08)'"
+                            @mouseleave="$event.currentTarget.style.transform = 'scale(1)'"
                         />
                         <div
                             v-else
                             :style="{
-                                width: '46px',
-                                height: '46px',
+                                width: '62px',
+                                height: '62px',
                                 borderRadius: '50%',
                                 background: f.avatar_color,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '17px',
+                                fontSize: '22px',
                                 fontWeight: '800',
                                 color: 'white',
-                                boxShadow: `0 2px 8px ${f.avatar_color}44`,
+                                boxShadow: `0 3px 12px ${f.avatar_color}44`,
+                                flexShrink: '0',
+                                transition: 'transform .22s cubic-bezier(.34,1.56,.64,1)',
                             }"
+                            @mouseenter="$event.currentTarget.style.transform = 'scale(1.08)'"
+                            @mouseleave="$event.currentTarget.style.transform = 'scale(1)'"
                         >
                             {{ formatInitial(f.name) }}
                         </div>
                         <span
                             style="
-                                font-size: 10px;
+                                font-size: 11px;
                                 font-weight: 600;
                                 color: #4a6a7a;
                                 text-align: center;
@@ -828,6 +721,35 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                             "
                             >{{ f.name.split(' ')[0] }}</span
                         >
+                    </Link>
+
+                    <!-- Ver mais amigos -->
+                    <Link
+                        v-if="profileFriends.length > 4"
+                        :href="route('friends.index')"
+                        style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; min-width: 0;"
+                    >
+                        <div
+                            style="
+                                width: 62px;
+                                height: 62px;
+                                border-radius: 50%;
+                                background: rgba(0,154,199,0.10);
+                                border: 2px dashed #009ac755;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 15px;
+                                color: #009ac7;
+                                font-weight: 800;
+                                transition: background .2s, transform .22s cubic-bezier(.34,1.56,.64,1);
+                                cursor: pointer;
+                                flex-shrink: 0;
+                            "
+                            @mouseenter="e => { e.currentTarget.style.background = 'rgba(0,154,199,0.18)'; e.currentTarget.style.transform = 'scale(1.08)'; }"
+                            @mouseleave="e => { e.currentTarget.style.background = 'rgba(0,154,199,0.10)'; e.currentTarget.style.transform = 'scale(1)'; }"
+                        >+{{ profileFriends.length - 4 }}</div>
+                        <span style="font-size: 11px; font-weight: 700; color: #009ac7; text-align: center; line-height: 1.2;">Ver mais</span>
                     </Link>
                 </div>
             </div>
