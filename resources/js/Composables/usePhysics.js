@@ -1,13 +1,14 @@
-const DAMPING = 0.91
+const DAMPING = 0.87
 const REPULSE = 2.8
 const ATTRACT = 0.00085
 const DRIFT = 0.04
-const MAX_SPD = 0.45
+const MAX_SPD = 1.2
 const EXPANDED_SIZE = 300
 
 // Cell size must be ≥ max interaction radius to guarantee no missed pairs.
-// max minD = (200 + 300)/2 + 18 = 268px → 300px is safe.
 const CELL_SIZE = 300
+
+const BADGE_RADIUS = 26
 
 function buildGrid(bubbles) {
     const grid = Object.create(null)
@@ -21,7 +22,7 @@ function buildGrid(bubbles) {
 }
 
 export function usePhysics() {
-    function step(bubbles, draggingId) {
+    function step(bubbles, draggingId, badgeObstacles = []) {
         const cx = window.innerWidth / 2
         const cy = window.innerHeight / 2 - 40
         const grid = buildGrid(bubbles)
@@ -46,13 +47,36 @@ export function usePhysics() {
                         const dx = b1.x - b2.x
                         const dy = b1.y - b2.y
                         const d = Math.hypot(dx, dy) || 0.01
-                        const minD = (b1.size + s2) * 0.5 + 18
+                        const minD = (b1.size + s2) * 0.5 + 10
                         if (d < minD) {
-                            const s = (minD - d) / minD
+                            const penetration = minD - d
+                            const s = penetration / minD
                             fx += (dx / d) * s * REPULSE
                             fy += (dy / d) * s * REPULSE
+                            // Positional correction: push b1 out of b2 immediately each frame
+                            const corr = penetration * 0.28
+                            b1.x += (dx / d) * corr
+                            b1.y += (dy / d) * corr
                         }
                     }
+                }
+            }
+
+            // Repulse bubbles from friend-connection badge positions
+            const bCx = b1.x + b1.size * 0.5
+            const bCy = b1.y + b1.size * 0.5
+            for (const badge of badgeObstacles) {
+                const dx = bCx - badge.x
+                const dy = bCy - badge.y
+                const d = Math.hypot(dx, dy) || 0.01
+                const minD = b1.size * 0.5 + BADGE_RADIUS
+                if (d < minD) {
+                    const penetration = minD - d
+                    const s = penetration / minD
+                    fx += (dx / d) * s * REPULSE
+                    fy += (dy / d) * s * REPULSE
+                    b1.x += (dx / d) * penetration * 0.35
+                    b1.y += (dy / d) * penetration * 0.35
                 }
             }
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckActivePunishments;
 use App\Http\Middleware\EnsureIsAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -26,7 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'admin' => EnsureIsAdmin::class,
+            'admin'       => EnsureIsAdmin::class,
+            'punishments' => CheckActivePunishments::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

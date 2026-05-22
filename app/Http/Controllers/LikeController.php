@@ -36,6 +36,36 @@ class LikeController extends Controller
         return $this->postResponse();
     }
 
+    public function reactorsPost(Post $post): JsonResponse
+    {
+        return $this->reactorsList($post);
+    }
+
+    public function reactorsCommunityPost(CommunityPost $post): JsonResponse
+    {
+        return $this->reactorsList($post);
+    }
+
+    private function reactorsList($model): JsonResponse
+    {
+        $likes = $model->likes()
+            ->with('user:id,name,username,avatar,avatar_color')
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'reactors' => $likes->map(fn ($like) => [
+                'id' => $like->user->id,
+                'name' => $like->user->name,
+                'username' => $like->user->username,
+                'avatar' => $like->user->avatar,
+                'avatar_color' => $like->user->avatar_color ?? '#009ac7',
+                'reaction_type' => $like->type,
+            ]),
+            'by_type' => $likes->groupBy('type')->map->count(),
+        ]);
+    }
+
     private function toggle($model): bool
     {
         $allowed = ['like', 'love', 'laugh', 'wow', 'sad'];

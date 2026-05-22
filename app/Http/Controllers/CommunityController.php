@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateCommunitySettingsRequest;
 use App\Models\Bubble;
 use App\Models\CommunityPost;
 use App\Models\User;
+use App\Services\AuditLogger;
+use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -47,6 +49,7 @@ class CommunityController extends Controller
                 'username' => $p->user->username,
                 'avatar_color' => $p->user->avatar_color ?? '#009ac7',
                 'avatar' => $p->user->avatar,
+                'role' => $p->user->role,
             ],
             'isOwn' => auth()->check() && auth()->id() === $p->user_id,
             'isCreator' => $p->user_id === $bubble->user_id,
@@ -82,9 +85,14 @@ class CommunityController extends Controller
             ->toArray();
 
         $isOwn = auth()->check() && auth()->id() === $bubble->user_id;
+        $authUser = auth()->user();
+        $canModerate = $authUser && $authUser->canModerateCommunity($bubble);
+        $canManage   = $authUser && $authUser->canManageCommunity($bubble);
 
         return Inertia::render('Community/Show', [
-            'isOwn' => $isOwn,
+            'isOwn'       => $isOwn,
+            'canModerate' => $canModerate,
+            'canManage'   => $canManage,
             'isMember' => $isOwn || (auth()->check() && $bubble->memberships()->where('user_id', auth()->id())->exists()),
             'community' => [
                 'id' => $bubble->id,
@@ -132,6 +140,10 @@ class CommunityController extends Controller
 
         $bubble->update($data);
 
+        AuditLogger::log('community.settings_updated', 'community', $bubble, [
+            'fields_changed' => array_keys($data),
+        ], $bubble->id);
+
         return back()->with('status', 'community-updated');
     }
 
@@ -139,6 +151,11 @@ class CommunityController extends Controller
     {
         $bubble = Bubble::findOrFail($id);
         Gate::authorize('manage', $bubble);
+
+        AuditLogger::log('community.deleted', 'community', null, [
+            'community_id' => $bubble->id,
+            'label' => $bubble->label,
+        ], $bubble->id);
 
         $bubble->delete();
 
@@ -149,6 +166,8 @@ class CommunityController extends Controller
     {
         $bubble = Bubble::findOrFail($id);
         $bubble->memberships()->syncWithoutDetaching([auth()->id()]);
+
+        AuditLogger::log('community.joined', 'community', $bubble, [], $bubble->id);
 
         return back();
     }
@@ -163,11 +182,22 @@ class CommunityController extends Controller
 
         $bubble->memberships()->detach(auth()->id());
 
+        AuditLogger::log('community.left', 'community', $bubble, [], $bubble->id);
+
         return back();
     }
 
     public function store(StoreCommunityPostRequest $request, int $id): RedirectResponse
     {
+        $user   = $request->user();
+        $bubble = Bubble::findOrFail($id);
+
+        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
+        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
+        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
+        abort_if($user->isBannedFromCommunity($bubble), 403, 'Estás banido desta comunidade.');
+        abort_if($user->isMutedInCommunity($bubble), 403, 'Estás em silêncio nesta comunidade.');
+
         $imageUrl = null;
         $imagePid = null;
         $videoUrl = null;
@@ -177,7 +207,7 @@ class CommunityController extends Controller
             ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
                 $request->file('image'),
                 'bubbles/posts',
-                ['transformation' => ['width' => 1200, 'height' => 800, 'crop' => 'limit', 'fetch_format' => 'auto', 'quality' => 'auto']]
+                ImageUploadPresets::post()
             );
         }
 
@@ -188,8 +218,7 @@ class CommunityController extends Controller
             );
         }
 
-        $bubble = Bubble::findOrFail($id);
-        $bubble->communityPosts()->create([
+        $communityPost = $bubble->communityPosts()->create([
             'user_id' => auth()->id(),
             'content' => $request->content,
             'image' => $imageUrl,
@@ -197,6 +226,11 @@ class CommunityController extends Controller
             'video' => $videoUrl,
             'video_public_id' => $videoPid,
         ]);
+
+        AuditLogger::log('community_post.created', 'content', $communityPost, [
+            'has_image' => $imageUrl !== null,
+            'has_video' => $videoUrl !== null,
+        ], $bubble->id);
 
         return back();
     }
@@ -208,17 +242,26 @@ class CommunityController extends Controller
         $data = $request->validate(['content' => 'required|string|min:1|max:1000']);
         $post->update(['content' => $data['content']]);
 
+        AuditLogger::log('community_post.updated', 'content', $post, [], $id);
+
         return response()->json(['content' => $post->content]);
     }
 
-    public function destroy(int $id, CommunityPost $post): RedirectResponse
+    public function destroy(int $id, CommunityPost $post): JsonResponse
     {
         Gate::authorize('delete', $post);
-        $this->deleteCloudinaryImage($post->image_public_id);
-        $this->deleteCloudinaryVideo($post->video_public_id);
+
+        $imagePid = $post->image_public_id;
+        $videoPid = $post->video_public_id;
+
+        AuditLogger::log('community_post.deleted', 'content', $post, [], $id);
+
         $post->delete();
 
-        return back();
+        app()->terminating(fn () => $this->deleteCloudinaryImage($imagePid));
+        app()->terminating(fn () => $this->deleteCloudinaryVideo($videoPid));
+
+        return response()->json(['ok' => true]);
     }
 
     public function uploadImage(Request $request, int $id): RedirectResponse
@@ -229,11 +272,11 @@ class CommunityController extends Controller
 
         $this->deleteCloudinaryImage($bubble->community_image_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('image'), 'bubbles/communities', [
-            'public_id' => 'community_img_'.$id,
-            'overwrite' => true,
-            'transformation' => ['width' => 300, 'height' => 300, 'crop' => 'fill', 'fetch_format' => 'auto', 'quality' => 'auto'],
-        ]);
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
+            $request->file('image'),
+            'bubbles/communities',
+            ImageUploadPresets::communityImage($id)
+        );
 
         $bubble->update(['community_image' => $url, 'community_image_public_id' => $pid]);
 
@@ -248,14 +291,36 @@ class CommunityController extends Controller
 
         $this->deleteCloudinaryImage($bubble->community_banner_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('banner'), 'bubbles/communities', [
-            'public_id' => 'community_banner_'.$id,
-            'overwrite' => true,
-            'transformation' => ['width' => 1400, 'height' => 500, 'crop' => 'fill', 'fetch_format' => 'auto', 'quality' => 'auto'],
-        ]);
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
+            $request->file('banner'),
+            'bubbles/communities',
+            ImageUploadPresets::communityBanner($id)
+        );
 
         $bubble->update(['community_banner' => $url, 'community_banner_public_id' => $pid]);
 
         return back();
+    }
+
+    public function userCommunities(): Response
+    {
+        $user = auth()->user();
+
+        $communities = $user->communities()
+            ->withCount('memberships')
+            ->get()
+            ->map(fn ($b) => [
+                'id'      => $b->id,
+                'label'   => $b->label,
+                'title'   => $b->community_title ?: $b->label,
+                'color'   => $b->color ?? '#009ac7',
+                'image'   => $b->community_image,
+                'members' => $b->memberships_count,
+            ])
+            ->values();
+
+        return Inertia::render('Communities/Index', [
+            'communities' => $communities,
+        ]);
     }
 }

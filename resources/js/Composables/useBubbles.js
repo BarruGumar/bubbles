@@ -36,21 +36,28 @@ export function useBubbles() {
         try {
             const { data } = await axios.get('/api/bubbles')
             if (Array.isArray(data) && data.length > 0) {
-                bubbles.value = data.map((b) =>
-                    makeLocal({
+                const cx = window.innerWidth / 2
+                const cy = window.innerHeight / 2
+                bubbles.value = data.map((b, i) => {
+                    const size = sizeFromMembers(b.members)
+                    const angle = (i / data.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.6
+                    const dist = 20 + Math.random() * 50
+                    return makeLocal({
                         id: b.id,
-                        x: b.x ?? Math.random() * (window.innerWidth - 200) + 100,
-                        y: b.y ?? Math.random() * (window.innerHeight - 200) + 100,
+                        x: cx - size / 2 + Math.cos(angle) * dist,
+                        y: cy - size / 2 + Math.sin(angle) * dist,
                         label: b.label,
                         color: b.color ?? '#009ac7',
-                        size: sizeFromMembers(b.members),
+                        size,
                         members: b.members ?? 0,
                         isMember: b.is_member ?? false,
                         image: b.community_image ?? null,
                         avatars: b.avatars ?? [],
                         persisted: true,
-                    }),
-                )
+                        vx: Math.cos(angle) * 1.1,
+                        vy: Math.sin(angle) * 1.1,
+                    })
+                })
             } else {
                 bubbles.value = []
             }

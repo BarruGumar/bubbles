@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     modelValue: { type: Boolean, required: true },
@@ -9,6 +10,8 @@ const props = defineProps({
     communityBannerPreview: { type: String, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'image-file-selected', 'banner-file-selected']);
+
+const { playSfx } = useAudio();
 
 const PALETTE = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b', '#e0a040', '#6b9bdf'];
 
@@ -61,6 +64,7 @@ function onBannerChange(e) {
 }
 
 function saveSettings() {
+    playSfx('send');
     editSaving.value = true;
     router.put(
         route('community.update', props.community.id),
@@ -126,7 +130,7 @@ function deleteCommunity() {
             >
                 <!-- Header -->
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px">
-                    <p style="font-size: 16px; font-weight: 900; color: #1a3a4a; margin: 0; letter-spacing: -0.02em">
+                    <p style="font-size: 16px; font-weight: 900; color: #3a6478; margin: 0; letter-spacing: -0.02em">
                         Editar comunidade
                     </p>
                     <button
@@ -388,7 +392,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 box-sizing: border-box;
@@ -421,7 +425,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 box-sizing: border-box;
@@ -454,7 +458,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 box-sizing: border-box;
@@ -488,7 +492,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 resize: vertical;
@@ -527,7 +531,7 @@ function deleteCommunity() {
                                 border-radius: 10px;
                                 padding: 10px 14px;
                                 font-size: 13px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 resize: vertical;

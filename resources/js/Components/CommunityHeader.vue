@@ -2,16 +2,20 @@
 import { computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import { clImg } from '@/Composables/useCloudinary';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     community: { type: Object, required: true },
     isOwn: { type: Boolean, default: false },
+    canModerate: { type: Boolean, default: false },
+    canManage: { type: Boolean, default: false },
     isMember: { type: Boolean, default: false },
     authUser: { type: Object, default: null },
     imagePreview: { type: String, default: null },
     bannerPreview: { type: String, default: null },
 });
 const emit = defineEmits(['open-edit']);
+const { playSfx } = useAudio();
 
 const activityLevel = computed(() => {
     const n = props.community.recent_posts_count ?? 0;
@@ -22,10 +26,12 @@ const activityLevel = computed(() => {
 });
 
 function joinCommunity() {
+    playSfx('join');
     router.post(route('community.join', props.community.id), {}, { preserveScroll: true });
 }
 
 function leaveCommunity() {
+    playSfx('leave');
     router.delete(route('community.leave', props.community.id), { preserveScroll: true });
 }
 </script>
@@ -117,7 +123,7 @@ function leaveCommunity() {
                         style="
                             font-size: 22px;
                             font-weight: 900;
-                            color: #1a3a4a;
+                            color: #3a6478;
                             margin: 0 0 3px;
                             letter-spacing: -0.02em;
                         "
@@ -197,6 +203,32 @@ function leaveCommunity() {
                     >
                         ✦ Criador
                     </div>
+                    <Link
+                        :href="route('community.members', community.id)"
+                        style="
+                            padding: 9px 16px;
+                            border-radius: 99px;
+                            border: none;
+                            background: #f0f8ff;
+                            color: #5a7a8a;
+                            font-size: 12px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            white-space: nowrap;
+                            text-decoration: none;
+                            transition: all 0.2s;
+                        "
+                        @mouseenter="
+                            $event.currentTarget.style.background = '#e0f0fc';
+                            $event.currentTarget.style.color = '#009ac7';
+                        "
+                        @mouseleave="
+                            $event.currentTarget.style.background = '#f0f8ff';
+                            $event.currentTarget.style.color = '#5a7a8a';
+                        "
+                    >
+                        👥 Membros
+                    </Link>
                     <button
                         @click="emit('open-edit')"
                         style="
@@ -226,6 +258,36 @@ function leaveCommunity() {
 
                 <!-- Member join/leave -->
                 <template v-else-if="authUser && !isOwn">
+                    <!-- Owner/admin members link (non-owner path) -->
+                    <Link
+                        v-if="canManage && !isOwn"
+                        :href="route('community.members', community.id)"
+                        style="
+                            padding: 9px 16px;
+                            border-radius: 99px;
+                            border: none;
+                            background: #f0f8ff;
+                            color: #5a7a8a;
+                            font-size: 12px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            white-space: nowrap;
+                            text-decoration: none;
+                            align-self: flex-start;
+                            margin-top: 4px;
+                            transition: all 0.2s;
+                        "
+                        @mouseenter="
+                            $event.currentTarget.style.background = '#e0f0fc';
+                            $event.currentTarget.style.color = '#009ac7';
+                        "
+                        @mouseleave="
+                            $event.currentTarget.style.background = '#f0f8ff';
+                            $event.currentTarget.style.color = '#5a7a8a';
+                        "
+                    >
+                        👥 Membros
+                    </Link>
                     <button
                         v-if="!isMember"
                         :style="{

@@ -47,6 +47,10 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:6,1')
         ->name('verification.send');
 
+    Route::get('auth/verification-status', fn () => response()->json([
+        'verified' => (bool) auth()->user()?->hasVerifiedEmail(),
+    ]))->name('verification.status');
+
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
 

@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     comments: { type: Array, required: true },
@@ -10,10 +11,12 @@ const props = defineProps({
 });
 
 const commentText = ref('');
+const { playSfx } = useAudio();
 
 function submitComment() {
     const text = commentText.value.trim();
     if (!text) return;
+    playSfx('send');
     router.post(
         props.commentRoute,
         { content: text },
@@ -28,6 +31,7 @@ function submitComment() {
 }
 
 function deleteComment(commentId) {
+    playSfx('off');
     router.delete(route('comments.destroy', commentId), {
         preserveScroll: true,
         preserveState: true,
@@ -82,10 +86,10 @@ function formatInitial(name) {
                     <Link
                         v-if="c.author.username"
                         :href="route('profile.show', c.author.username)"
-                        style="font-size: 12px; font-weight: 700; color: #1a3a4a; text-decoration: none"
+                        style="font-size: 12px; font-weight: 700; color: #3a6478; text-decoration: none"
                         >{{ c.author.name }}</Link
                     >
-                    <span v-else style="font-size: 12px; font-weight: 700; color: #1a3a4a">{{ c.author.name }}</span>
+                    <span v-else style="font-size: 12px; font-weight: 700; color: #3a6478">{{ c.author.name }}</span>
                     <p
                         style="
                             font-size: 13px;
@@ -173,7 +177,7 @@ function formatInitial(name) {
                         border-radius: 20px;
                         padding: 7px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition: border-color 0.2s;

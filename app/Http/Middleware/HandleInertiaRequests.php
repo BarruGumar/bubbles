@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Announcement;
 use App\Models\Friend;
 use App\Models\Message;
 use Illuminate\Http\Request;
@@ -26,6 +27,44 @@ class HandleInertiaRequests extends Middleware
                 'status' => $request->session()->get('status'),
                 'error' => $request->session()->get('error'),
             ],
+            'new_punishment' => function () use ($user) {
+                if (! $user) {
+                    return null;
+                }
+                // Show unnotified punishments even if expired — user deserves to know it happened.
+                // Exclude only revoked ones (admin undid it, no need to alarm the user).
+                $p = $user->punishments()
+                    ->whereNull('notified_at')
+                    ->whereNull('revoked_at')
+                    ->latest()
+                    ->first();
+                if (! $p) {
+                    return null;
+                }
+                return [
+                    'id'      => $p->id,
+                    'type'    => $p->type,
+                    'reason'  => $p->reason,
+                    'ends_at' => $p->ends_at?->toIso8601String(),
+                ];
+            },
+            'active_announcements' => function () use ($user) {
+                if (! $user) {
+                    return [];
+                }
+
+                return Announcement::active()
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(fn ($a) => [
+                        'id'         => $a->id,
+                        'title'      => $a->title,
+                        'body'       => $a->body,
+                        'type'       => $a->type,
+                        'created_at' => $a->created_at->toIso8601String(),
+                    ])
+                    ->all();
+            },
             'auth' => [
                 'user' => $user,
                 'pending_friends_count' => $user
@@ -46,7 +85,9 @@ class HandleInertiaRequests extends Middleware
                         ->count()
                     : 0,
                 'unread_notifications_count' => $user
-                    ? $user->unreadNotifications()->count()
+                    ? $user->unreadNotifications()
+                        ->where('type', '!=', \App\Notifications\MessageReceived::class)
+                        ->count()
                     : 0,
             ],
         ];

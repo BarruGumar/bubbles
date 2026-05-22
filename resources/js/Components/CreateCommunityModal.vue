@@ -1,7 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue';
+import { useAudio } from '@/Composables/useAudio';
 
 const emit = defineEmits(['create', 'cancel']);
+
+const { playSfx } = useAudio();
 
 const PALETTE = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b', '#e0a040', '#6b9bdf'];
 
@@ -42,11 +45,17 @@ function validateStep1() {
 
 function next() {
     if (step.value === 1 && !validateStep1()) return;
-    if (step.value < STEPS) step.value++;
+    if (step.value < STEPS) {
+        playSfx('pageChange');
+        step.value++;
+    }
 }
 
 function prev() {
-    if (step.value > 1) step.value--;
+    if (step.value > 1) {
+        playSfx('pageChange');
+        step.value--;
+    }
 }
 
 function submit() {
@@ -70,6 +79,7 @@ function submit() {
 }
 
 function cancel() {
+    playSfx('off');
     emit('cancel');
 }
 
@@ -119,7 +129,7 @@ const guidelineLines = computed(() =>
                             style="
                                 font-size: 18px;
                                 font-weight: 900;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 margin: 0;
                                 letter-spacing: -0.02em;
                             "
@@ -252,7 +262,7 @@ const guidelineLines = computed(() =>
                                         border-radius: 12px;
                                         padding: 11px 14px;
                                         font-size: 14px;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         outline: none;
                                         font-family: inherit;
                                         transition: border-color 0.2s;
@@ -396,7 +406,7 @@ const guidelineLines = computed(() =>
                                         border-radius: 12px;
                                         padding: 11px 14px;
                                         font-size: 13px;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         outline: none;
                                         font-family: inherit;
                                         transition: border-color 0.2s;
@@ -433,7 +443,7 @@ const guidelineLines = computed(() =>
                                         border-radius: 12px;
                                         padding: 11px 14px;
                                         font-size: 13px;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         outline: none;
                                         font-family: inherit;
                                         transition: border-color 0.2s;
@@ -479,7 +489,7 @@ const guidelineLines = computed(() =>
                                         border-radius: 12px;
                                         padding: 11px 14px;
                                         font-size: 13px;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         outline: none;
                                         font-family: inherit;
                                         resize: vertical;
@@ -535,7 +545,7 @@ const guidelineLines = computed(() =>
                                     border-radius: 12px;
                                     padding: 11px 14px;
                                     font-size: 13px;
-                                    color: #1a3a4a;
+                                    color: #3a6478;
                                     outline: none;
                                     font-family: inherit;
                                     resize: vertical;
@@ -614,7 +624,7 @@ const guidelineLines = computed(() =>
                                         style="
                                             font-size: 15px;
                                             font-weight: 800;
-                                            color: #1a3a4a;
+                                            color: #3a6478;
                                             margin: 0 0 2px;
                                             overflow: hidden;
                                             text-overflow: ellipsis;

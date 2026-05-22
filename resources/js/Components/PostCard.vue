@@ -1,14 +1,18 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
+
+const emit = defineEmits(['deleted']);
 import axios from 'axios';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
+import { useAudio } from '@/Composables/useAudio';
 import PostImageLightbox from '@/Components/PostImageLightbox.vue';
 import PostReactionBar from '@/Components/PostReactionBar.vue';
 import PostComments from '@/Components/PostComments.vue';
 import PostEditForm from '@/Components/PostEditForm.vue';
 import PostReportForm from '@/Components/PostReportForm.vue';
+import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
 
 const props = defineProps({
     post: { type: Object, required: true },
@@ -18,6 +22,7 @@ const props = defineProps({
     canDelete: { type: Boolean, default: false },
     isCreator: { type: Boolean, default: false },
     likeRoute: { type: String, required: true },
+    reactorsRoute: { type: String, default: null },
     commentRoute: { type: String, required: true },
     deleteRoute: { type: String, required: true },
     editRoute: { type: String, default: null },
@@ -27,6 +32,7 @@ const props = defineProps({
 });
 
 const { show: toast } = useToast();
+const { playSfx } = useAudio();
 
 // ── Edit ──────────────────────────────────────────────────────────
 const localContent = ref(props.post.content);
@@ -57,6 +63,7 @@ async function saveEdit() {
         return;
     }
     editLoading.value = true;
+    playSfx('send');
     try {
         await axios.patch(props.editRoute, { content: trimmed });
         localContent.value = trimmed;
@@ -72,8 +79,14 @@ async function saveEdit() {
 // ── Delete ────────────────────────────────────────────────────────
 const confirmDelete = ref(false);
 
-function doDelete() {
-    router.delete(props.deleteRoute, { preserveScroll: true });
+async function doDelete() {
+    playSfx('off');
+    emit('deleted', props.post.id);
+    try {
+        await axios.delete(props.deleteRoute);
+    } catch {
+        toast('Erro ao apagar. Tenta novamente.', 'error');
+    }
 }
 
 // ── Report ────────────────────────────────────────────────────────
@@ -90,8 +103,11 @@ async function submitReport() {
         showReport.value = false;
         reportText.value = '';
         toast('Denúncia enviada.');
-    } catch {
-        toast('Erro ao enviar denúncia.', 'error');
+    } catch (e) {
+        const msg = e?.response?.data?.errors?.reason?.[0]
+            ?? e?.response?.data?.message
+            ?? 'Erro ao enviar denúncia.';
+        toast(msg, 'error');
     } finally {
         reportSending.value = false;
     }
@@ -130,7 +146,14 @@ function formatInitial(name) {
             :href="route('community.show', community.id)"
             style="display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; text-decoration: none"
         >
+            <img
+                v-if="community.image"
+                :src="community.image"
+                :alt="community.title"
+                style="width: 18px; height: 18px; border-radius: 50%; object-fit: cover; flex-shrink: 0;"
+            />
             <div
+                v-else
                 :style="{
                     width: '18px',
                     height: '18px',
@@ -211,11 +234,12 @@ function formatInitial(name) {
                                 fontSize: '13px',
                                 fontWeight: '800',
                                 textDecoration: 'none',
-                                color: isCreator ? accentColor : '#1a3a4a',
+                                color: isCreator ? accentColor : '#3a6478',
                             }"
                         >
                             <span v-if="isCreator" style="margin-right: 2px">✦</span>{{ author.name }}
                         </component>
+                        <SiteOwnerBadge v-if="author.role === 'site_owner'" size="sm" />
                         <span
                             v-if="isCreator"
                             :style="{
@@ -426,6 +450,7 @@ function formatInitial(name) {
             :post="post"
             :auth-user="authUser"
             :like-route="likeRoute"
+            :reactors-route="reactorsRoute"
             :accent-color="accentColor"
             :comments-expanded="expandedComments"
             @toggle-comments="expandedComments = !expandedComments"

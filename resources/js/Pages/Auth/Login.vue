@@ -1,11 +1,15 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
-defineProps({
+const props = defineProps({
     canResetPassword: Boolean,
     status: String,
+    punishmentModal: { type: Object, default: null },
 });
+
+const banModalVisible = ref(!!props.punishmentModal);
 
 const form = useForm({
     email: '',
@@ -24,11 +28,12 @@ const submit = () => {
     <GuestLayout>
         <Head title="Entrar" />
 
-        <h2 style="font-weight: 800; font-size: 18px; color: #1a3a4a; margin-bottom: 4px">Bem-vindo de volta</h2>
+        <h2 style="font-weight: 800; font-size: 18px; color: #3a6478; margin-bottom: 4px">Bem-vindo de volta</h2>
         <p style="font-size: 12px; color: #8ba0b0; margin-bottom: 28px">Entra na tua conta Bubbles</p>
 
         <div
             v-if="status"
+            class="status-success"
             style="
                 background: #edfaf4;
                 border: 1px solid #2ea87e44;
@@ -66,7 +71,7 @@ const submit = () => {
                         border-radius: 11px;
                         padding: 11px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition: border-color 0.2s;
@@ -109,7 +114,7 @@ const submit = () => {
                         border-radius: 11px;
                         padding: 11px 14px;
                         font-size: 13px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         transition: border-color 0.2s;
@@ -158,4 +163,51 @@ const submit = () => {
             >
         </p>
     </GuestLayout>
+
+    <!-- ── Ban modal ─────────────────────────────────────────────── -->
+    <Transition name="ban-overlay">
+        <div
+            v-if="banModalVisible && punishmentModal"
+            style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.6);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px"
+        >
+            <Transition name="ban-pop" appear>
+                <div style="background:white;border-radius:20px;max-width:400px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.25);overflow:hidden">
+                    <!-- Header -->
+                    <div style="background:#991b1b;padding:22px 24px;display:flex;align-items:center;gap:14px">
+                        <span style="font-size:32px;line-height:1">⛔</span>
+                        <div>
+                            <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.08em;margin:0 0 2px">Acesso negado</p>
+                            <h2 style="font-size:18px;font-weight:800;color:white;margin:0">Conta banida</h2>
+                        </div>
+                    </div>
+                    <!-- Body -->
+                    <div style="padding:24px">
+                        <p style="font-size:13px;color:#64748b;margin:0 0 16px;line-height:1.5">
+                            A tua conta foi <strong style="color:#991b1b">permanentemente banida</strong> da plataforma e não podes iniciar sessão.
+                        </p>
+                        <p style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.07em;margin:0 0 8px">Motivo</p>
+                        <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:14px 16px;margin-bottom:20px">
+                            <p style="font-size:14px;color:#374151;margin:0;line-height:1.55">
+                                {{ punishmentModal.reason || 'Sem motivo especificado.' }}
+                            </p>
+                        </div>
+                        <button
+                            @click="banModalVisible = false"
+                            style="width:100%;padding:13px;border-radius:12px;background:#991b1b;border:none;color:white;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px #991b1b55"
+                        >
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            </Transition>
+        </div>
+    </Transition>
 </template>
+
+<style scoped>
+.ban-overlay-enter-active, .ban-overlay-leave-active { transition: opacity 0.2s ease; }
+.ban-overlay-enter-from, .ban-overlay-leave-to { opacity: 0; }
+.ban-pop-enter-active { transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.ban-pop-leave-active { transition: opacity 0.18s ease, transform 0.2s ease; }
+.ban-pop-enter-from, .ban-pop-leave-to { opacity: 0; transform: scale(0.9) translateY(12px); }
+</style>

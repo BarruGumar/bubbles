@@ -4,10 +4,15 @@ import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PostCard from '@/Components/PostCard.vue';
 import PostCardSkeleton from '@/Components/PostCardSkeleton.vue';
+import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
+import { useClipboardImage } from '@/Composables/useClipboardImage';
+import { compressImage } from '@/Composables/useImageCompressor';
+import { useAudio } from '@/Composables/useAudio';
 
 const { show: toast } = useToast();
+const { playSfx } = useAudio();
 
 const props = defineProps({
     profileUser: Object,
@@ -65,7 +70,7 @@ const isVideoMedia = ref(false);
 const uploadProgress = ref(0);
 const uploadingServer = ref(false);
 
-function onMediaChange(e) {
+async function onMediaChange(e) {
     const file = e.target.files[0];
     if (!file) return;
     if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
@@ -73,12 +78,14 @@ function onMediaChange(e) {
         postForm.image = null;
         postForm.video = file;
         isVideoMedia.value = true;
+        mediaPreview.value = URL.createObjectURL(file);
     } else {
         postForm.video = null;
-        postForm.image = file;
         isVideoMedia.value = false;
+        mediaPreview.value = URL.createObjectURL(file);
+        postForm.image = file;
+        postForm.image = await compressImage(file);
     }
-    mediaPreview.value = URL.createObjectURL(file);
 }
 
 function removeMedia() {
@@ -90,12 +97,28 @@ function removeMedia() {
     if (mediaInput.value) mediaInput.value.value = '';
 }
 
+async function setMediaFile(file) {
+    if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
+    postForm.video = null;
+    isVideoMedia.value = false;
+    mediaPreview.value = URL.createObjectURL(file);
+    postForm.image = file;
+    postForm.image = await compressImage(file);
+}
+
+const { handlePaste: handlePostPaste } = useClipboardImage({
+    onImage: setMediaFile,
+    maxKB: 4096,
+    onError: (msg) => toast(msg, 'error'),
+});
+
 onUnmounted(() => {
     if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
 });
 
 function submitPost() {
     if (!postForm.content.trim()) return;
+    playSfx('send');
     uploadProgress.value = 0;
     uploadingServer.value = false;
     postForm.post(route('posts.store'), {
@@ -106,6 +129,7 @@ function submitPost() {
             if (uploadProgress.value >= 100) uploadingServer.value = true;
         },
         onSuccess: () => {
+            if (usePage().props.flash?.error) return;
             postForm.reset('content', 'image', 'video');
             removeMedia();
             uploadProgress.value = 0;
@@ -137,6 +161,7 @@ function acceptFriendRequest() {
 }
 
 function removeFriend() {
+    playSfx('leave');
     router.delete(route('friends.reject', props.friendId), { preserveScroll: true });
 }
 
@@ -144,28 +169,6 @@ function startConversation() {
     router.post(route('conversations.store'), { recipient_id: props.profileUser.id });
 }
 
-// ── Community network layout ───────────────────────────────────────
-// All coordinates live in a 580×auto virtual canvas (matches card inner width).
-const BUBBLE_R = 32; // community bubble radius in the virtual canvas
-
-function ringR(n) {
-    if (n === 0) return 80;
-    const minArc = 2 * BUBBLE_R + 20; // min arc between adjacent bubble edges
-    return Math.max(80, Math.min((minArc * n) / (2 * Math.PI), 290 - BUBBLE_R - 16));
-}
-
-const communityPos = computed(() => {
-    const n = props.communities.length;
-    const rR = ringR(n);
-    const cy = rR + BUBBLE_R + 24; // vertical center of the ring
-    return props.communities.map((c, i) => {
-        const angle = (i / n) * 2 * Math.PI - Math.PI / 2; // start from top
-        return { ...c, bx: 290 + Math.cos(angle) * rR, by: cy + Math.sin(angle) * rR };
-    });
-});
-
-const hubPos = computed(() => ({ x: 290, y: ringR(props.communities.length) + BUBBLE_R + 24 }));
-const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 2 + 16);
 </script>
 
 <template>
@@ -196,37 +199,47 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                 >
                     <!-- Avatar overlapping -->
                     <div style="position: absolute; bottom: -45px; left: 32px; z-index: 5">
-                        <img
-                            v-if="profileUser.avatar"
-                            :src="clImg(profileUser.avatar, 200, 200, 'fill', 'face')"
-                            :style="{
-                                width: '90px',
-                                height: '90px',
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                                border: '4px solid white',
-                                boxShadow: `0 4px 20px ${profileUser.avatar_color}66`,
-                                display: 'block',
-                            }"
-                        />
-                        <div
-                            v-else
-                            :style="{
-                                width: '90px',
-                                height: '90px',
-                                borderRadius: '50%',
-                                background: profileUser.avatar_color,
-                                border: '4px solid white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '30px',
-                                fontWeight: '900',
-                                color: 'white',
-                                boxShadow: `0 4px 20px ${profileUser.avatar_color}66`,
-                            }"
-                        >
-                            {{ formatInitial(profileUser.name) }}
+                        <div style="position: relative; display: inline-block">
+                            <img
+                                v-if="profileUser.avatar"
+                                :src="clImg(profileUser.avatar, 200, 200, 'fill', 'face')"
+                                :style="{
+                                    width: '90px',
+                                    height: '90px',
+                                    borderRadius: '50%',
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                    border: profileUser.role === 'site_owner' ? '4px solid transparent' : '4px solid white',
+                                    boxShadow: profileUser.role === 'site_owner'
+                                        ? '0 0 0 3px #d4a017, 0 4px 24px #d4a01755'
+                                        : `0 4px 20px ${profileUser.avatar_color}66`,
+                                }"
+                            />
+                            <div
+                                v-else
+                                :style="{
+                                    width: '90px',
+                                    height: '90px',
+                                    borderRadius: '50%',
+                                    background: profileUser.avatar_color,
+                                    border: profileUser.role === 'site_owner' ? '4px solid transparent' : '4px solid white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '30px',
+                                    fontWeight: '900',
+                                    color: 'white',
+                                    boxShadow: profileUser.role === 'site_owner'
+                                        ? '0 0 0 3px #d4a017, 0 4px 24px #d4a01755'
+                                        : `0 4px 20px ${profileUser.avatar_color}66`,
+                                }"
+                            >
+                                {{ formatInitial(profileUser.name) }}
+                            </div>
+                            <span
+                                v-if="profileUser.role === 'site_owner'"
+                                style="position: absolute; bottom: 0; right: 0; font-size: 20px; line-height: 1"
+                            >👑</span>
                         </div>
                     </div>
                 </div>
@@ -254,9 +267,24 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                         "
                     >
                         <div>
-                            <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 2px">
-                                {{ profileUser.name }}
-                            </h1>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 2px">
+                                <h1
+                                    :style="{
+                                        fontSize: '22px',
+                                        fontWeight: '900',
+                                        margin: '0',
+                                        ...(profileUser.role === 'site_owner' ? {
+                                            background: 'linear-gradient(135deg, #d4a017 0%, #c084fc 100%)',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                            backgroundClip: 'text',
+                                        } : { color: '#3a6478' }),
+                                    }"
+                                >
+                                    {{ profileUser.name }}
+                                </h1>
+                                <SiteOwnerBadge v-if="profileUser.role === 'site_owner'" size="md" />
+                            </div>
                             <p style="font-size: 13px; color: #009ac7; font-weight: 600; margin: 0">
                                 @{{ profileUser.username }}
                             </p>
@@ -478,7 +506,7 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
 
                     <div style="display: flex; gap: 24px; margin-top: 18px">
                         <div>
-                            <span style="font-size: 18px; font-weight: 800; color: #1a3a4a">{{
+                            <span style="font-size: 18px; font-weight: 800; color: #3a6478">{{
                                 profileUser.posts_count
                             }}</span>
                             <span style="font-size: 11px; color: #8ba0b0; font-weight: 600; margin-left: 5px"
@@ -543,155 +571,68 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                     Comunidades · {{ communities.length }}
                 </p>
 
-                <div style="position: relative; width: 100%" :style="{ paddingTop: (netH / 580) * 100 + '%' }">
-                    <svg
-                        :viewBox="`0 0 580 ${netH}`"
-                        preserveAspectRatio="xMidYMid meet"
-                        style="
-                            position: absolute;
-                            inset: 0;
-                            width: 100%;
-                            height: 100%;
-                            pointer-events: none;
-                            overflow: visible;
-                        "
-                    >
-                        <line
-                            v-for="c in communityPos"
-                            :key="'h-' + c.id"
-                            :x1="hubPos.x"
-                            :y1="hubPos.y"
-                            :x2="c.bx"
-                            :y2="c.by"
-                            :stroke="c.color"
-                            stroke-opacity="0.28"
-                            stroke-width="1.5"
-                            stroke-dasharray="5 4"
-                        />
-                        <template v-if="communityPos.length >= 3">
-                            <line
-                                v-for="(c, i) in communityPos"
-                                :key="'r-' + c.id"
-                                :x1="c.bx"
-                                :y1="c.by"
-                                :x2="communityPos[(i + 1) % communityPos.length].bx"
-                                :y2="communityPos[(i + 1) % communityPos.length].by"
-                                :stroke="c.color"
-                                stroke-opacity="0.14"
-                                stroke-width="1"
-                            />
-                        </template>
-                    </svg>
-
-                    <div
-                        style="position: absolute; transform: translate(-50%, -50%); z-index: 2"
-                        :style="{ left: (hubPos.x / 580) * 100 + '%', top: (hubPos.y / netH) * 100 + '%' }"
-                    >
-                        <img
-                            v-if="profileUser.avatar"
-                            :src="profileUser.avatar"
-                            :style="{
-                                width: '46px',
-                                height: '46px',
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                                border: '3px solid white',
-                                display: 'block',
-                                boxShadow: `0 4px 14px ${profileUser.avatar_color}55`,
-                            }"
-                        />
-                        <div
-                            v-else
-                            :style="{
-                                width: '46px',
-                                height: '46px',
-                                borderRadius: '50%',
-                                background: `radial-gradient(circle at 38% 32%, ${profileUser.avatar_color}ee, ${profileUser.avatar_color})`,
-                                border: '3px solid white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '17px',
-                                fontWeight: '900',
-                                color: 'white',
-                                boxShadow: `0 4px 14px ${profileUser.avatar_color}55`,
-                            }"
-                        >
-                            {{ formatInitial(profileUser.name) }}
-                        </div>
-                    </div>
-
+                <div style="display: flex; padding-top: 12px; gap: 6px;">
                     <Link
-                        v-for="c in communityPos"
+                        v-for="c in communities.slice(0, 4)"
                         :key="c.id"
                         :href="route('community.show', c.id)"
-                        style="position: absolute; transform: translate(-50%, -50%); text-decoration: none; z-index: 3"
-                        :style="{ left: (c.bx / 580) * 100 + '%', top: (c.by / netH) * 100 + '%' }"
+                        style="flex: 1; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0;"
                     >
                         <div
                             :title="c.title !== c.label ? c.title : undefined"
                             :style="{
-                                width: '64px',
-                                height: '64px',
+                                width: '68px',
+                                height: '68px',
                                 borderRadius: '50%',
                                 backgroundImage: c.image
                                     ? `radial-gradient(circle at 38% 32%, ${c.color}55 0%, ${c.color}99 100%), url('${c.image}')`
                                     : `radial-gradient(circle at 38% 32%, ${c.color}ee 0%, ${c.color} 60%)`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
                                 position: 'relative',
                                 overflow: 'hidden',
-                                cursor: 'pointer',
-                                boxShadow: `0 6px 20px ${c.color}55, 0 2px 6px ${c.color}33`,
+                                boxShadow: `0 4px 16px ${c.color}44, 0 2px 6px ${c.color}22`,
                                 transition: 'transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s',
+                                flexShrink: '0',
                             }"
-                            @mouseenter="
-                                (e) => {
-                                    e.currentTarget.style.transform = 'scale(1.13)';
-                                    e.currentTarget.style.boxShadow = `0 10px 30px ${c.color}77, 0 4px 12px ${c.color}44`;
-                                }
-                            "
-                            @mouseleave="
-                                (e) => {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                    e.currentTarget.style.boxShadow = `0 6px 20px ${c.color}55, 0 2px 6px ${c.color}33`;
-                                }
-                            "
+                            @mouseenter="e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = `0 8px 24px ${c.color}66, 0 3px 8px ${c.color}33`; }"
+                            @mouseleave="e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = `0 4px 16px ${c.color}44, 0 2px 6px ${c.color}22`; }"
                         >
-                            <div
-                                style="
-                                    position: absolute;
-                                    top: 7px;
-                                    left: 14%;
-                                    width: 72%;
-                                    height: 36%;
-                                    border-radius: 50%;
-                                    background: rgba(255, 255, 255, 0.22);
-                                    transform: rotate(-10deg);
-                                    pointer-events: none;
-                                "
-                            />
-                            <!-- Label -->
-                            <span
-                                style="
-                                    position: relative;
-                                    font-size: 9px;
-                                    font-weight: 800;
-                                    color: white;
-                                    text-align: center;
-                                    padding: 0 5px;
-                                    line-height: 1.25;
-                                    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-                                    word-break: break-word;
-                                    max-width: 100%;
-                                "
-                                >{{ c.label }}</span
-                            >
+                            <div style="position:absolute;top:7px;left:14%;width:72%;height:34%;border-radius:50%;background:rgba(255,255,255,0.22);transform:rotate(-10deg);pointer-events:none;" />
+                            <span style="position:relative;font-size:9px;font-weight:800;color:white;text-align:center;padding:0 5px;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.35);word-break:break-word;max-width:100%;display:flex;align-items:center;justify-content:center;height:100%;">{{ c.label }}</span>
                         </div>
+                        <span style="font-size: 11px; font-weight: 700; color: #5a7a8a; text-align: center; line-height: 1.2; word-break: break-word; width: 100%; display: block;">
+                            {{ c.title ?? c.label }}
+                        </span>
+                    </Link>
+
+                    <!-- Ver mais -->
+                    <Link
+                        v-if="communities.length > 4"
+                        :href="route('communities.index')"
+                        style="flex: 1; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0;"
+                    >
+                        <div
+                            style="
+                                width: 68px;
+                                height: 68px;
+                                border-radius: 50%;
+                                background: rgba(0,154,199,0.10);
+                                border: 2px dashed #009ac755;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 15px;
+                                color: #009ac7;
+                                font-weight: 800;
+                                transition: background .2s, transform .22s cubic-bezier(.34,1.56,.64,1);
+                                cursor: pointer;
+                                flex-shrink: 0;
+                            "
+                            @mouseenter="e => { e.currentTarget.style.background = 'rgba(0,154,199,0.18)'; e.currentTarget.style.transform = 'scale(1.08)'; }"
+                            @mouseleave="e => { e.currentTarget.style.background = 'rgba(0,154,199,0.10)'; e.currentTarget.style.transform = 'scale(1)'; }"
+                        >+{{ communities.length - 4 }}</div>
+                        <span style="font-size: 11px; font-weight: 700; color: #009ac7; text-align: center; line-height: 1.2;">Ver mais</span>
                     </Link>
                 </div>
             </div>
@@ -721,54 +662,55 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                 >
                     Amigos · {{ profileFriends.length }}
                 </p>
-                <div style="display: flex; flex-wrap: wrap; gap: 12px">
+                <div style="display: flex; gap: 6px;">
                     <Link
-                        v-for="f in profileFriends"
+                        v-for="f in profileFriends.slice(0, 4)"
                         :key="f.id"
                         :href="route('profile.show', f.username)"
-                        style="
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            gap: 6px;
-                            text-decoration: none;
-                            width: 60px;
-                        "
+                        style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; min-width: 0;"
                     >
                         <img
                             v-if="f.avatar"
                             :src="f.avatar"
                             :style="{
-                                width: '46px',
-                                height: '46px',
+                                width: '62px',
+                                height: '62px',
                                 borderRadius: '50%',
                                 objectFit: 'cover',
-                                border: `2px solid ${f.avatar_color}`,
-                                boxShadow: `0 2px 8px ${f.avatar_color}44`,
+                                border: `2.5px solid ${f.avatar_color}`,
+                                boxShadow: `0 3px 12px ${f.avatar_color}44`,
                                 display: 'block',
+                                flexShrink: '0',
+                                transition: 'transform .22s cubic-bezier(.34,1.56,.64,1)',
                             }"
+                            @mouseenter="$event.currentTarget.style.transform = 'scale(1.08)'"
+                            @mouseleave="$event.currentTarget.style.transform = 'scale(1)'"
                         />
                         <div
                             v-else
                             :style="{
-                                width: '46px',
-                                height: '46px',
+                                width: '62px',
+                                height: '62px',
                                 borderRadius: '50%',
                                 background: f.avatar_color,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '17px',
+                                fontSize: '22px',
                                 fontWeight: '800',
                                 color: 'white',
-                                boxShadow: `0 2px 8px ${f.avatar_color}44`,
+                                boxShadow: `0 3px 12px ${f.avatar_color}44`,
+                                flexShrink: '0',
+                                transition: 'transform .22s cubic-bezier(.34,1.56,.64,1)',
                             }"
+                            @mouseenter="$event.currentTarget.style.transform = 'scale(1.08)'"
+                            @mouseleave="$event.currentTarget.style.transform = 'scale(1)'"
                         >
                             {{ formatInitial(f.name) }}
                         </div>
                         <span
                             style="
-                                font-size: 10px;
+                                font-size: 11px;
                                 font-weight: 600;
                                 color: #4a6a7a;
                                 text-align: center;
@@ -779,6 +721,35 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                             "
                             >{{ f.name.split(' ')[0] }}</span
                         >
+                    </Link>
+
+                    <!-- Ver mais amigos -->
+                    <Link
+                        v-if="profileFriends.length > 4"
+                        :href="route('friends.index')"
+                        style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; min-width: 0;"
+                    >
+                        <div
+                            style="
+                                width: 62px;
+                                height: 62px;
+                                border-radius: 50%;
+                                background: rgba(0,154,199,0.10);
+                                border: 2px dashed #009ac755;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 15px;
+                                color: #009ac7;
+                                font-weight: 800;
+                                transition: background .2s, transform .22s cubic-bezier(.34,1.56,.64,1);
+                                cursor: pointer;
+                                flex-shrink: 0;
+                            "
+                            @mouseenter="e => { e.currentTarget.style.background = 'rgba(0,154,199,0.18)'; e.currentTarget.style.transform = 'scale(1.08)'; }"
+                            @mouseleave="e => { e.currentTarget.style.background = 'rgba(0,154,199,0.10)'; e.currentTarget.style.transform = 'scale(1)'; }"
+                        >+{{ profileFriends.length - 4 }}</div>
+                        <span style="font-size: 11px; font-weight: 700; color: #009ac7; text-align: center; line-height: 1.2;">Ver mais</span>
                     </Link>
                 </div>
             </div>
@@ -842,7 +813,7 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                                 border-radius: 12px;
                                 padding: 12px 14px;
                                 font-size: 14px;
-                                color: #1a3a4a;
+                                color: #3a6478;
                                 outline: none;
                                 font-family: inherit;
                                 resize: vertical;
@@ -852,6 +823,7 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                             @focus="$event.target.style.borderColor = '#009ac7'"
                             @blur="$event.target.style.borderColor = '#4ebcff33'"
                             @keydown.ctrl.enter="submitPost"
+                            @paste="handlePostPaste"
                         />
                         <div v-if="mediaPreview" style="margin-top: 10px; position: relative; display: inline-block">
                             <video
@@ -1042,10 +1014,12 @@ const netH = computed(() => (ringR(props.communities.length) + BUBBLE_R + 24) * 
                     :can-edit="isOwn"
                     :can-delete="isOwn"
                     :like-route="route('posts.like', post.id)"
+                    :reactors-route="route('posts.reactors', post.id)"
                     :comment-route="route('posts.comments.store', post.id)"
                     :delete-route="route('posts.destroy', post.id)"
                     :edit-route="route('posts.update', post.id)"
                     :report-route="!isOwn && authUser ? route('posts.report', post.id) : null"
+                    @deleted="localPosts = localPosts.filter(p => p.id !== $event)"
                 />
             </div>
 

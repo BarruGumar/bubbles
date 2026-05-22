@@ -1,16 +1,19 @@
 import { ref } from 'vue'
 
 const DRAG_THR = 5
+const TOUCH_THR = 14
 
 export function useDrag(onBubbleClick) {
     const dragging = ref(null)
     const dragMoved = ref(false)
+    let isTouchDrag = false
 
     function startDrag(bubble, e) {
         if (e.button !== 0) return
         e.preventDefault()
         e.stopPropagation()
         if (bubble.selected) return
+        isTouchDrag = false
         dragging.value = {
             id: bubble.id,
             ox: e.clientX - bubble.x,
@@ -22,8 +25,10 @@ export function useDrag(onBubbleClick) {
     }
 
     function startTouch(bubble, e) {
+        e.preventDefault()
         e.stopPropagation()
         if (bubble.selected) return
+        isTouchDrag = true
         const t = e.touches[0]
         dragging.value = {
             id: bubble.id,
@@ -39,7 +44,8 @@ export function useDrag(onBubbleClick) {
         if (!dragging.value) return
         const dx = clientX - dragging.value.sx
         const dy = clientY - dragging.value.sy
-        if (!dragMoved.value && Math.hypot(dx, dy) > DRAG_THR) dragMoved.value = true
+        const thr = isTouchDrag ? TOUCH_THR : DRAG_THR
+        if (!dragMoved.value && Math.hypot(dx, dy) > thr) dragMoved.value = true
         if (!dragMoved.value) return
         const b = bubbles.find((x) => x.id === dragging.value.id)
         if (!b) return

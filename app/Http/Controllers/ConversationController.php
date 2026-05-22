@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\Friend;
 use App\Models\Message;
 use App\Notifications\MessageReceived;
+use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +20,7 @@ class ConversationController extends Controller
 {
     use StoresImages;
 
-    private const PER_PAGE = 40;
+    private const PER_PAGE = 20;
 
     public function index(): Response
     {
@@ -45,12 +46,8 @@ class ConversationController extends Controller
             'last_read_at' => now(),
         ]);
 
-        $other = $conversation->participants()
-            ->where('users.id', '!=', auth()->id())
-            ->first();
-
         // Load last PER_PAGE messages; support paging older ones via ?before=id
-        $query = $conversation->messages()->with('user')->orderByDesc('id');
+        $query = $conversation->messages()->with(['user', 'replyTo.user'])->orderByDesc('id');
 
         $beforeId = $request->query('before');
         if ($beforeId) {
@@ -63,21 +60,17 @@ class ConversationController extends Controller
 
         $mapped = $messages->map(fn ($m) => $this->formatMessage($m));
 
+        // Skip the expensive conversation list query when Inertia only needs messages/hasMoreMessages
+        $partialData = $request->header('X-Inertia-Partial-Data', '');
+        $requestedProps = array_filter(array_map('trim', explode(',', $partialData)));
+        $skipConversations = !empty($requestedProps) && !in_array('conversations', $requestedProps);
+
         return Inertia::render('Chat/Index', [
-            'conversations' => $this->listConversations(),
-            'activeConversation' => [
-                'id' => $conversation->id,
-                'other_user' => $other ? [
-                    'id' => $other->id,
-                    'name' => $other->name,
-                    'username' => $other->username,
-                    'avatar' => $other->avatar,
-                    'avatar_color' => $other->avatar_color ?? '#009ac7',
-                ] : null,
-            ],
-            'messages' => $mapped->values(),
-            'hasMoreMessages' => $hasMore,
-            'friends' => [],
+            'conversations'      => $skipConversations ? [] : $this->listConversations(),
+            'activeConversation' => $this->formatConversation($conversation),
+            'messages'           => $mapped->values(),
+            'hasMoreMessages'    => $hasMore,
+            'friends'            => [],
         ]);
     }
 
@@ -103,8 +96,13 @@ class ConversationController extends Controller
         return redirect()->route('conversations.show', $conversation->id);
     }
 
-    public function storeMessage(StoreMessageRequest $request, Conversation $conversation): RedirectResponse
+    public function storeMessage(StoreMessageRequest $request, Conversation $conversation): JsonResponse
     {
+        $user = $request->user();
+        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
+        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
+        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
+
         abort_unless(
             $conversation->participants()->where('user_id', auth()->id())->exists(),
             403
@@ -112,13 +110,18 @@ class ConversationController extends Controller
 
         $imageUrl = null;
         if ($request->hasFile('image')) {
-            $imageUrl = $this->storeImage($request->file('image'), 'messages');
+            ['url' => $imageUrl] = $this->storeImageWithMeta(
+                $request->file('image'),
+                'messages',
+                ImageUploadPresets::message()
+            );
         }
 
         $message = $conversation->messages()->create([
             'user_id' => auth()->id(),
             'content' => $request->input('content'),
             'image_url' => $imageUrl,
+            'reply_to_id' => $request->input('reply_to_id'),
         ]);
 
         $conversation->update(['last_message_id' => $message->id]);
@@ -127,51 +130,106 @@ class ConversationController extends Controller
             'last_read_at' => now(),
         ]);
 
-        // Notify the other participant (not the sender)
-        $recipient = $conversation->participants()
+        // Notify all other participants (supports both direct and group)
+        $conversation->participants()
             ->where('users.id', '!=', auth()->id())
-            ->first();
-
-        if ($recipient) {
-            $recipient->notify(new MessageReceived(
+            ->get()
+            ->each(fn ($p) => $p->notify(new MessageReceived(
                 auth()->user(),
                 $conversation,
                 $message->content ?? '[imagem]',
-            ));
-        }
+            )));
 
-        return back();
+        $message->load(['user', 'replyTo.user']);
+
+        return response()->json(['message' => $this->formatMessage($message)]);
     }
 
     /**
      * Lightweight polling: return messages newer than ?after=id as JSON.
-     * Frontend polls this every ~12 s when the tab is visible.
+     * Frontend polls this every ~3 s when the tab is visible.
      */
     public function poll(Conversation $conversation, Request $request): JsonResponse
     {
+        $userId = auth()->id();
+
         abort_unless(
-            $conversation->participants()->where('user_id', auth()->id())->exists(),
+            DB::table('conversation_user')
+                ->where('conversation_id', $conversation->id)
+                ->where('user_id', $userId)
+                ->exists(),
             403
         );
 
         $afterId = (int) $request->query('after', 0);
 
         $messages = $conversation->messages()
-            ->with('user')
+            ->with(['user', 'replyTo.user'])
             ->where('id', '>', $afterId)
             ->orderBy('id')
             ->limit(50)
             ->get()
             ->map(fn ($m) => $this->formatMessage($m));
 
-        // Mark as read if there are new messages
         if ($messages->isNotEmpty()) {
-            $conversation->participants()->updateExistingPivot(auth()->id(), [
-                'last_read_at' => now(),
-            ]);
+            DB::table('conversation_user')
+                ->where('conversation_id', $conversation->id)
+                ->where('user_id', $userId)
+                ->update(['last_read_at' => now()]);
         }
 
-        return response()->json(['messages' => $messages]);
+        // For direct conversations only: return the other participant's last_read_at
+        // For groups this is always null (per-user read state shown differently in UI)
+        $otherReadAt = null;
+        if ($conversation->isDirect()) {
+            $otherReadAt = DB::table('conversation_user')
+                ->where('conversation_id', $conversation->id)
+                ->where('user_id', '!=', $userId)
+                ->value('last_read_at');
+        }
+
+        // Read typing state for other participants from cache (no DB query)
+        $otherUserIds = DB::table('conversation_user')
+            ->where('conversation_id', $conversation->id)
+            ->where('user_id', '!=', $userId)
+            ->pluck('user_id');
+
+        $typingUsers = $otherUserIds->map(function ($uid) use ($conversation) {
+            return cache()->get("typing:{$conversation->id}:{$uid}");
+        })->filter()->values();
+
+        return response()->json([
+            'messages' => $messages,
+            'other_last_read_at' => $otherReadAt
+                ? \Carbon\Carbon::parse($otherReadAt)->toISOString()
+                : null,
+            'typing_users' => $typingUsers,
+        ]);
+    }
+
+    public function typing(Request $request, Conversation $conversation): JsonResponse
+    {
+        $userId = auth()->id();
+
+        abort_unless(
+            DB::table('conversation_user')
+                ->where('conversation_id', $conversation->id)
+                ->where('user_id', $userId)
+                ->exists(),
+            403
+        );
+
+        $request->validate(['is_typing' => 'required|boolean']);
+
+        $key = "typing:{$conversation->id}:{$userId}";
+
+        if ($request->boolean('is_typing')) {
+            cache()->put($key, ['id' => $userId, 'name' => auth()->user()->name], 8);
+        } else {
+            cache()->forget($key);
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     public function updateMessage(Request $request, Message $message): JsonResponse
@@ -196,12 +254,77 @@ class ConversationController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    private function formatConversation(Conversation $conversation): array
+    {
+        $userId = auth()->id();
+
+        if ($conversation->isDirect()) {
+            $other = $conversation->participants()
+                ->where('users.id', '!=', $userId)
+                ->first();
+
+            return [
+                'id'                => $conversation->id,
+                'type'              => 'direct',
+                'other_last_read_at' => $other?->pivot?->last_read_at
+                    ? \Carbon\Carbon::parse($other->pivot->last_read_at)->toISOString()
+                    : null,
+                'other_user'        => $other ? [
+                    'id'           => $other->id,
+                    'name'         => $other->name,
+                    'username'     => $other->username,
+                    'avatar'       => $other->avatar,
+                    'avatar_color' => $other->avatar_color ?? '#009ac7',
+                ] : null,
+            ];
+        }
+
+        // Group conversation
+        $participants = $conversation->participants()
+            ->get()
+            ->map(fn ($p) => [
+                'id'           => $p->id,
+                'name'         => $p->name,
+                'username'     => $p->username,
+                'avatar'       => $p->avatar,
+                'avatar_color' => $p->avatar_color ?? '#009ac7',
+                'role'         => $p->pivot->role,
+            ])
+            ->values();
+
+        $userRole = $participants->firstWhere('id', $userId)['role'] ?? 'member';
+
+        return [
+            'id'                 => $conversation->id,
+            'type'               => 'group',
+            'group_name'         => $conversation->name,
+            'group_avatar'       => $conversation->avatar,
+            'group_description'  => $conversation->description,
+            'owner_id'           => $conversation->owner_id,
+            'user_role'          => $userRole,
+            'participants_count' => $participants->count(),
+            'participants'       => $participants,
+        ];
+    }
+
     private function formatMessage($m): array
     {
+        $replyTo = null;
+        if ($m->reply_to_id && $m->replyTo) {
+            $rt = $m->replyTo;
+            $replyTo = [
+                'id' => $rt->id,
+                'content' => $rt->content,
+                'image_url' => $rt->image_url,
+                'author_name' => $rt->user->name ?? '?',
+            ];
+        }
+
         return [
             'id' => $m->id,
             'content' => $m->content,
             'image_url' => $m->image_url,
+            'reply_to' => $replyTo,
             'created_at' => $m->created_at->toISOString(),
             'is_edited' => $m->updated_at->gt($m->created_at->addSecond()),
             'is_own' => $m->user_id === auth()->id(),
@@ -267,24 +390,37 @@ class ConversationController extends Controller
             ->pluck('cnt', 'conversation_id');
 
         return $convList->map(function ($conv) use ($userId, $unreadCounts) {
-            $other = $conv->participants->firstWhere('id', '!=', $userId);
-
-            return [
-                'id' => $conv->id,
+            $base = [
+                'id'           => $conv->id,
+                'type'         => $conv->type ?? 'direct',
                 'unread_count' => (int) ($unreadCounts->get($conv->id, 0)),
                 'last_message' => $conv->lastMessage ? [
-                    'content' => $conv->lastMessage->content,
+                    'content'    => $conv->lastMessage->content,
                     'created_at' => $conv->lastMessage->created_at->toISOString(),
-                    'is_own' => $conv->lastMessage->user_id === $userId,
-                ] : null,
-                'other_user' => $other ? [
-                    'id' => $other->id,
-                    'name' => $other->name,
-                    'username' => $other->username,
-                    'avatar' => $other->avatar,
-                    'avatar_color' => $other->avatar_color ?? '#009ac7',
+                    'is_own'     => $conv->lastMessage->user_id === $userId,
                 ] : null,
             ];
+
+            if (($conv->type ?? 'direct') === 'group') {
+                return array_merge($base, [
+                    'group_name'         => $conv->name,
+                    'group_avatar'       => $conv->avatar,
+                    'participants_count' => $conv->participants->count(),
+                    'other_user'         => null,
+                ]);
+            }
+
+            $other = $conv->participants->firstWhere('id', '!=', $userId);
+
+            return array_merge($base, [
+                'other_user' => $other ? [
+                    'id'           => $other->id,
+                    'name'         => $other->name,
+                    'username'     => $other->username,
+                    'avatar'       => $other->avatar,
+                    'avatar_color' => $other->avatar_color ?? '#009ac7',
+                ] : null,
+            ]);
         })->values()->toArray();
     }
 }

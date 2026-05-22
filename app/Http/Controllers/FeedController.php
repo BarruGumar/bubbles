@@ -101,13 +101,7 @@ class FeedController extends Controller
             'delete_route' => route('posts.destroy', $p->id),
             'like_route' => route('posts.like', $p->id),
             'comment_route' => route('posts.comments.store', $p->id),
-            'author' => [
-                'id' => $p->user->id,
-                'name' => $p->user->name,
-                'username' => $p->user->username,
-                'avatar' => $p->user->avatar,
-                'avatar_color' => $p->user->avatar_color ?? '#009ac7',
-            ],
+            'author' => $this->mapAuthor($p->user),
             'comments' => $p->comments->map(fn ($c) => $this->mapComment($c, $authId))->values(),
         ];
     }
@@ -140,13 +134,7 @@ class FeedController extends Controller
                 'color' => $p->bubble->color ?? '#009ac7',
                 'image' => $p->bubble->community_image,
             ] : null,
-            'author' => [
-                'id' => $p->user->id,
-                'name' => $p->user->name,
-                'username' => $p->user->username,
-                'avatar' => $p->user->avatar,
-                'avatar_color' => $p->user->avatar_color ?? '#009ac7',
-            ],
+            'author' => $this->mapAuthor($p->user),
             'comments' => $p->comments->map(fn ($c) => $this->mapComment($c, $authId))->values(),
         ];
     }
@@ -158,12 +146,24 @@ class FeedController extends Controller
             'content' => $c->content,
             'created_at' => $c->created_at->diffForHumans(),
             'is_own' => $c->user_id === $authId,
-            'author' => [
-                'name' => $c->user->name,
-                'username' => $c->user->username,
-                'avatar' => $c->user->avatar,
-                'avatar_color' => $c->user->avatar_color ?? '#009ac7',
-            ],
+            'author' => $this->mapAuthor($c->user, false),
         ];
+    }
+
+    private function mapAuthor($user, bool $includeId = true): array
+    {
+        $data = [
+            'name' => $user->name,
+            'username' => $user->username,
+            'avatar' => $user->avatar,
+            'avatar_color' => $user->avatar_color ?? '#009ac7',
+            'role' => $user->role,
+        ];
+
+        if ($includeId) {
+            $data = array_merge(['id' => $user->id], $data);
+        }
+
+        return $data;
     }
 }

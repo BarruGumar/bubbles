@@ -20,7 +20,7 @@ const authUser = computed(() => usePage().props.auth?.user);
         <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px 80px">
             <!-- Header -->
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px">
-                <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0; letter-spacing: -0.02em">
+                <h1 style="font-size: 22px; font-weight: 900; color: #3a6478; margin: 0; letter-spacing: -0.02em">
                     Feed
                 </h1>
                 <span style="font-size: 12px; color: #8ba0b0">Posts de amigos e comunidades</span>
@@ -38,7 +38,7 @@ const authUser = computed(() => usePage().props.auth?.user);
                 "
             >
                 <p style="font-size: 36px; margin: 0 0 14px">🫧</p>
-                <p style="font-size: 15px; font-weight: 700; color: #1a3a4a; margin: 0 0 6px">O teu feed está vazio</p>
+                <p style="font-size: 15px; font-weight: 700; color: #3a6478; margin: 0 0 6px">O teu feed está vazio</p>
                 <p style="font-size: 13px; color: #8ba0b0; margin: 0">
                     Entra em comunidades e adiciona amigos para ver o conteúdo deles aqui.
                 </p>
@@ -75,6 +75,7 @@ const authUser = computed(() => usePage().props.auth?.user);
                     :can-edit="item.can_edit"
                     :can-delete="item.can_delete"
                     :like-route="item.like_route"
+                    :reactors-route="item._type === 'post' ? route('posts.reactors', item.id) : route('community-posts.reactors', item.id)"
                     :comment-route="item.comment_route"
                     :delete-route="item.delete_route"
                     :edit-route="item.can_edit ? item.edit_route : null"

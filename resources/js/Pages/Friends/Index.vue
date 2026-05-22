@@ -2,6 +2,9 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { clImg } from '@/Composables/useCloudinary';
+import { useAudio } from '@/Composables/useAudio';
+
+const { playSfx } = useAudio();
 
 defineProps({
     friends: Array,
@@ -31,7 +34,7 @@ function startConversation(friend) {
 
     <AuthenticatedLayout>
         <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px 80px">
-            <h1 style="font-size: 22px; font-weight: 900; color: #1a3a4a; margin: 0 0 24px; letter-spacing: -0.02em">
+            <h1 style="font-size: 22px; font-weight: 900; color: #3a6478; margin: 0 0 24px; letter-spacing: -0.02em">
                 Amigos
             </h1>
 
@@ -110,7 +113,7 @@ function startConversation(friend) {
                                 style="
                                     font-size: 13px;
                                     font-weight: 700;
-                                    color: #1a3a4a;
+                                    color: #3a6478;
                                     margin: 0;
                                     overflow: hidden;
                                     text-overflow: ellipsis;
@@ -243,7 +246,7 @@ function startConversation(friend) {
                                 style="
                                     font-size: 13px;
                                     font-weight: 700;
-                                    color: #1a3a4a;
+                                    color: #3a6478;
                                     margin: 0;
                                     overflow: hidden;
                                     text-overflow: ellipsis;
@@ -376,7 +379,7 @@ function startConversation(friend) {
                                 style="
                                     font-size: 13px;
                                     font-weight: 700;
-                                    color: #1a3a4a;
+                                    color: #3a6478;
                                     margin: 0;
                                     overflow: hidden;
                                     text-overflow: ellipsis;
@@ -412,7 +415,7 @@ function startConversation(friend) {
                         </button>
 
                         <button
-                            @click="reject(friend.friendId)"
+                            @click="playSfx('leave'); reject(friend.friendId)"
                             style="
                                 padding: 7px 14px;
                                 border-radius: 99px;

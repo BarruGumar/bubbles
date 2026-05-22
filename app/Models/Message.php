@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Message extends Model
 {
-    protected $fillable = ['conversation_id', 'user_id', 'content', 'image_url'];
+    protected $fillable = ['conversation_id', 'user_id', 'content', 'image_url', 'reply_to_id'];
 
     public function conversation(): BelongsTo
     {
@@ -17,5 +17,10 @@ class Message extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function replyTo(): BelongsTo
+    {
+        return $this->belongsTo(Message::class, 'reply_to_id')->with('user');
     }
 }

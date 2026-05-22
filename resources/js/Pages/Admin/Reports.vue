@@ -35,7 +35,7 @@ const statusBg = { pending: '#fff8e6', resolved: '#f0fff8', dismissed: '#f4f7fb'
 
     <AdminLayout>
         <template #header>
-            <h1 style="font-size: 16px; font-weight: 800; color: #1a3a4a; margin: 0">Denúncias</h1>
+            <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Denúncias</h1>
         </template>
 
         <!-- Status tabs -->
@@ -107,7 +107,7 @@ const statusBg = { pending: '#fff8e6', resolved: '#f0fff8', dismissed: '#f4f7fb'
                                 <span style="font-size: 11px; color: #8ba0b0">{{ r.type }} · {{ r.created_at }}</span>
                             </div>
 
-                            <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0 0 4px">
+                            <p style="font-size: 13px; font-weight: 700; color: #3a6478; margin: 0 0 4px">
                                 {{ r.reason }}
                             </p>
 
@@ -158,7 +158,7 @@ const statusBg = { pending: '#fff8e6', resolved: '#f0fff8', dismissed: '#f4f7fb'
                                         border-radius: 8px;
                                         padding: 7px 12px;
                                         font-size: 12px;
-                                        color: #1a3a4a;
+                                        color: #3a6478;
                                         outline: none;
                                         font-family: inherit;
                                     "

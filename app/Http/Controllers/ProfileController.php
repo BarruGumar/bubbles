@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Friend;
 use App\Models\User;
+use App\Services\AuditLogger;
+use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -119,6 +121,7 @@ class ProfileController extends Controller
                 'avatar_color' => $profileUser->avatar_color ?? '#009ac7',
                 'avatar' => $profileUser->avatar,
                 'banner' => $profileUser->banner,
+                'role' => $profileUser->role,
                 'created_at' => $profileUser->created_at->format('M Y'),
                 'posts_count' => $profileUser->posts()->count(),
             ],
@@ -146,11 +149,29 @@ class ProfileController extends Controller
         $user = $request->user();
         $user->fill($request->validated());
 
-        if ($user->isDirty('email')) {
+        $emailChanged = $user->isDirty('email');
+        if ($emailChanged) {
             $user->email_verified_at = null;
         }
 
+        $dirty = $user->getDirty();
+
         $user->save();
+
+        if (! empty($dirty)) {
+            $safeChanges = collect($dirty)
+                ->only(['name', 'username', 'bio', 'avatar_color'])
+                ->map(fn ($newVal, $field) => [
+                    'from' => $user->getOriginal($field),
+                    'to'   => is_string($newVal) ? mb_substr($newVal, 0, 100) : $newVal,
+                ])
+                ->all();
+
+            AuditLogger::log('profile.updated', 'profile', $user, [
+                'email_changed' => $emailChanged,
+                'changes'       => $safeChanges,
+            ]);
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -164,13 +185,15 @@ class ProfileController extends Controller
         $user = $request->user();
         $this->deleteCloudinaryImage($user->avatar_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('avatar'), 'bubbles/avatars', [
-            'public_id' => 'user_'.$user->id,
-            'overwrite' => true,
-            'transformation' => ['width' => 300, 'height' => 300, 'crop' => 'fill', 'gravity' => 'face', 'fetch_format' => 'auto', 'quality' => 'auto'],
-        ]);
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
+            $request->file('avatar'),
+            'bubbles/avatars',
+            ImageUploadPresets::avatar($user->id)
+        );
 
         $user->update(['avatar' => $url, 'avatar_public_id' => $pid]);
+
+        AuditLogger::log('profile.avatar_upload', 'profile', $user);
 
         return back()->with('status', 'avatar-updated');
     }
@@ -184,15 +207,25 @@ class ProfileController extends Controller
         $user = $request->user();
         $this->deleteCloudinaryImage($user->banner_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta($request->file('banner'), 'bubbles/banners', [
-            'public_id' => 'banner_'.$user->id,
-            'overwrite' => true,
-            'transformation' => ['width' => 1200, 'height' => 400, 'crop' => 'fill', 'fetch_format' => 'auto', 'quality' => 'auto'],
-        ]);
+        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
+            $request->file('banner'),
+            'bubbles/banners',
+            ImageUploadPresets::profileBanner($user->id)
+        );
 
         $user->update(['banner' => $url, 'banner_public_id' => $pid]);
 
+        AuditLogger::log('profile.banner_upload', 'profile', $user);
+
         return back()->with('status', 'banner-updated');
+    }
+
+    public function updateTheme(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['theme' => 'required|in:light,dark']);
+        $request->user()->update(['theme' => $request->input('theme')]);
+
+        return response()->json(['theme' => $request->input('theme')]);
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -202,6 +235,10 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        AuditLogger::log('profile.account_deleted', 'profile', $user, [
+            'username' => $user->username,
+        ]);
 
         Auth::logout();
 

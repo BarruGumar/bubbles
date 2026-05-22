@@ -219,7 +219,7 @@ function confirm() {
         >
             <!-- Header -->
             <div style="padding: 18px 24px 12px">
-                <p style="font-size: 14px; font-weight: 800; color: #1a3a4a; margin: 0 0 2px">Ajusta a imagem</p>
+                <p style="font-size: 14px; font-weight: 800; color: #3a6478; margin: 0 0 2px">Ajusta a imagem</p>
                 <p style="font-size: 11px; color: #8ba0b0; margin: 0">
                     Arrasta para posicionar · scroll ou slider para zoom
                 </p>

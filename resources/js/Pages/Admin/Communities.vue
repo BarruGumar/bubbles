@@ -29,7 +29,7 @@ function deleteCommunity(id) {
 
     <AdminLayout>
         <template #header>
-            <h1 style="font-size: 16px; font-weight: 800; color: #1a3a4a; margin: 0">Comunidades</h1>
+            <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Comunidades</h1>
         </template>
 
         <div style="margin-bottom: 18px">
@@ -45,7 +45,7 @@ function deleteCommunity(id) {
                     border-radius: 10px;
                     padding: 10px 14px;
                     font-size: 13px;
-                    color: #1a3a4a;
+                    color: #3a6478;
                     outline: none;
                     font-family: inherit;
                     box-sizing: border-box;
@@ -161,7 +161,7 @@ function deleteCommunity(id) {
                                     {{ (c.label ?? '?')[0].toUpperCase() }}
                                 </div>
                                 <div>
-                                    <p style="font-size: 13px; font-weight: 700; color: #1a3a4a; margin: 0">
+                                    <p style="font-size: 13px; font-weight: 700; color: #3a6478; margin: 0">
                                         {{ c.title }}
                                     </p>
                                     <p style="font-size: 11px; color: #8ba0b0; margin: 0">{{ c.label }}</p>

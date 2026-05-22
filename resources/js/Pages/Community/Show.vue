@@ -18,6 +18,8 @@ const props = defineProps({
     nextCursor: String,
     hasMorePosts: Boolean,
     isOwn: Boolean,
+    canModerate: Boolean,
+    canManage: Boolean,
     isMember: Boolean,
 });
 
@@ -129,6 +131,8 @@ const showEdit = ref(false);
             <CommunityHeader
                 :community="community"
                 :is-own="isOwn"
+                :can-moderate="canModerate"
+                :can-manage="canManage"
                 :is-member="isMember"
                 :auth-user="authUser"
                 :image-preview="communityImagePreview"
@@ -166,14 +170,16 @@ const showEdit = ref(false);
                     :author="post.author"
                     :auth-user="authUser"
                     :can-edit="post.isOwn"
-                    :can-delete="post.isOwn || isOwn"
+                    :can-delete="post.isOwn || isOwn || authUser?.role === 'admin'"
                     :is-creator="post.isCreator"
                     :accent-color="community.color"
                     :like-route="route('community-posts.like', post.id)"
+                    :reactors-route="route('community-posts.reactors', post.id)"
                     :comment-route="route('community-posts.comments.store', post.id)"
                     :delete-route="route('community.posts.destroy', [community.id, post.id])"
                     :edit-route="post.isOwn ? route('community.posts.update', [community.id, post.id]) : null"
                     :report-route="!post.isOwn && authUser ? route('community-posts.report', post.id) : null"
+                    @deleted="localPosts = localPosts.filter(p => p.id !== $event)"
                 />
             </div>
 

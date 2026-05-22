@@ -1,7 +1,10 @@
 <script setup>
 import { ref, computed, onUnmounted } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import { useToast } from '@/Composables/useToast';
+import { useClipboardImage } from '@/Composables/useClipboardImage';
+import { compressImage } from '@/Composables/useImageCompressor';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     authUser: { type: Object, required: true },
@@ -9,6 +12,7 @@ const props = defineProps({
 });
 
 const { show: toast } = useToast();
+const { playSfx } = useAudio();
 
 const postForm = useForm({ content: '', image: null, video: null });
 const uploadProgress = ref(0);
@@ -19,7 +23,7 @@ const mediaInput = ref(null);
 const mediaPreview = ref(null);
 const isVideoMedia = ref(false);
 
-function onMediaChange(e) {
+async function onMediaChange(e) {
     const file = e.target.files[0];
     if (!file) return;
     if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
@@ -27,12 +31,14 @@ function onMediaChange(e) {
         postForm.image = null;
         postForm.video = file;
         isVideoMedia.value = true;
+        mediaPreview.value = URL.createObjectURL(file);
     } else {
         postForm.video = null;
-        postForm.image = file;
         isVideoMedia.value = false;
+        mediaPreview.value = URL.createObjectURL(file);
+        postForm.image = file;
+        postForm.image = await compressImage(file);
     }
-    mediaPreview.value = URL.createObjectURL(file);
 }
 
 function removeMedia() {
@@ -44,8 +50,24 @@ function removeMedia() {
     if (mediaInput.value) mediaInput.value.value = '';
 }
 
+async function setMediaFile(file) {
+    if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
+    postForm.video = null;
+    isVideoMedia.value = false;
+    mediaPreview.value = URL.createObjectURL(file);
+    postForm.image = file;
+    postForm.image = await compressImage(file);
+}
+
+const { handlePaste: handlePostPaste } = useClipboardImage({
+    onImage: setMediaFile,
+    maxKB: 4096,
+    onError: (msg) => toast(msg, 'error'),
+});
+
 function submitPost() {
     if (!postForm.content.trim()) return;
+    playSfx('send');
     uploadProgress.value = 0;
     uploadingServer.value = false;
     postForm.post(route('community.posts.store', props.community.id), {
@@ -56,6 +78,7 @@ function submitPost() {
             if (uploadProgress.value >= 100) uploadingServer.value = true;
         },
         onSuccess: () => {
+            if (usePage().props.flash?.error) return;
             postForm.reset('content', 'image', 'video');
             removeMedia();
             uploadProgress.value = 0;
@@ -140,7 +163,7 @@ onUnmounted(() => {
                         border-radius: 12px;
                         padding: 12px 14px;
                         font-size: 14px;
-                        color: #1a3a4a;
+                        color: #3a6478;
                         outline: none;
                         font-family: inherit;
                         resize: vertical;
@@ -150,6 +173,7 @@ onUnmounted(() => {
                     @focus="$event.target.style.borderColor = community.color"
                     @blur="$event.target.style.borderColor = '#4ebcff33'"
                     @keydown.ctrl.enter="submitPost"
+                    @paste="handlePostPaste"
                 />
 
                 <!-- Media preview -->
