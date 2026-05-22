@@ -36,12 +36,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return in_array($this->role, ['site_owner', 'admin'], true);
     }
 
     public function isModerator(): bool
     {
-        return in_array($this->role, ['admin', 'moderator']);
+        return in_array($this->role, ['site_owner', 'admin', 'moderator'], true);
     }
 
     public function isSuspended(): bool

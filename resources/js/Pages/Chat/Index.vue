@@ -341,22 +341,29 @@ watch(
 
     <AuthenticatedLayout>
         <!-- Full-height chat shell -->
-        <div style="display: flex; height: calc(100vh - 58px); overflow: hidden; background: transparent">
+        <div class="wa-shell">
             <!-- ═══ SIDEBAR ═══════════════════════════════════ -->
             <aside
                 v-show="!isMobile || showSidebar"
                 :style="{
-                    width: isMobile ? '100%' : '300px',
-                    minWidth: isMobile ? 'unset' : '300px',
+                    width: isMobile ? '100%' : '360px',
+                    minWidth: isMobile ? 'unset' : '360px',
                     display: 'flex',
                     flexDirection: 'column',
-                    borderRight: '1px solid #009ac712',
-                    background: 'rgba(255,255,255,0.60)',
-                    backdropFilter: 'blur(24px)',
+                    borderRight: '1px solid #d1d7db',
+                    background: '#ffffff',
+                    backdropFilter: 'none',
                 }"
             >
                 <!-- Sidebar header -->
-                <div style="padding: 20px 20px 14px; border-bottom: 1px solid #009ac710; flex-shrink: 0">
+                <div
+                    style="
+                        padding: 18px 20px 14px;
+                        border-bottom: 1px solid #e9edef;
+                        flex-shrink: 0;
+                        background: #f0f2f5;
+                    "
+                >
                     <div style="display: flex; align-items: center; justify-content: space-between">
                         <div>
                             <h2
@@ -665,7 +672,14 @@ watch(
             <!-- ═══ MAIN ═══════════════════════════════════════ -->
             <main
                 v-show="!isMobile || !showSidebar"
-                style="flex: 1; display: flex; flex-direction: column; min-width: 0; background: transparent"
+                style="
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    min-width: 0;
+                    background: #efeae2;
+                    position: relative;
+                "
             >
                 <!-- No conversation selected -->
                 <div
@@ -875,9 +889,9 @@ watch(
                             align-items: center;
                             gap: 14px;
                             padding: 0 24px;
-                            background: rgba(255, 255, 255, 0.65);
-                            backdrop-filter: blur(20px);
-                            border-bottom: 1px solid #009ac712;
+                            background: #f0f2f5;
+                            backdrop-filter: none;
+                            border-bottom: 1px solid #d1d7db;
                         "
                     >
                         <button
@@ -986,10 +1000,11 @@ watch(
                     <!-- Messages area -->
                     <div
                         ref="messagesEl"
+                        class="wa-messages"
                         style="
                             flex: 1;
                             overflow-y: auto;
-                            padding: 24px 28px;
+                            padding: 28px clamp(14px, 4vw, 56px);
                             display: flex;
                             flex-direction: column;
                             gap: 4px;
@@ -1038,40 +1053,16 @@ watch(
 
                         <!-- Message groups -->
                         <template v-for="(item, i) in groupedMessages" :key="i">
-                            <div
-                                v-if="item.type === 'date'"
-                                style="display: flex; align-items: center; gap: 12px; margin: 18px 0 10px"
-                            >
-                                <div
-                                    style="
-                                        flex: 1;
-                                        height: 1px;
-                                        background: linear-gradient(to right, transparent, #009ac714);
-                                    "
-                                ></div>
-                                <span
-                                    style="
-                                        font-size: 10px;
-                                        font-weight: 700;
-                                        color: #b0c0cc;
-                                        letter-spacing: 0.06em;
-                                        white-space: nowrap;
-                                    "
-                                    >{{ item.label }}</span
-                                >
-                                <div
-                                    style="
-                                        flex: 1;
-                                        height: 1px;
-                                        background: linear-gradient(to left, transparent, #009ac714);
-                                    "
-                                ></div>
+                            <div v-if="item.type === 'date'" class="wa-date-row">
+                                <div></div>
+                                <span>{{ item.label }}</span>
+                                <div></div>
                             </div>
 
                             <div
                                 v-else
                                 class="msg-group"
-                                style="display: flex; flex-direction: column"
+                                style="display: flex; flex-direction: column; margin: 2px 0"
                                 :style="{ alignItems: item.is_own ? 'flex-end' : 'flex-start' }"
                             >
                                 <!-- Action buttons (own messages, shown on hover) -->
@@ -1088,7 +1079,7 @@ watch(
                                             height: 24px;
                                             border-radius: 6px;
                                             border: none;
-                                            background: rgba(255, 255, 255, 0.85);
+                                            background: #ffffff;
                                             color: #8ba0b0;
                                             cursor: pointer;
                                             display: flex;
@@ -1222,10 +1213,17 @@ watch(
 
                                 <!-- Message bubble -->
                                 <div
+                                    class="wa-message-bubble"
+                                    :class="{
+                                        'wa-own': item.is_own,
+                                        'wa-other': !item.is_own,
+                                        'wa-media-only': item.image_url && !item.content,
+                                        'wa-editing': editingId === item.id,
+                                    }"
                                     style="
-                                        max-width: 68%;
-                                        border-radius: 18px;
-                                        font-size: 13.5px;
+                                        max-width: min(72%, 620px);
+                                        border-radius: 7.5px;
+                                        font-size: 14.2px;
                                         line-height: 1.5;
                                         word-break: break-word;
                                     "
@@ -1412,9 +1410,9 @@ watch(
                         style="
                             flex-shrink: 0;
                             padding: 14px 20px;
-                            background: rgba(255, 255, 255, 0.65);
-                            backdrop-filter: blur(20px);
-                            border-top: 1px solid #009ac712;
+                            background: #f0f2f5;
+                            backdrop-filter: none;
+                            border-top: 1px solid #d1d7db;
                             display: flex;
                             flex-direction: column;
                             gap: 8px;
@@ -1514,13 +1512,13 @@ watch(
                                 style="
                                     flex: 1;
                                     resize: none;
-                                    border: 1.5px solid #009ac722;
-                                    border-radius: 20px;
+                                    border: none;
+                                    border-radius: 22px;
                                     padding: 10px 16px;
                                     font-size: 13.5px;
                                     font-family: inherit;
                                     color: #1a3a4a;
-                                    background: rgba(255, 255, 255, 0.85);
+                                    background: #ffffff;
                                     outline: none;
                                     line-height: 1.5;
                                     max-height: 120px;
@@ -1660,6 +1658,103 @@ watch(
 </template>
 
 <style scoped>
+.wa-shell {
+    display: flex;
+    height: calc(100vh - 58px);
+    overflow: hidden;
+    background: #efeae2;
+}
+
+.wa-messages {
+    background-color: #efeae2;
+    background-image:
+        radial-gradient(circle at 20% 20%, rgba(17, 27, 33, 0.035) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 80% 40%, rgba(17, 27, 33, 0.025) 0 1px, transparent 1.8px),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0));
+    background-size:
+        28px 28px,
+        36px 36px,
+        cover;
+}
+
+.wa-date-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 18px 0 10px;
+}
+
+.wa-date-row > div {
+    display: none;
+}
+
+.wa-date-row > span {
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.78);
+    color: #667781;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    box-shadow: 0 1px 2px rgba(11, 20, 26, 0.08);
+}
+
+.wa-message-bubble {
+    position: relative;
+    color: #111b21 !important;
+    box-shadow: 0 1px 1px rgba(11, 20, 26, 0.13) !important;
+}
+
+.wa-message-bubble.wa-own:not(.wa-editing) {
+    background: #d9fdd3 !important;
+    border: none !important;
+    border-bottom-right-radius: 2px !important;
+    padding: 7px 9px 6px 10px !important;
+}
+
+.wa-message-bubble.wa-other:not(.wa-editing) {
+    background: #ffffff !important;
+    border: none !important;
+    border-bottom-left-radius: 2px !important;
+    padding: 7px 9px 6px 10px !important;
+}
+
+.wa-message-bubble.wa-own:not(.wa-editing)::after,
+.wa-message-bubble.wa-other:not(.wa-editing)::after {
+    position: absolute;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    content: '';
+    border-top: 8px solid transparent;
+}
+
+.wa-message-bubble.wa-own:not(.wa-editing)::after {
+    right: -7px;
+    border-left: 8px solid #d9fdd3;
+}
+
+.wa-message-bubble.wa-other:not(.wa-editing)::after {
+    left: -7px;
+    border-right: 8px solid #ffffff;
+}
+
+.wa-message-bubble.wa-media-only:not(.wa-editing) {
+    padding: 3px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.wa-message-bubble.wa-media-only::after {
+    display: none;
+}
+
+.wa-message-bubble img {
+    border-radius: 7px !important;
+}
+
 aside > div::-webkit-scrollbar,
 div[style*='overflow-y: auto']::-webkit-scrollbar {
     width: 4px;
