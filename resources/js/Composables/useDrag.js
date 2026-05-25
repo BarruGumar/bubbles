@@ -9,6 +9,7 @@ export function useDrag(onBubbleClick) {
     const dragMoved = ref(false)
     let isTouchDrag = false
     let lastTouchTime = 0
+    let lastTouchTapTime = 0
 
     function startDrag(bubble, e) {
         if (e.button !== 0) return
@@ -74,11 +75,22 @@ export function useDrag(onBubbleClick) {
 
     function stopDrag() {
         if (dragging.value && !dragMoved.value) {
+            if (isTouchDrag) lastTouchTapTime = Date.now()
             onBubbleClick?.(dragging.value.id)
         }
         dragging.value = null
         dragMoved.value = false
     }
 
-    return { dragging, dragMoved, startDrag, startTouch, onMouseMove, onTouchMove, stopDrag, getLastTouchTime: () => lastTouchTime }
+    return {
+        dragging,
+        dragMoved,
+        startDrag,
+        startTouch,
+        onMouseMove,
+        onTouchMove,
+        stopDrag,
+        getLastTouchTime: () => lastTouchTime,
+        getLastTouchTapTime: () => lastTouchTapTime,
+    }
 }

@@ -187,6 +187,7 @@ const {
     onTouchMove: moveDragTouch,
     stopDrag,
     getLastTouchTime,
+    getLastTouchTapTime,
 } = useDrag((id) => {
     toggleSelect(id);
 });
@@ -226,15 +227,22 @@ function onBubbleLeave(id) {
     if (hoveredId.value === id) hoveredId.value = null;
 }
 
-function clearSelection() {
+// Always closes — used by close button, overlay touchend, and Escape.
+function clearSelectionForced() {
     bubbles.value.forEach((b) => {
         b.selected = false;
     });
     connectSource.value = null;
 }
 
-// Only used by the overlay's @click to absorb the synthetic click Chrome generates
-// after a touch sequence. Real closes come via touchend (which is always intentional).
+// Guarded close — blocks spurious calls (synthetic clicks, touchend.self)
+// for 600ms after a touch-tap opened the panel.
+function clearSelection() {
+    if (Date.now() - getLastTouchTapTime() < 600) return;
+    clearSelectionForced();
+}
+
+// Overlay @click handler: extra guard against synthetic clicks from touch.
 function handleOverlayClick() {
     if (Date.now() - getLastTouchTime() < 600) return;
     clearSelection();
@@ -251,7 +259,7 @@ function onKeyDown(e) {
             closeSearch();
             return;
         }
-        clearSelection();
+        clearSelectionForced();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
@@ -1426,7 +1434,7 @@ const isMobile = window.innerWidth < 640;
 
                 <!-- Close button -->
                 <button
-                    @click.stop="clearSelection"
+                    @click.stop="clearSelectionForced"
                     :style="{
                         position: 'absolute',
                         top: isMobile ? '44px' : '54px',
@@ -1593,7 +1601,7 @@ const isMobile = window.innerWidth < 640;
             v-if="selectedBubble"
             style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 35;"
             @click.stop="handleOverlayClick"
-            @touchend.prevent="clearSelection"
+            @touchend.prevent="clearSelectionForced"
         />
 
         <!-- GLOBAL TRENDS SIDEBAR -->
