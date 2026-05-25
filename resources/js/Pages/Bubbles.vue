@@ -199,7 +199,10 @@ function onWindowMouseUp() {
 function onWindowTouchMove(e) {
     moveDragTouch(e, bubbles.value);
 }
-function onWindowTouchEnd() {
+function onWindowTouchEnd(e) {
+    // preventDefault stops Chrome from firing a synthetic click after touchend,
+    // which would otherwise land on the overlay and immediately deselect the bubble.
+    e.preventDefault();
     stopDrag();
 }
 
@@ -306,7 +309,7 @@ onMounted(async () => {
     window.addEventListener('mouseup', onWindowMouseUp);
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('touchmove', onWindowTouchMove, { passive: false });
-    window.addEventListener('touchend', onWindowTouchEnd);
+    window.addEventListener('touchend', onWindowTouchEnd, { passive: false });
     document.addEventListener('visibilitychange', onVisibilityChange);
     document.addEventListener('click', onDocClick);
     startLoop();

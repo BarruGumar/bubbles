@@ -57,6 +57,7 @@ const containerStyle = computed(() => {
         gap: '3px',
         opacity: selected ? 0 : props.anyHovered && !props.isHovered ? 0.52 : 1,
         pointerEvents: selected ? 'none' : 'auto',
+        touchAction: 'none',
         boxShadow: shadow,
         transform: `scale(${finalScale.toFixed(4)})`,
         transition: props.isDragging
