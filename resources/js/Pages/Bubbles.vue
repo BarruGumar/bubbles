@@ -188,10 +188,8 @@ const {
     onTouchMove: moveDragTouch,
     stopDrag,
 } = useDrag((id) => {
-    if (isMobile) {
-        selectGuard = true;
-        setTimeout(() => { selectGuard = false; }, 300);
-    }
+    selectGuard = true;
+    setTimeout(() => { selectGuard = false; }, 300);
     toggleSelect(id);
 });
 
@@ -1585,8 +1583,9 @@ const isMobile = window.innerWidth < 640;
              the click hits the root div and @click.self fires clearSelection.
              z-index 35 intercepts it; panel at z-index 36 stays on top. -->
         <div
-            v-if="selectedBubble && isMobile"
+            v-if="selectedBubble"
             style="position: fixed; inset: 0; z-index: 35;"
+            @click="clearSelection"
             @touchend.prevent="clearSelection"
         />
 
