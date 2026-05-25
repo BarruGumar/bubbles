@@ -223,11 +223,17 @@ function onBubbleLeave(id) {
 }
 
 function clearSelection() {
-    if (Date.now() - getLastTouchTime() < 600) return;
     bubbles.value.forEach((b) => {
         b.selected = false;
     });
     connectSource.value = null;
+}
+
+// Only used by the overlay's @click to absorb the synthetic click Chrome generates
+// after a touch sequence. Real closes come via touchend (which is always intentional).
+function handleOverlayClick() {
+    if (Date.now() - getLastTouchTime() < 600) return;
+    clearSelection();
 }
 
 function onDocClick(e) {
@@ -1575,14 +1581,14 @@ const isMobile = window.innerWidth < 640;
             </div>
         </Transition>
 
-        <!-- Mobile overlay: absorbs the synthetic click Chrome fires after touchend.
-             By then Vue has flushed (bubble has pointer-events:none), so without this
-             the click hits the root div and @click.self fires clearSelection.
-             z-index 35 intercepts it; panel at z-index 36 stays on top. -->
+        <!-- Overlay: absorbs the synthetic click Chrome fires after a touch-to-select.
+             handleOverlayClick has the time guard; @touchend.prevent="clearSelection"
+             is called for genuine tap-to-close (no guard needed, always intentional).
+             @click.stop prevents the (now-handled) click from reaching the root div. -->
         <div
             v-if="selectedBubble"
-            style="position: fixed; inset: 0; z-index: 35;"
-            @click="clearSelection"
+            style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 35;"
+            @click.stop="handleOverlayClick"
             @touchend.prevent="clearSelection"
         />
 
