@@ -41,7 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /** True only for role=admin (not site_owner). Use hasAdminAccess() for permission checks. */
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['site_owner', 'admin'], true);
+        return $this->role === 'admin';
     }
 
     /** True for site_owner OR admin — use this in middleware/policies. */
