@@ -7,7 +7,7 @@ import { createApp, h } from 'vue'
 import { ZiggyVue } from 'ziggy-js'
 import { applyTheme } from './Composables/useTheme.js'
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel'
+const appName = import.meta.env.VITE_APP_NAME || 'Bubbles'
 
 function updateBodyBackground(component) {
     const isProfilePage = component?.startsWith('Profile/')
