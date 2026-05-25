@@ -178,8 +178,6 @@ function handleSearchKey(e) {
     }
 }
 
-let selectGuard = false;
-
 const {
     dragging,
     startDrag,
@@ -187,9 +185,8 @@ const {
     onMouseMove: moveDrag,
     onTouchMove: moveDragTouch,
     stopDrag,
+    getLastTouchTime,
 } = useDrag((id) => {
-    selectGuard = true;
-    setTimeout(() => { selectGuard = false; }, 300);
     toggleSelect(id);
 });
 
@@ -226,7 +223,7 @@ function onBubbleLeave(id) {
 }
 
 function clearSelection() {
-    if (selectGuard) return;
+    if (Date.now() - getLastTouchTime() < 600) return;
     bubbles.value.forEach((b) => {
         b.selected = false;
     });

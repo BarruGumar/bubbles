@@ -80,5 +80,5 @@ export function useDrag(onBubbleClick) {
         dragMoved.value = false
     }
 
-    return { dragging, dragMoved, startDrag, startTouch, onMouseMove, onTouchMove, stopDrag }
+    return { dragging, dragMoved, startDrag, startTouch, onMouseMove, onTouchMove, stopDrag, getLastTouchTime: () => lastTouchTime }
 }
