@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -20,6 +20,7 @@ import { useAudio } from '@/Composables/useAudio';
 import AudioControls from '@/Components/AudioControls.vue';
 import AnnouncementBanner from '@/Components/AnnouncementBanner.vue';
 import AnnouncementModal from '@/Components/AnnouncementModal.vue';
+
 
 const props = defineProps({
     feed: { type: Array, default: () => [] },
