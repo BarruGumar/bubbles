@@ -248,6 +248,12 @@ function handleOverlayClick() {
     clearSelection();
 }
 
+// Overlay touchend: guarded so a spurious touchend right after opening doesn't close the panel.
+function handleOverlayTouchEnd() {
+    if (Date.now() - getLastTouchTapTime() < 500) return;
+    clearSelectionForced();
+}
+
 function onDocClick(e) {
     if (menuEl.value && !menuEl.value.contains(e.target)) menuOpen.value = false;
 }
@@ -1601,7 +1607,7 @@ const isMobile = window.innerWidth < 640;
             v-if="selectedBubble"
             style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 35;"
             @click.stop="handleOverlayClick"
-            @touchend.prevent="clearSelectionForced"
+            @touchend.prevent="handleOverlayTouchEnd"
         />
 
         <!-- GLOBAL TRENDS SIDEBAR -->
