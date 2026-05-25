@@ -41,7 +41,11 @@ class RegisteredUserController extends Controller
             'avatar_color' => $color,
         ]);
 
-        event(new Registered($user));
+        try {
+            event(new Registered($user));
+        } catch (\Exception $e) {
+            // Email sending failed — user is still registered and can request resend
+        }
 
         Auth::login($user);
 
