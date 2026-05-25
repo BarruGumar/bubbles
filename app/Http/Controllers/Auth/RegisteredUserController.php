@@ -44,7 +44,7 @@ class RegisteredUserController extends Controller
         try {
             event(new Registered($user));
         } catch (\Exception $e) {
-            // Email sending failed — user is still registered and can request resend
+            \Log::error('[Mail] Registration verification email failed: ' . $e->getMessage());
         }
 
         Auth::login($user);
