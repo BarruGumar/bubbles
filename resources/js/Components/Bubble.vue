@@ -63,7 +63,6 @@ const containerStyle = computed(() => {
             ? 'none'
             : 'box-shadow .35s ease, transform .45s cubic-bezier(.22,.78,.26,1), opacity .3s ease',
         overflow: 'hidden',
-        willChange: 'transform',
     };
 });
 </script>

@@ -1326,6 +1326,26 @@ const isMobile = window.innerWidth < 640;
             </div>
         </div>
 
+        <!-- EMPTY STATE -->
+        <div
+            v-if="ready && !bubbles.length"
+            style="
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                pointer-events: none;
+                z-index: 10;
+            "
+        >
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; opacity: 0.55; text-align: center; padding: 0 24px">
+                <span style="font-size: 36px">🫧</span>
+                <span style="font-size: 13px; font-weight: 700; color: #009ac7">Ainda não há comunidades</span>
+                <span style="font-size: 11px; color: #8ba0b0">Cria a primeira com o botão +</span>
+            </div>
+        </div>
+
         <!-- SVG LAYER: connections + avatars -->
         <ConnectionLines
             v-if="ready"
