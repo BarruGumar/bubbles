@@ -386,7 +386,7 @@ const isMobile = window.innerWidth < 640;
 <template>
     <div
         class="w-screen h-screen overflow-hidden relative select-none"
-        style="background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none"
+        style="background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none; transform: translateZ(0)"
         @click.self="clearSelection"
         @touchend.self="clearSelection"
     >

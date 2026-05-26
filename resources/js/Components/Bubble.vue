@@ -60,7 +60,7 @@ const containerStyle = computed(() => {
         touchAction: 'none',
         boxShadow: shadow,
         transform: `scale(${finalScale.toFixed(4)})`,
-        transition: props.isDragging
+        transition: (props.isDragging || props.bubble.selected)
             ? 'none'
             : 'box-shadow .35s ease, transform .45s cubic-bezier(.22,.78,.26,1), opacity .3s ease',
         overflow: 'hidden',
