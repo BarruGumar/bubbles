@@ -201,10 +201,7 @@ function onWindowMouseUp() {
 function onWindowTouchMove(e) {
     moveDragTouch(e, bubbles.value);
 }
-function onWindowTouchEnd(e) {
-    // preventDefault stops Chrome from firing a synthetic click after touchend,
-    // which would otherwise land on the overlay and immediately deselect the bubble.
-    e.preventDefault();
+function onWindowTouchEnd() {
     stopDrag();
 }
 
