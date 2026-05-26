@@ -16,7 +16,6 @@ function makeLocal(raw) {
         vx: raw.vx ?? 0,
         vy: raw.vy ?? 0,
         selected: false,
-        hover: false,
         phase: Math.random() * Math.PI * 2,
         spawnScale: raw.spawnScale ?? 1,
         activity: raw.activity ?? 0.35 + Math.random() * 0.4,
@@ -29,10 +28,8 @@ export function useBubbles() {
     const bubbles = ref([])
     const hoveredId = ref(null)
     const connectSource = ref(null)
-    const loading = ref(true)
 
     async function load() {
-        loading.value = true
         try {
             const { data } = await axios.get('/api/bubbles')
             if (Array.isArray(data) && data.length > 0) {
@@ -64,8 +61,6 @@ export function useBubbles() {
         } catch (err) {
             console.error('[Bubbles] Erro ao carregar bolhas:', err?.response?.data ?? err)
             bubbles.value = []
-        } finally {
-            loading.value = false
         }
     }
 
@@ -126,5 +121,5 @@ export function useBubbles() {
         })
     }
 
-    return { bubbles, hoveredId, connectSource, loading, load, add, toggleSelect }
+    return { bubbles, hoveredId, connectSource, load, add, toggleSelect }
 }

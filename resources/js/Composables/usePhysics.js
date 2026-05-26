@@ -15,7 +15,7 @@ function buildGrid(bubbles) {
     for (const b of bubbles) {
         const col = ((b.x + b.size * 0.5) / CELL_SIZE) | 0
         const row = ((b.y + b.size * 0.5) / CELL_SIZE) | 0
-        const key = `${col},${row}`
+        const key = col * 1000 + row
         ;(grid[key] ??= []).push(b)
     }
     return grid
@@ -23,8 +23,11 @@ function buildGrid(bubbles) {
 
 export function usePhysics() {
     function step(bubbles, draggingId, badgeObstacles = []) {
-        const cx = window.innerWidth / 2
-        const cy = window.innerHeight / 2 - 40
+        const W = window.innerWidth
+        const H = window.innerHeight
+        const cx = W / 2
+        const cy = H / 2 - 40
+        const pad = W < 640 ? 28 : 60
         const grid = buildGrid(bubbles)
 
         for (let i = 0; i < bubbles.length; i++) {
@@ -39,7 +42,7 @@ export function usePhysics() {
 
             for (let dc = -1; dc <= 1; dc++) {
                 for (let dr = -1; dr <= 1; dr++) {
-                    const neighbors = grid[`${col + dc},${row + dr}`]
+                    const neighbors = grid[(col + dc) * 1000 + (row + dr)]
                     if (!neighbors) continue
                     for (const b2 of neighbors) {
                         if (b2 === b1) continue
@@ -92,12 +95,11 @@ export function usePhysics() {
             b1.vy = (b1.vy + fy) * DAMPING
             b1.vx = Math.max(-MAX_SPD, Math.min(MAX_SPD, b1.vx))
             b1.vy = Math.max(-MAX_SPD, Math.min(MAX_SPD, b1.vy))
-            const pad = window.innerWidth < 640 ? 28 : 60
-            b1.x = Math.max(pad, Math.min(b1.x + b1.vx, window.innerWidth - b1.size - pad))
-            b1.y = Math.max(60, Math.min(b1.y + b1.vy, window.innerHeight - b1.size - pad))
+            b1.x = Math.max(pad, Math.min(b1.x + b1.vx, W - b1.size - pad))
+            b1.y = Math.max(60, Math.min(b1.y + b1.vy, H - b1.size - pad))
 
             b1.activity = Math.max(0.08, Math.min(1, b1.activity + (Math.random() - 0.5) * 0.006))
-            b1.spawnScale += (1 - b1.spawnScale) * 0.14
+            if (b1.spawnScale < 0.999) b1.spawnScale += (1 - b1.spawnScale) * 0.14
         }
     }
 

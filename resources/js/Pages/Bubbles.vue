@@ -21,7 +21,6 @@ import AudioControls from '@/Components/AudioControls.vue';
 import AnnouncementBanner from '@/Components/AnnouncementBanner.vue';
 import AnnouncementModal from '@/Components/AnnouncementModal.vue';
 
-
 const props = defineProps({
     feed: { type: Array, default: () => [] },
     hasFriends: { type: Boolean, default: false },
@@ -277,18 +276,28 @@ function onKeyDown(e) {
 let animId = null;
 let lastTime = 0;
 
+const EMPTY_OBSTACLES = [];
+let _cachedBadgePositions = [];
+
 function badgeObstacles() {
-    const byId = new Map(bubbles.value.map((b) => [b.id, b]));
-    const result = [];
+    if (!friendConnections.value.length) {
+        _cachedBadgePositions = EMPTY_OBSTACLES;
+        return EMPTY_OBSTACLES;
+    }
+    const obstacles = [];
+    const positions = [];
     for (const c of friendConnections.value) {
-        const from = byId.get(c.from);
-        const to = byId.get(c.to);
+        const from = bubbleById.value.get(c.from);
+        const to = bubbleById.value.get(c.to);
         if (!from || !to) continue;
         const midX = (from.x + from.size / 2 + to.x + to.size / 2) / 2;
         const midY = (from.y + from.size / 2 + to.y + to.size / 2) / 2;
-        result.push(resolveBadgePos(midX, midY, c.from, c.to, bubbles.value));
+        const pos = resolveBadgePos(midX, midY, c.from, c.to, bubbles.value);
+        obstacles.push(pos);
+        positions.push({ from: c.from, to: c.to, x: pos.x, y: pos.y });
     }
-    return result;
+    _cachedBadgePositions = positions;
+    return obstacles;
 }
 
 function loop(timestamp) {
@@ -361,6 +370,8 @@ async function handleCreate(data) {
 }
 
 const selectedBubble = computed(() => bubbles.value.find((b) => b.selected) ?? null);
+
+const bubbleById = computed(() => new Map(bubbles.value.map((b) => [b.id, b])));
 
 // ── Audio SFX ─────────────────────────────────────────────────────
 watch(selectedBubble, (newVal, oldVal) => {
@@ -1372,6 +1383,7 @@ const isMobile = window.innerWidth < 640;
             :connections="connections"
             :friend-connections="friendConnections"
             :bubbles="bubbles"
+            :badge-positions="_cachedBadgePositions"
         />
 
         <!-- BUBBLES -->

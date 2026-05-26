@@ -6,7 +6,7 @@ const TOUCH_MOUSE_SUPPRESS_MS = 500
 
 export function useDrag(onBubbleClick) {
     const dragging = ref(null)
-    const dragMoved = ref(false)
+    let dragMoved = false
     let isTouchDrag = false
     let lastTouchTime = 0
     let lastTouchTapTime = 0
@@ -28,7 +28,7 @@ export function useDrag(onBubbleClick) {
             sx: e.clientX,
             sy: e.clientY,
         }
-        dragMoved.value = false
+        dragMoved = false
     }
 
     function startTouch(bubble, e) {
@@ -45,7 +45,7 @@ export function useDrag(onBubbleClick) {
             sx: t.clientX,
             sy: t.clientY,
         }
-        dragMoved.value = false
+        dragMoved = false
     }
 
     function _move(clientX, clientY, bubbles) {
@@ -53,8 +53,8 @@ export function useDrag(onBubbleClick) {
         const dx = clientX - dragging.value.sx
         const dy = clientY - dragging.value.sy
         const thr = isTouchDrag ? TOUCH_THR : DRAG_THR
-        if (!dragMoved.value && Math.hypot(dx, dy) > thr) dragMoved.value = true
-        if (!dragMoved.value) return
+        if (!dragMoved && Math.hypot(dx, dy) > thr) dragMoved = true
+        if (!dragMoved) return
         const b = bubbles.find((x) => x.id === dragging.value.id)
         if (!b) return
         b.x = Math.max(60, Math.min(clientX - dragging.value.ox, window.innerWidth - b.size - 60))
@@ -74,17 +74,16 @@ export function useDrag(onBubbleClick) {
     }
 
     function stopDrag() {
-        if (dragging.value && !dragMoved.value) {
+        if (dragging.value && !dragMoved) {
             if (isTouchDrag) lastTouchTapTime = Date.now()
             onBubbleClick?.(dragging.value.id)
         }
         dragging.value = null
-        dragMoved.value = false
+        dragMoved = false
     }
 
     return {
         dragging,
-        dragMoved,
         startDrag,
         startTouch,
         onMouseMove,

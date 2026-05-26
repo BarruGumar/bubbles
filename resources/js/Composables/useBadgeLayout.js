@@ -1,5 +1,5 @@
 // Visual radius of the badge circle + clearance margin
-export const BADGE_COLLISION_R = 20
+const BADGE_COLLISION_R = 20
 
 /**
  * Compute where the midpoint badge should render so it doesn't overlap any

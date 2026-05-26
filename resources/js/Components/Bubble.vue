@@ -14,6 +14,10 @@ defineEmits(['mousedown', 'mouseenter', 'mouseleave', 'contextmenu', 'touchstart
 
 const ARC_C = 276.46;
 
+const optimizedImage = computed(() =>
+    props.bubble.image ? clImg(props.bubble.image, 300, 300, 'fill') : null,
+);
+
 const activityDash = computed(() => {
     const filled = ARC_C * props.bubble.activity;
     return `${filled} ${ARC_C - filled}`;
@@ -33,9 +37,6 @@ const containerStyle = computed(() => {
         shadow = `0 8px 26px ${color}44, 0 2px 8px ${color}22, 0 0 ${10 + activity * 8}px ${color}22`;
     }
 
-    const { image } = props.bubble;
-    const optimizedImage = image ? clImg(image, 300, 300, 'fill') : null;
-
     return {
         position: 'absolute',
         zIndex: props.isHovered && !selected ? 32 : 20,
@@ -44,8 +45,8 @@ const containerStyle = computed(() => {
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: '50%',
-        backgroundImage: optimizedImage
-            ? `radial-gradient(circle at 38% 32%, ${color}55 0%, ${color}99 100%), url(${optimizedImage})`
+        backgroundImage: optimizedImage.value
+            ? `radial-gradient(circle at 38% 32%, ${color}55 0%, ${color}99 100%), url(${optimizedImage.value})`
             : `radial-gradient(circle at 38% 32%, ${color}ee 0%, ${color} 60%)`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
