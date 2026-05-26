@@ -201,7 +201,10 @@ function onWindowMouseUp() {
 function onWindowTouchMove(e) {
     moveDragTouch(e, bubbles.value);
 }
-function onWindowTouchEnd() {
+function onWindowTouchEnd(e) {
+    // preventDefault stops Chrome from firing a synthetic click after touchend,
+    // which would otherwise land on the overlay and immediately deselect the bubble.
+    e.preventDefault();
     stopDrag();
 }
 
@@ -385,8 +388,8 @@ const isMobile = window.innerWidth < 640;
 
 <template>
     <div
-        class="w-screen h-screen relative select-none"
-        style="overflow: clip; background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none"
+        class="w-screen h-screen overflow-hidden relative select-none"
+        style="background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none"
         @click.self="clearSelection"
         @touchend.self="clearSelection"
     >
@@ -1387,11 +1390,12 @@ const isMobile = window.innerWidth < 640;
         />
 
         <!-- EXPANDED BUBBLE PANEL -->
-        <div
-            v-if="selectedBubble"
-            :style="{
+        <Transition name="bubble-expand">
+            <div
+                v-if="selectedBubble"
+                :style="{
                     position: 'absolute',
-                    zIndex: 50,
+                    zIndex: 36,
                     left: isMobile
                         ? `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`
                         : `${selectedBubble.x + selectedBubble.size / 2 - 150}px`,
@@ -1593,6 +1597,7 @@ const isMobile = window.innerWidth < 640;
                     >Demo · Cria uma comunidade com ≡</span
                 >
             </div>
+        </Transition>
 
         <!-- Overlay: absorbs the synthetic click Chrome fires after a touch-to-select.
              handleOverlayClick has the time guard; @touchend.prevent="clearSelection"
@@ -1989,6 +1994,22 @@ const isMobile = window.innerWidth < 640;
     to {
         transform: rotate(360deg);
     }
+}
+
+.bubble-expand-enter-active {
+    transition:
+        opacity 0.3s ease,
+        transform 0.45s cubic-bezier(0.22, 0.78, 0.26, 1);
+}
+.bubble-expand-leave-active {
+    transition:
+        opacity 0.22s ease,
+        transform 0.32s cubic-bezier(0.6, 0, 0.4, 1);
+}
+.bubble-expand-enter-from,
+.bubble-expand-leave-to {
+    opacity: 0;
+    transform: scale(0.32);
 }
 
 input::placeholder {
