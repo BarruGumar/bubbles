@@ -7,17 +7,12 @@ const props = defineProps({
     connections: { type: Array, required: true },
     friendConnections: { type: Array, default: () => [] },
     bubbles: { type: Array, required: true },
-    badgePositions: { type: Array, default: () => [] },
 });
 
 const bubbleMap = computed(() => new Map(props.bubbles.map((b) => [b.id, b])));
 
 const validFriendConnections = computed(() =>
     props.friendConnections.filter((c) => bubbleMap.value.has(c.from) && bubbleMap.value.has(c.to)),
-);
-
-const badgePosMap = computed(() =>
-    new Map(props.badgePositions.map((p) => [`${p.from}-${p.to}`, p])),
 );
 
 function getBubble(id) {
@@ -36,8 +31,6 @@ function midpoint(fromId, toId) {
 }
 
 function badgePosition(c) {
-    const cached = badgePosMap.value.get(`${c.from}-${c.to}`);
-    if (cached) return cached;
     const mid = midpoint(c.from, c.to);
     return resolveBadgePos(mid.x, mid.y, c.from, c.to, props.bubbles);
 }

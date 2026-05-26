@@ -276,27 +276,17 @@ function onKeyDown(e) {
 let animId = null;
 let lastTime = 0;
 
-const EMPTY_OBSTACLES = [];
-let _cachedBadgePositions = [];
-
 function badgeObstacles() {
-    if (!friendConnections.value.length) {
-        _cachedBadgePositions = EMPTY_OBSTACLES;
-        return EMPTY_OBSTACLES;
-    }
+    if (!friendConnections.value.length) return [];
     const obstacles = [];
-    const positions = [];
     for (const c of friendConnections.value) {
         const from = bubbleById.value.get(c.from);
         const to = bubbleById.value.get(c.to);
         if (!from || !to) continue;
         const midX = (from.x + from.size / 2 + to.x + to.size / 2) / 2;
         const midY = (from.y + from.size / 2 + to.y + to.size / 2) / 2;
-        const pos = resolveBadgePos(midX, midY, c.from, c.to, bubbles.value);
-        obstacles.push(pos);
-        positions.push({ from: c.from, to: c.to, x: pos.x, y: pos.y });
+        obstacles.push(resolveBadgePos(midX, midY, c.from, c.to, bubbles.value));
     }
-    _cachedBadgePositions = positions;
     return obstacles;
 }
 
@@ -1383,7 +1373,6 @@ const isMobile = window.innerWidth < 640;
             :connections="connections"
             :friend-connections="friendConnections"
             :bubbles="bubbles"
-            :badge-positions="_cachedBadgePositions"
         />
 
         <!-- BUBBLES -->
