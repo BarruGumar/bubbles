@@ -386,7 +386,7 @@ const isMobile = window.innerWidth < 640;
 <template>
     <div
         class="w-screen h-screen overflow-hidden relative select-none"
-        style="background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none; transform: translateZ(0)"
+        style="background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none"
         @click.self="clearSelection"
         @touchend.self="clearSelection"
     >
@@ -1600,7 +1600,7 @@ const isMobile = window.innerWidth < 640;
              @click.stop prevents the (now-handled) click from reaching the root div. -->
         <div
             v-if="selectedBubble"
-            style="position: absolute; inset: 0; z-index: 35;"
+            style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 35;"
             @click.stop="handleOverlayClick"
             @touchend.prevent="handleOverlayTouchEnd"
         />
