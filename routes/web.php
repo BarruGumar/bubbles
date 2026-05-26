@@ -17,7 +17,7 @@ use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/bubbles', [FeedController::class, 'home'])->middleware(['auth', 'verified', 'punishments'])->name('bubbles');
+Route::get('/bubbles', [FeedController::class, 'home'])->middleware(['auth', 'punishments'])->name('bubbles');
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -54,7 +54,7 @@ Route::middleware(['auth'])->post('/punishment/{punishment}/acknowledge', functi
     return back();
 })->name('punishment.acknowledge');
 
-Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
+Route::middleware(['auth', 'punishments'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/password/confirm', [\App\Http\Controllers\Auth\PasswordController::class, 'confirm'])->name('profile.password.confirm')->middleware('signed');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

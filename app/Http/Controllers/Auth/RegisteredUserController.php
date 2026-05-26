@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditLogger;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,13 +38,8 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
             'username' => $username,
             'avatar_color' => $color,
+            'email_verified_at' => now(),
         ]);
-
-        try {
-            event(new Registered($user));
-        } catch (\Throwable $e) {
-            error_log('[Mail] Registration verification email failed: ' . $e->getMessage());
-        }
 
         Auth::login($user);
 
