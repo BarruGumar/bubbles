@@ -202,9 +202,10 @@ function onWindowTouchMove(e) {
     moveDragTouch(e, bubbles.value);
 }
 function onWindowTouchEnd(e) {
-    // preventDefault stops Chrome from firing a synthetic click after touchend,
-    // which would otherwise land on the overlay and immediately deselect the bubble.
-    e.preventDefault();
+    // Only preventDefault when a bubble tap/drag was in progress — prevents the
+    // synthetic click Chrome fires after touchend from landing on the overlay.
+    // Without this guard, navbar buttons and links would also be blocked.
+    if (dragging.value) e.preventDefault();
     stopDrag();
 }
 
