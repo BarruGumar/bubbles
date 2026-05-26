@@ -1413,7 +1413,6 @@ const isMobile = window.innerWidth < 640;
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'default',
-                    animation: 'bubble-pop-in 0.45s cubic-bezier(0.22, 0.78, 0.26, 1)',
                 }"
                 @click.stop
                 @mousedown.stop
@@ -1990,11 +1989,6 @@ const isMobile = window.innerWidth < 640;
     to {
         transform: rotate(360deg);
     }
-}
-
-@keyframes bubble-pop-in {
-    from { opacity: 0; transform: scale(0.32); }
-    to   { opacity: 1; transform: scale(1); }
 }
 
 input::placeholder {
