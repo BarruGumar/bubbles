@@ -44,7 +44,7 @@ class RegisteredUserController extends Controller
         try {
             event(new Registered($user));
         } catch (\Exception $e) {
-            \Log::error('[Mail] Registration verification email failed: ' . $e->getMessage());
+            error_log('[Mail] Registration verification email failed: ' . $e->getMessage());
         }
 
         Auth::login($user);

@@ -1387,12 +1387,11 @@ const isMobile = window.innerWidth < 640;
         />
 
         <!-- EXPANDED BUBBLE PANEL -->
-        <Transition name="bubble-expand">
-            <div
-                v-if="selectedBubble"
-                :style="{
+        <div
+            v-if="selectedBubble"
+            :style="{
                     position: 'absolute',
-                    zIndex: 36,
+                    zIndex: 50,
                     left: isMobile
                         ? `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`
                         : `${selectedBubble.x + selectedBubble.size / 2 - 150}px`,
@@ -1414,6 +1413,7 @@ const isMobile = window.innerWidth < 640;
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'default',
+                    animation: 'bubble-pop-in 0.45s cubic-bezier(0.22, 0.78, 0.26, 1)',
                 }"
                 @click.stop
                 @mousedown.stop
@@ -1594,7 +1594,6 @@ const isMobile = window.innerWidth < 640;
                     >Demo · Cria uma comunidade com ≡</span
                 >
             </div>
-        </Transition>
 
         <!-- Overlay: absorbs the synthetic click Chrome fires after a touch-to-select.
              handleOverlayClick has the time guard; @touchend.prevent="clearSelection"
@@ -1993,20 +1992,9 @@ const isMobile = window.innerWidth < 640;
     }
 }
 
-.bubble-expand-enter-active {
-    transition:
-        opacity 0.3s ease,
-        transform 0.45s cubic-bezier(0.22, 0.78, 0.26, 1);
-}
-.bubble-expand-leave-active {
-    transition:
-        opacity 0.22s ease,
-        transform 0.32s cubic-bezier(0.6, 0, 0.4, 1);
-}
-.bubble-expand-enter-from,
-.bubble-expand-leave-to {
-    opacity: 0;
-    transform: scale(0.32);
+@keyframes bubble-pop-in {
+    from { opacity: 0; transform: scale(0.32); }
+    to   { opacity: 1; transform: scale(1); }
 }
 
 input::placeholder {
