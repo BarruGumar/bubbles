@@ -1386,11 +1386,12 @@ const isMobile = window.innerWidth < 640;
             @contextmenu="handleContextMenu(b, $event)"
         />
 
+        <Teleport to="body">
         <!-- EXPANDED BUBBLE PANEL -->
         <div
             v-if="selectedBubble"
             :style="{
-                    position: 'absolute',
+                    position: 'fixed',
                     zIndex: 50,
                     left: isMobile
                         ? `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`
@@ -1604,6 +1605,7 @@ const isMobile = window.innerWidth < 640;
             @click.stop="handleOverlayClick"
             @touchend.prevent="handleOverlayTouchEnd"
         />
+        </Teleport>
 
         <!-- GLOBAL TRENDS SIDEBAR -->
         <div
