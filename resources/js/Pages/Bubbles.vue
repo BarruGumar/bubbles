@@ -385,8 +385,8 @@ const isMobile = window.innerWidth < 640;
 
 <template>
     <div
-        class="w-screen h-screen overflow-hidden relative select-none"
-        style="background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none"
+        class="w-screen h-screen relative select-none"
+        style="overflow: clip; background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none"
         @click.self="clearSelection"
         @touchend.self="clearSelection"
     >
@@ -1386,12 +1386,11 @@ const isMobile = window.innerWidth < 640;
             @contextmenu="handleContextMenu(b, $event)"
         />
 
-        <Teleport to="body">
         <!-- EXPANDED BUBBLE PANEL -->
         <div
             v-if="selectedBubble"
             :style="{
-                    position: 'fixed',
+                    position: 'absolute',
                     zIndex: 50,
                     left: isMobile
                         ? `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`
@@ -1605,7 +1604,6 @@ const isMobile = window.innerWidth < 640;
             @click.stop="handleOverlayClick"
             @touchend.prevent="handleOverlayTouchEnd"
         />
-        </Teleport>
 
         <!-- GLOBAL TRENDS SIDEBAR -->
         <div
