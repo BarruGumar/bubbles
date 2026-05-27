@@ -65,7 +65,8 @@ function deleteCommunity(id) {
                 overflow: hidden;
             "
         >
-            <table style="width: 100%; border-collapse: collapse">
+        <div style="overflow-x: auto">
+            <table style="width: 100%; border-collapse: collapse; min-width: 480px">
                 <thead>
                     <tr style="border-bottom: 1px solid #f0f4f8">
                         <th
@@ -220,6 +221,7 @@ function deleteCommunity(id) {
                     </tr>
                 </tbody>
             </table>
+        </div><!-- /overflow-x wrapper -->
 
             <div
                 v-if="communities.last_page > 1"

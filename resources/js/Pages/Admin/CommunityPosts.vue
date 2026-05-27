@@ -69,7 +69,8 @@ function restore(postId) {
                 overflow: hidden;
             "
         >
-            <table style="width: 100%; border-collapse: collapse">
+        <div style="overflow-x: auto">
+            <table style="width: 100%; border-collapse: collapse; min-width: 520px">
                 <thead>
                     <tr style="border-bottom: 1px solid #f0f4f8">
                         <th style="text-align: left; padding: 12px 16px; font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: 0.07em">Conteúdo</th>
@@ -141,6 +142,7 @@ function restore(postId) {
                     </tr>
                 </tbody>
             </table>
+        </div><!-- /overflow-x wrapper -->
 
             <div
                 v-if="posts.last_page > 1"

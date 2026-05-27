@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import AudioControls from '@/Components/AudioControls.vue';
@@ -8,6 +8,10 @@ import { useAudio } from '@/Composables/useAudio';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+
+const sidebarOpen = ref(false);
+function toggleSidebar() { sidebarOpen.value = !sidebarOpen.value; }
+function closeSidebar() { sidebarOpen.value = false; }
 const { show: toast } = useToast();
 const { playBgm, playSfx } = useAudio();
 
@@ -47,8 +51,17 @@ const navLinks = [
 
 <template>
     <div style="min-height: 100vh; background: #f0f4f8; font-family: 'Segoe UI', system-ui, sans-serif; display: flex" @click.capture="onAdminClick">
+        <!-- Mobile overlay -->
+        <div
+            v-if="sidebarOpen"
+            class="sidebar-overlay"
+            @click="closeSidebar"
+        />
+
         <!-- Sidebar -->
         <aside
+            class="admin-sidebar"
+            :class="{ open: sidebarOpen }"
             style="
                 width: 220px;
                 flex-shrink: 0;
@@ -84,6 +97,7 @@ const navLinks = [
                     v-for="link in navLinks"
                     :key="link.route"
                     :href="route(link.route)"
+                    @click="closeSidebar"
                     style="
                         display: flex;
                         align-items: center;
@@ -120,6 +134,7 @@ const navLinks = [
         <!-- Main -->
         <div style="flex: 1; min-width: 0">
             <header
+                class="admin-header"
                 style="
                     background: white;
                     border-bottom: 1px solid #e8f0f8;
@@ -128,17 +143,21 @@ const navLinks = [
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
+                    gap: 12px;
                     position: sticky;
                     top: 0;
                     z-index: 10;
                 "
             >
-                <slot name="header">
-                    <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Admin</h1>
-                </slot>
-                <div style="display:flex;align-items:center;gap:12px">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+                    <button class="hamburger-btn" @click="toggleSidebar">☰</button>
+                    <slot name="header">
+                        <h1 style="font-size: 16px; font-weight: 800; color: #3a6478; margin: 0">Admin</h1>
+                    </slot>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
                     <AudioControls />
-                    <Link href="/bubbles" style="font-size: 12px; color: #009ac7; text-decoration: none; font-weight: 600">← Voltar ao site</Link>
+                    <Link href="/bubbles" class="back-link" style="font-size: 12px; color: #009ac7; text-decoration: none; font-weight: 600">← Voltar ao site</Link>
                 </div>
             </header>
 
@@ -150,3 +169,58 @@ const navLinks = [
         <ToastContainer />
     </div>
 </template>
+
+<style scoped>
+/* Hamburger: hidden on desktop */
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #3a6478;
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* Back link: hide text on very small screens */
+@media (max-width: 400px) {
+    .back-link { font-size: 0; }
+    .back-link::after { content: '←'; font-size: 16px; }
+}
+
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: block;
+    }
+
+    /* Sidebar: fixed drawer, hidden off-screen */
+    .admin-sidebar {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        z-index: 100;
+        transform: translateX(-220px);
+        transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-shadow: none;
+    }
+    .admin-sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Overlay */
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 99;
+    }
+
+    /* Reduce header padding */
+    .admin-header {
+        padding: 0 16px !important;
+    }
+}
+</style>

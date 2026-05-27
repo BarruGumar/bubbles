@@ -127,7 +127,8 @@ function deleteAllLogs() {
             <div v-if="logs.data.length === 0" style="padding:48px; text-align:center; color:#8ba0b0; font-size:13px;">
                 Sem logs para este filtro.
             </div>
-            <table v-else style="width:100%; border-collapse:collapse;">
+            <div v-else style="overflow-x: auto">
+            <table style="width:100%; border-collapse:collapse; min-width:660px;">
                 <thead>
                     <tr style="border-bottom:1px solid #f0f4f8;">
                         <th v-for="h in ['Data','Actor','Ação','Categoria','Target','IP','']" :key="h"
@@ -176,6 +177,7 @@ function deleteAllLogs() {
                     </tr>
                 </tbody>
             </table>
+            </div><!-- /overflow-x wrapper -->
 
             <div v-if="logs.last_page > 1"
                 style="padding:14px 16px; border-top:1px solid #f0f4f8; display:flex; gap:6px; justify-content:center;">

@@ -91,7 +91,8 @@ function deleteUser(u) {
                 overflow: hidden;
             "
         >
-            <table style="width: 100%; border-collapse: collapse">
+        <div style="overflow-x: auto">
+            <table style="width: 100%; border-collapse: collapse; min-width: 580px">
                 <thead>
                     <tr style="border-bottom: 1px solid #f0f4f8">
                         <th
@@ -281,6 +282,7 @@ function deleteUser(u) {
                     </tr>
                 </tbody>
             </table>
+        </div><!-- /overflow-x wrapper -->
 
             <!-- Pagination -->
             <div

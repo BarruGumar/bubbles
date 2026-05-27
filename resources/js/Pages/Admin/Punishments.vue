@@ -96,7 +96,7 @@ function submitRevoke() {
         </template>
 
         <!-- Toolbar -->
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; overflow-x: auto; padding-bottom: 4px">
             <input
                 v-model="search" @input="applyFilters"
                 placeholder="Pesquisar utilizador..."
@@ -132,7 +132,8 @@ function submitRevoke() {
             <div v-if="punishments.data.length === 0" style="padding: 48px; text-align: center; color: #8ba0b0; font-size: 13px;">
                 Sem punições para este filtro.
             </div>
-            <table v-else style="width: 100%; border-collapse: collapse;">
+            <div v-else style="overflow-x: auto">
+            <table style="width: 100%; border-collapse: collapse; min-width: 640px;">
                 <thead>
                     <tr style="border-bottom: 1px solid #f0f4f8;">
                         <th v-for="h in ['Utilizador','Tipo','Motivo','Duração','Estado','Emitido por','Ações']" :key="h"
@@ -180,6 +181,7 @@ function submitRevoke() {
                     </tr>
                 </tbody>
             </table>
+            </div><!-- /overflow-x wrapper -->
 
             <!-- Pagination -->
             <div v-if="punishments.last_page > 1"
