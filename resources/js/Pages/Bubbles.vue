@@ -357,6 +357,8 @@ function toggleTrends() {
     playSfx(trendsOpen.value ? 'openGlobal' : 'closeGlobal');
 }
 const isMobile = window.innerWidth < 640;
+const mobilePanelLeft = `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`;
+const mobilePanelTop = `${window.innerHeight / 2 - 140}px`;
 </script>
 
 <template>
@@ -1370,10 +1372,10 @@ const isMobile = window.innerWidth < 640;
                     position: 'absolute',
                     zIndex: 36,
                     left: isMobile
-                        ? `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`
+                        ? mobilePanelLeft
                         : `${selectedBubble.x + selectedBubble.size / 2 - 150}px`,
                     top: isMobile
-                        ? `${window.innerHeight / 2 - 140}px`
+                        ? mobilePanelTop
                         : `${selectedBubble.y + selectedBubble.size / 2 - 150}px`,
                     width: isMobile ? '260px' : '300px',
                     height: isMobile ? '260px' : '300px',
