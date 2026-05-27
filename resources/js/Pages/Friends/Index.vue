@@ -104,10 +104,11 @@ function startConversation(friend) {
                             </div>
                         </Link>
 
-                        <!-- Info -->
+                        <!-- Info + Ações -->
+                        <div class="list-content">
                         <Link
                             :href="route('profile.show', req.username)"
-                            style="text-decoration: none; flex: 1; min-width: 0"
+                            style="text-decoration: none; min-width: 0"
                         >
                             <p
                                 style="
@@ -128,7 +129,7 @@ function startConversation(friend) {
                         </Link>
 
                         <!-- Ações -->
-                        <div style="display: flex; gap: 8px; flex-shrink: 0">
+                        <div class="list-actions">
                             <button
                                 @click="accept(req.friendId)"
                                 style="
@@ -173,6 +174,7 @@ function startConversation(friend) {
                                 Recusar
                             </button>
                         </div>
+                        </div><!-- /list-content -->
                     </div>
                 </div>
             </div>
@@ -238,9 +240,10 @@ function startConversation(friend) {
                             </div>
                         </Link>
 
+                        <div class="list-content">
                         <Link
                             :href="route('profile.show', req.username)"
-                            style="text-decoration: none; flex: 1; min-width: 0"
+                            style="text-decoration: none; min-width: 0"
                         >
                             <p
                                 style="
@@ -260,6 +263,7 @@ function startConversation(friend) {
                             </p>
                         </Link>
 
+                        <div class="list-actions">
                         <button
                             @click="reject(req.friendId)"
                             style="
@@ -272,7 +276,6 @@ function startConversation(friend) {
                                 font-weight: 600;
                                 cursor: pointer;
                                 transition: all 0.2s;
-                                flex-shrink: 0;
                             "
                             @mouseenter="
                                 $event.currentTarget.style.borderColor = '#e05555';
@@ -285,6 +288,8 @@ function startConversation(friend) {
                         >
                             Cancelar
                         </button>
+                        </div><!-- /list-actions -->
+                        </div><!-- /list-content -->
                     </div>
                 </div>
             </div>
@@ -371,9 +376,10 @@ function startConversation(friend) {
                             </div>
                         </Link>
 
+                        <div class="list-content">
                         <Link
                             :href="route('profile.show', friend.username)"
-                            style="text-decoration: none; flex: 1; min-width: 0"
+                            style="text-decoration: none; min-width: 0"
                         >
                             <p
                                 style="
@@ -393,6 +399,7 @@ function startConversation(friend) {
                             </p>
                         </Link>
 
+                        <div class="list-actions">
                         <button
                             @click="startConversation(friend)"
                             style="
@@ -426,7 +433,6 @@ function startConversation(friend) {
                                 font-weight: 600;
                                 cursor: pointer;
                                 transition: all 0.2s;
-                                flex-shrink: 0;
                             "
                             @mouseenter="
                                 $event.currentTarget.style.borderColor = '#e05555';
@@ -439,9 +445,34 @@ function startConversation(friend) {
                         >
                             Remover
                         </button>
+                        </div><!-- /list-actions -->
+                        </div><!-- /list-content -->
                     </div>
                 </div>
             </div>
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.list-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.list-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+    .list-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+}
+</style>

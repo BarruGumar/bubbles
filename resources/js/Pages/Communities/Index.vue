@@ -157,10 +157,11 @@ function leave(id) {
                             </div>
                         </Link>
 
-                        <!-- Info -->
+                        <!-- Info + Ações -->
+                        <div class="list-content">
                         <Link
                             :href="route('community.show', c.id)"
-                            style="text-decoration: none; flex: 1; min-width: 0"
+                            style="text-decoration: none; min-width: 0"
                         >
                             <p
                                 style="
@@ -181,7 +182,7 @@ function leave(id) {
                         </Link>
 
                         <!-- Ações -->
-                        <div style="display: flex; gap: 8px; flex-shrink: 0">
+                        <div class="list-actions">
                             <Link
                                 :href="route('community.show', c.id)"
                                 style="
@@ -216,7 +217,6 @@ function leave(id) {
                                     font-weight: 600;
                                     cursor: pointer;
                                     transition: all 0.2s;
-                                    flex-shrink: 0;
                                 "
                                 @mouseenter="
                                     $event.currentTarget.style.borderColor = '#e05555';
@@ -229,10 +229,34 @@ function leave(id) {
                             >
                                 Sair
                             </button>
-                        </div>
+                        </div><!-- /list-actions -->
+                        </div><!-- /list-content -->
                     </div>
                 </div>
             </div>
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.list-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.list-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+    .list-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+}
+</style>
