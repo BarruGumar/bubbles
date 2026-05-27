@@ -17,7 +17,7 @@ use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/bubbles', [FeedController::class, 'home'])->middleware(['auth', 'punishments'])->name('bubbles');
+Route::get('/bubbles', [FeedController::class, 'home'])->middleware(['auth', 'verified', 'punishments'])->name('bubbles');
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -33,7 +33,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
-})->middleware(['auth'])->name('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
 // Public profile — accessible without login
 Route::get('/u/{username}', [ProfileController::class, 'show'])->name('profile.show');
@@ -54,7 +54,7 @@ Route::middleware(['auth'])->post('/punishment/{punishment}/acknowledge', functi
     return back();
 })->name('punishment.acknowledge');
 
-Route::middleware(['auth', 'punishments'])->group(function () {
+Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/password/confirm', [\App\Http\Controllers\Auth\PasswordController::class, 'confirm'])->name('profile.password.confirm')->middleware('signed');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -146,7 +146,7 @@ Route::middleware(['auth', 'punishments'])->group(function () {
 });
 
 // Admin panel
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::patch('/users/{user}/role', [AdminController::class, 'updateUserRole'])->name('users.role');
