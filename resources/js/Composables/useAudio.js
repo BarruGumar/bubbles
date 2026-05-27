@@ -15,6 +15,7 @@ let bgmAudio      = null;   // the live <audio> element
 let bgmPlayingKey = '';     // key that bgmAudio is playing
 let pendingBgmKey = null;   // queued before first interaction
 let hasInteracted = false;
+let bgmPausedByVisibility = false;
 
 let sfxCache   = {};        // key → <audio>
 let clickState = 0;         // alternates click1/click2
@@ -80,6 +81,23 @@ if (typeof document !== 'undefined') {
     ['click', 'touchstart', 'keydown'].forEach(evt =>
         document.addEventListener(evt, onFirstInteraction, { passive: true, capture: true }),
     );
+
+    // On mobile only: pause BGM when the browser goes to background, resume on return.
+    // Desktop tabs also fire visibilitychange when switching — music should keep playing there.
+    const isMobile = navigator.maxTouchPoints > 0;
+    if (isMobile) {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (bgmAudio && !bgmAudio.paused) {
+                    bgmAudio.pause();
+                    bgmPausedByVisibility = true;
+                }
+            } else if (bgmPausedByVisibility && bgmAudio) {
+                bgmPausedByVisibility = false;
+                bgmAudio.play().catch(() => {});
+            }
+        });
+    }
 
     // Play persons.mp3 on clicks that navigate to a profile/friends/members page.
     // Direct click listener guarantees we're inside a user gesture (audio.play allowed).
@@ -184,6 +202,7 @@ function playBgm(key) {
 function stopBgm() {
     currentBgmKey.value = null;
     pendingBgmKey = null;
+    bgmPausedByVisibility = false;
     try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
     if (bgmAudio) {
         const old = bgmAudio;
@@ -245,6 +264,7 @@ function toggleMuted() { setMuted(!muted.value); }
 function setBgmEnabled(v) {
     bgmEnabled.value = !!v;
     if (!v) {
+        bgmPausedByVisibility = false;
         // Stop audio but remember which track was requested
         if (bgmAudio) {
             const old = bgmAudio;
