@@ -5,7 +5,6 @@ import axios from 'axios';
 import Bubble from '@/Components/Bubble.vue';
 import ConnectionLines from '@/Components/ConnectionLines.vue';
 import CreateCommunityModal from '@/Components/CreateCommunityModal.vue';
-import PostCard from '@/Components/PostCard.vue';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useBubbles } from '@/Composables/useBubbles';
@@ -20,6 +19,9 @@ import { useAudio } from '@/Composables/useAudio';
 import AudioControls from '@/Components/AudioControls.vue';
 import AnnouncementBanner from '@/Components/AnnouncementBanner.vue';
 import AnnouncementModal from '@/Components/AnnouncementModal.vue';
+import TrendsSidebar from '@/Components/TrendsSidebar.vue';
+import FeedPanel from '@/Components/FeedPanel.vue';
+import PunishmentModal from '@/Components/PunishmentModal.vue';
 
 const props = defineProps({
     feed: { type: Array, default: () => [] },
@@ -60,37 +62,6 @@ watch(
     },
 );
 
-// ── Punishment notification modal ─────────────────────────────────
-const newPunishment = computed(() => page.props.new_punishment ?? null);
-const punishmentModalVisible = ref(false);
-
-const punishmentConfig = {
-    warning:    { label: 'Aviso',          icon: '⚠️',  color: '#d97706' },
-    mute:       { label: 'Silenciamento',  icon: '🔇',  color: '#ea580c' },
-    suspension: { label: 'Conta Suspensa', icon: '🚫',  color: '#dc2626' },
-    ban:        { label: 'Banimento',      icon: '⛔',  color: '#991b1b' },
-};
-
-const punishmentInfo = computed(() => punishmentConfig[newPunishment.value?.type] ?? punishmentConfig.warning);
-
-function formatPunishmentDate(iso) {
-    if (!iso) return null;
-    return new Date(iso).toLocaleDateString('pt-PT', {
-        year: 'numeric', month: 'long', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-    });
-}
-
-watch(newPunishment, (p) => {
-    if (p) punishmentModalVisible.value = true;
-}, { immediate: true });
-
-function acknowledgePunishment() {
-    punishmentModalVisible.value = false;
-    router.post(route('punishment.acknowledge', newPunishment.value.id), {}, {
-        preserveScroll: true,
-    });
-}
 
 const showAdd = ref(false);
 const searchOpen = ref(false);
@@ -1613,229 +1584,21 @@ const isMobile = window.innerWidth < 640;
         />
 
         <!-- GLOBAL TRENDS SIDEBAR -->
-        <div
-            :style="{
-                position: 'absolute',
-                right: isMobile ? '8px' : '16px',
-                top: isMobile ? 'auto' : '70px',
-                bottom: isMobile ? '80px' : 'auto',
-                zIndex: 38,
-                width: isMobile ? '158px' : '192px',
-                background: 'rgba(255,255,255,0.88)',
-                backdropFilter: 'blur(16px)',
-                borderRadius: '18px',
-                border: '1px solid #4ebcff22',
-                boxShadow: '0 4px 20px #009ac70c',
-                padding: isMobile ? '10px 10px' : '14px 12px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '2px',
-            }"
-            @click.stop
-        >
-            <!-- Header — clicável em mobile para abrir/fechar -->
-            <div
-                style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 0 6px;
-                    margin-bottom: 8px;
-                    cursor: pointer;
-                    user-select: none;
-                "
-                @click="toggleTrends"
-                @touchend.prevent="toggleTrends"
-            >
-                <p
-                    style="
-                        font-size: 10px;
-                        font-weight: 800;
-                        color: #8ba0b0;
-                        text-transform: uppercase;
-                        letter-spacing: 0.1em;
-                        margin: 0;
-                    "
-                >
-                    Global Trends
-                </p>
-                <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    :style="{
-                        transform: trendsOpen ? 'rotate(0deg)' : 'rotate(180deg)',
-                        transition: 'transform .25s',
-                        flexShrink: 0,
-                    }"
-                >
-                    <path
-                        d="M2 8L6 4l4 4"
-                        stroke="#8ba0b0"
-                        stroke-width="1.6"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
-                </svg>
-            </div>
-
-            <!-- Lista colapsável -->
-            <div
-                :style="{
-                    overflow: 'hidden',
-                    maxHeight: trendsOpen ? '400px' : '0px',
-                    transition: 'max-height .3s cubic-bezier(.4,0,.2,1)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
-                }"
-            >
-                <div
-                    v-for="(b, i) in trends"
-                    :key="b.id"
-                    @click.stop="toggleSelect(b.id)"
-                    style="
-                        display: flex;
-                        align-items: center;
-                        gap: 9px;
-                        padding: 7px 8px;
-                        border-radius: 10px;
-                        cursor: pointer;
-                        transition: background 0.15s;
-                    "
-                    @mouseenter="$event.currentTarget.style.background = '#f0f8ff'"
-                    @mouseleave="$event.currentTarget.style.background = 'transparent'"
-                >
-                    <span
-                        style="
-                            font-size: 10px;
-                            font-weight: 700;
-                            color: #c0ccd4;
-                            width: 12px;
-                            flex-shrink: 0;
-                            text-align: right;
-                        "
-                        >{{ i + 1 }}</span
-                    >
-                    <div
-                        :style="{
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            background: b.color,
-                            flexShrink: 0,
-                            boxShadow: `0 0 5px ${b.color}88`,
-                        }"
-                    />
-                    <div style="flex: 1; min-width: 0">
-                        <p
-                            style="
-                                font-size: 12px;
-                                font-weight: 700;
-                                color: #3a6478;
-                                margin: 0;
-                                white-space: nowrap;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
-                            "
-                        >
-                            {{ b.label }}
-                        </p>
-                        <p style="font-size: 9px; color: #8ba0b0; margin: 0">{{ b.members }} membros</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <TrendsSidebar
+            :trends="trends"
+            :isMobile="isMobile"
+            :open="trendsOpen"
+            @toggle="toggleTrends"
+            @select="toggleSelect"
+        />
 
         <!-- FEED PANEL -->
-        <Transition name="slide-left">
-            <div
-                v-if="feedOpen"
-                :style="{
-                    position: 'absolute',
-                    left: isMobile ? '8px' : '16px',
-                    top: '70px',
-                    zIndex: 38,
-                    width: isMobile ? 'calc(100vw - 16px)' : '380px',
-                    height: 'calc(100vh - 86px)',
-                    background: 'var(--card-bg)',
-                    backdropFilter: 'blur(16px)',
-                    borderRadius: '18px',
-                    border: '1px solid var(--card-border)',
-                    boxShadow: '0 4px 20px #009ac70c',
-                    display: 'flex',
-                    flexDirection: 'column',
-                }"
-                @click.stop
-                @mousedown.stop
-            >
-                <!-- Header -->
-                <div
-                    style="
-                        padding: 14px 16px 10px;
-                        border-bottom: 1px solid var(--dropdown-sep);
-                        display: flex;
-                        align-items: center;
-                        justify-content: space-between;
-                        flex-shrink: 0;
-                    "
-                >
-                    <p
-                        style="
-                            font-size: 10px;
-                            font-weight: 800;
-                            color: var(--text-3);
-                            text-transform: uppercase;
-                            letter-spacing: 0.1em;
-                            margin: 0;
-                        "
-                    >
-                        Feed
-                    </p>
-                    <Link
-                        :href="route('feed.index')"
-                        style="font-size: 11px; font-weight: 700; color: #009ac7; text-decoration: none"
-                        >Ver tudo →</Link
-                    >
-                </div>
-
-                <!-- Content -->
-                <div style="padding: 10px 10px 20px; flex: 1; overflow-y: auto">
-                    <div v-if="props.feed.length === 0" style="text-align: center; padding: 40px 16px">
-                        <p style="font-size: 28px; margin: 0 0 10px">🫧</p>
-                        <p style="font-size: 13px; font-weight: 700; color: var(--text); margin: 0 0 6px">Feed vazio</p>
-                        <p style="font-size: 11px; color: var(--text-3); margin: 0; line-height: 1.5">
-                            Junta-te a comunidades e adiciona amigos para ver posts aqui.
-                        </p>
-                    </div>
-                    <div v-else style="display: flex; flex-direction: column; gap: 8px">
-                        <PostCard
-                            v-for="item in props.feed"
-                            :key="`${item._type}-${item.id}`"
-                            :post="item"
-                            :author="item.author"
-                            :auth-user="authUser"
-                            :can-edit="item.can_edit"
-                            :can-delete="item.can_delete"
-                            :like-route="item.like_route"
-                            :reactors-route="item._type === 'post' ? route('posts.reactors', item.id) : route('community-posts.reactors', item.id)"
-                            :comment-route="item.comment_route"
-                            :delete-route="item.delete_route"
-                            :edit-route="item.can_edit ? item.edit_route : null"
-                            :report-route="
-                                !item.can_edit && authUser
-                                    ? item._type === 'post'
-                                        ? route('posts.report', item.id)
-                                        : route('community-posts.report', item.id)
-                                    : null
-                            "
-                            :community="item.community ?? null"
-                        />
-                    </div>
-                </div>
-            </div>
-        </Transition>
+        <FeedPanel
+            :open="feedOpen"
+            :feed="props.feed"
+            :auth-user="authUser"
+            :isMobile="isMobile"
+        />
 
         <ToastContainer />
         <AnnouncementModal />
@@ -1914,44 +1677,7 @@ const isMobile = window.innerWidth < 640;
         </Transition>
 
         <!-- ── Punishment notification modal ─────────────────────── -->
-        <Transition name="punishment-overlay">
-            <div
-                v-if="punishmentModalVisible && newPunishment"
-                style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.55);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px"
-            >
-                <Transition name="punishment-pop" appear>
-                    <div style="background:var(--surface);border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);overflow:hidden">
-                        <div :style="{ background: punishmentInfo.color, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px' }">
-                            <span style="font-size:32px;line-height:1">{{ punishmentInfo.icon }}</span>
-                            <div>
-                                <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:0.08em;margin:0 0 2px">Punição recebida</p>
-                                <h2 style="font-size:18px;font-weight:800;color:white;margin:0">{{ punishmentInfo.label }}</h2>
-                            </div>
-                        </div>
-                        <div style="padding:24px">
-                            <p style="font-size:11px;font-weight:700;color:#8ba0b0;text-transform:uppercase;letter-spacing:0.07em;margin:0 0 8px">Motivo</p>
-                            <div style="background:rgba(0,0,0,0.06);border-radius:12px;padding:14px 16px;margin-bottom:16px">
-                                <p style="font-size:14px;color:#3a6478;margin:0;line-height:1.55">
-                                    {{ newPunishment.reason || 'Sem motivo especificado.' }}
-                                </p>
-                            </div>
-                            <p v-if="newPunishment.ends_at" style="font-size:12px;color:#8ba0b0;margin:0 0 20px;text-align:center">
-                                Ativo até <strong style="color:#3a6478">{{ formatPunishmentDate(newPunishment.ends_at) }}</strong>
-                            </p>
-                            <p v-else-if="newPunishment.type !== 'warning'" style="font-size:12px;color:#8ba0b0;margin:0 0 20px;text-align:center">
-                                Duração: <strong style="color:#3a6478">Permanente</strong>
-                            </p>
-                            <button
-                                @click="acknowledgePunishment"
-                                :style="{ width: '100%', padding: '13px', borderRadius: '12px', background: punishmentInfo.color, border: 'none', color: 'white', fontSize: '14px', fontWeight: '700', cursor: 'pointer', boxShadow: `0 4px 16px ${punishmentInfo.color}55` }"
-                            >
-                                Entendido
-                            </button>
-                        </div>
-                    </div>
-                </Transition>
-            </div>
-        </Transition>
+        <PunishmentModal />
     </div>
 </template>
 
@@ -1965,24 +1691,6 @@ const isMobile = window.innerWidth < 640;
     opacity: 0;
 }
 
-.slide-left-enter-active {
-    transition:
-        opacity 0.28s ease,
-        transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.slide-left-leave-active {
-    transition:
-        opacity 0.2s ease,
-        transform 0.24s ease;
-}
-.slide-left-enter-from {
-    opacity: 0;
-    transform: translateX(-20px);
-}
-.slide-left-leave-to {
-    opacity: 0;
-    transform: translateX(-20px);
-}
 
 .overlay-enter-active,
 .overlay-leave-active {
