@@ -68,9 +68,13 @@ onUnmounted(() => {
         </div>
 
         <template v-else>
-            <div class="mb-4 text-sm text-gray-600">
+            <div class="mb-4 text-sm text-gray-800">
                 Obrigado por te registares! Antes de começares, verifica o teu endereço de email clicando no link que
                 acabámos de te enviar. Se não recebeste o email, podemos enviar outro.
+            </div>
+
+            <div class="mb-4 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+                Abre o email de verificação <strong>no mesmo dispositivo</strong> em que fizeste o registo. Clicar o link noutro dispositivo pode resultar em erro.
             </div>
 
             <div class="mb-4 text-sm font-medium text-green-600" v-if="verificationLinkSent">
