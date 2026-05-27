@@ -18,6 +18,10 @@
         @routes
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
+        @if(config('app.debug'))
+        <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+        <script>eruda.init();</script>
+        @endif
     </head>
     <body class="font-sans antialiased">
         @inertia
