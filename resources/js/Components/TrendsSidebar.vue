@@ -14,7 +14,7 @@ const emit = defineEmits(['toggle', 'select']);
             position: 'absolute',
             right: isMobile ? '8px' : '16px',
             top: isMobile ? 'auto' : '70px',
-            bottom: isMobile ? '80px' : 'auto',
+            bottom: isMobile ? '120px' : 'auto',
             zIndex: 38,
             width: isMobile ? '158px' : '192px',
             background: 'rgba(255,255,255,0.88)',

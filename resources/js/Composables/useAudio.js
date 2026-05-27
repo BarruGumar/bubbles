@@ -89,12 +89,18 @@ if (typeof document !== 'undefined') {
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 if (bgmAudio && !bgmAudio.paused) {
-                    bgmAudio.pause();
                     bgmPausedByVisibility = true;
+                    const old = bgmAudio;
+                    bgmAudio = null;
+                    bgmPlayingKey = '';
+                    old.pause();
+                    old.src = '';
                 }
-            } else if (bgmPausedByVisibility && bgmAudio) {
+            } else if (bgmPausedByVisibility) {
                 bgmPausedByVisibility = false;
-                bgmAudio.play().catch(() => {});
+                if (currentBgmKey.value && bgmEnabled.value) {
+                    _startBgm(currentBgmKey.value);
+                }
             }
         });
     }
