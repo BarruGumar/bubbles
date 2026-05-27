@@ -87,6 +87,15 @@ html.dark body::before {
     opacity: 0.45;
 }
 
+@media (max-width: 639px) {
+    body::before {
+        opacity: 0.08;
+    }
+    html.dark body::before {
+        opacity: 0.18;
+    }
+}
+
 /* ── Floor gradient colour ─────────────────────────────────────── */
 :root  { --floor-gradient: #9dcee8; }
 html.dark { --floor-gradient: #060e1c; }

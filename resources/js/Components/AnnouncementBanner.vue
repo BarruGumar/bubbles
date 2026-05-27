@@ -50,7 +50,7 @@ function fmtDate(iso) {
                     <span style="font-size: 13px; font-weight: 700; color: #1a2a3a">{{ ann.title }}</span>
                     <span style="font-size: 11px; color: #8ba0b0">· {{ fmtDate(ann.created_at) }}</span>
                 </div>
-                <p style="font-size: 12px; color: #3a5068; margin: 0; line-height: 1.5">{{ ann.body }}</p>
+                <p style="font-size: 12px; color: #3a5068; margin: 0; line-height: 1.5; overflow-wrap: break-word; word-break: break-word">{{ ann.body }}</p>
             </div>
 
             <button
