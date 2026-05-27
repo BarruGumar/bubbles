@@ -1,6 +1,7 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const form = useForm({
     name: '',
@@ -8,6 +9,13 @@ const form = useForm({
     password: '',
     password_confirmation: '',
 });
+
+const pwChecks = computed(() => ({
+    length:  form.password.length >= 8,
+    letter:  /[a-zA-Z]/.test(form.password),
+    number:  /[0-9]/.test(form.password),
+    symbol:  /[^a-zA-Z0-9]/.test(form.password),
+}));
 
 const submit = () => {
     form.post(route('register'), {
@@ -125,6 +133,17 @@ const submit = () => {
                     @focus="$event.target.style.borderColor = '#009ac7'"
                     @blur="$event.target.style.borderColor = '#4ebcff44'"
                 />
+                <div v-if="form.password.length > 0" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px">
+                    <span v-for="[key, label] in [['length','8 caracteres'],['letter','1 letra'],['number','1 número'],['symbol','1 símbolo']]" :key="key"
+                        :style="{
+                            fontSize: '10px', fontWeight: '600', padding: '2px 8px',
+                            borderRadius: '99px', transition: 'all 0.2s',
+                            background: pwChecks[key] ? '#edfdf4' : '#f0f4f8',
+                            color: pwChecks[key] ? '#16a34a' : '#8ba0b0',
+                            border: `1px solid ${pwChecks[key] ? '#16a34a44' : 'transparent'}`,
+                        }"
+                    >{{ pwChecks[key] ? '✓' : '·' }} {{ label }}</span>
+                </div>
                 <p v-if="form.errors.password" style="font-size: 11px; color: #e05555; margin: 0">
                     {{ form.errors.password }}
                 </p>

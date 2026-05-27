@@ -4,7 +4,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
@@ -12,6 +12,13 @@ const props = defineProps({
 });
 
 const { playSfx } = useAudio();
+
+const pwChecks = computed(() => ({
+    length: form.password.length >= 8,
+    letter: /[a-zA-Z]/.test(form.password),
+    number: /[0-9]/.test(form.password),
+    symbol: /[^a-zA-Z0-9]/.test(form.password),
+}));
 
 const passwordInput = ref(null);
 const currentPasswordInput = ref(null);
@@ -125,6 +132,17 @@ const updatePassword = () => {
                     class="mt-1 block w-full"
                     autocomplete="new-password"
                 />
+                <div v-if="form.password.length > 0" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px">
+                    <span v-for="[key, label] in [['length','8 caracteres'],['letter','1 letra'],['number','1 número'],['symbol','1 símbolo']]" :key="key"
+                        :style="{
+                            fontSize: '10px', fontWeight: '600', padding: '2px 8px',
+                            borderRadius: '99px', transition: 'all 0.2s',
+                            background: pwChecks[key] ? '#edfdf4' : 'var(--kbd-bg)',
+                            color: pwChecks[key] ? '#16a34a' : 'var(--text-3)',
+                            border: `1px solid ${pwChecks[key] ? '#16a34a44' : 'transparent'}`,
+                        }"
+                    >{{ pwChecks[key] ? '✓' : '·' }} {{ label }}</span>
+                </div>
                 <InputError :message="form.errors.password" class="mt-2" />
             </div>
 
