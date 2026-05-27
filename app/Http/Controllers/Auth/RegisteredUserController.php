@@ -38,14 +38,15 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
             'username' => $username,
             'avatar_color' => $color,
-            'email_verified_at' => now(),
         ]);
 
         Auth::login($user);
 
+        $user->sendEmailVerificationNotification();
+
         AuditLogger::log('auth.registered', 'auth', $user);
 
-        return redirect(route('bubbles', absolute: false));
+        return redirect(route('verification.notice'));
     }
 
     private function generateUsername(string $name): string
