@@ -104,6 +104,20 @@ function deleteUser(u) {
                                 color: #8ba0b0;
                                 text-transform: uppercase;
                                 letter-spacing: 0.07em;
+                                width: 50px;
+                            "
+                        >
+                            ID
+                        </th>
+                        <th
+                            style="
+                                text-align: left;
+                                padding: 12px 16px;
+                                font-size: 10px;
+                                font-weight: 800;
+                                color: #8ba0b0;
+                                text-transform: uppercase;
+                                letter-spacing: 0.07em;
                             "
                         >
                             Utilizador
@@ -181,6 +195,7 @@ function deleteUser(u) {
                         :key="u.id"
                         :style="{ borderTop: i > 0 ? '1px solid #f4f7fb' : 'none' }"
                     >
+                        <td style="padding: 12px 16px; font-size: 12px; color: #8ba0b0; font-family: monospace; font-weight: 600">{{ u.id }}</td>
                         <td style="padding: 12px 16px">
                             <div style="display: flex; align-items: center; gap: 10px">
                                 <img
