@@ -108,7 +108,7 @@ function startConversation(friend) {
                         <div class="list-content">
                         <Link
                             :href="route('profile.show', req.username)"
-                            style="text-decoration: none; min-width: 0"
+                            style="text-decoration: none; min-width: 0; flex: 1"
                         >
                             <p
                                 style="
@@ -243,7 +243,7 @@ function startConversation(friend) {
                         <div class="list-content">
                         <Link
                             :href="route('profile.show', req.username)"
-                            style="text-decoration: none; min-width: 0"
+                            style="text-decoration: none; min-width: 0; flex: 1"
                         >
                             <p
                                 style="
@@ -379,7 +379,7 @@ function startConversation(friend) {
                         <div class="list-content">
                         <Link
                             :href="route('profile.show', friend.username)"
-                            style="text-decoration: none; min-width: 0"
+                            style="text-decoration: none; min-width: 0; flex: 1"
                         >
                             <p
                                 style="
