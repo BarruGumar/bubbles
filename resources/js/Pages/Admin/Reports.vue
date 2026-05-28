@@ -6,13 +6,20 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 const props = defineProps({
     reports: { type: Object, required: true },
     statusFilter: { type: String, default: 'pending' },
+    typeFilter: { type: String, default: 'all' },
 });
 
 const activeStatus = ref(props.statusFilter);
+const activeType = ref(props.typeFilter);
 
 function changeStatus(s) {
     activeStatus.value = s;
-    router.get(route('admin.reports'), { status: s }, { preserveState: true, replace: true });
+    router.get(route('admin.reports'), { status: s, type: activeType.value }, { preserveState: true, replace: true });
+}
+
+function changeType(t) {
+    activeType.value = t;
+    router.get(route('admin.reports'), { status: activeStatus.value, type: t }, { preserveState: true, replace: true });
 }
 
 const noteMap = ref({});
@@ -28,6 +35,14 @@ function dismissReport(id) {
 const statusLabel = { pending: 'Pendente', resolved: 'Resolvido', dismissed: 'Dispensado' };
 const statusColor = { pending: '#e09a00', resolved: '#2ea87e', dismissed: '#8ba0b0' };
 const statusBg = { pending: '#fff8e6', resolved: '#f0fff8', dismissed: '#f4f7fb' };
+
+const typeOptions = [
+    { value: 'all',           label: 'Todas' },
+    { value: 'post',          label: 'Posts' },
+    { value: 'community_post', label: 'Posts de comunidade' },
+    { value: 'user',          label: 'Utilizadores' },
+    { value: 'community',     label: 'Comunidades' },
+];
 </script>
 
 <template>
@@ -39,7 +54,7 @@ const statusBg = { pending: '#fff8e6', resolved: '#f0fff8', dismissed: '#f4f7fb'
         </template>
 
         <!-- Status tabs -->
-        <div style="display: flex; gap: 8px; margin-bottom: 18px">
+        <div style="display: flex; gap: 8px; margin-bottom: 10px">
             <button
                 v-for="s in ['pending', 'resolved', 'dismissed']"
                 :key="s"
@@ -57,6 +72,29 @@ const statusBg = { pending: '#fff8e6', resolved: '#f0fff8', dismissed: '#f4f7fb'
                 }"
             >
                 {{ statusLabel[s] }}
+            </button>
+        </div>
+
+        <!-- Type tabs -->
+        <div style="display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap">
+            <button
+                v-for="t in typeOptions"
+                :key="t.value"
+                @click="changeType(t.value)"
+                :style="{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    padding: '5px 13px',
+                    borderRadius: '99px',
+                    border: '1.5px solid',
+                    borderColor: activeType === t.value ? '#009ac744' : '#eef2f8',
+                    cursor: 'pointer',
+                    transition: 'all .15s',
+                    background: activeType === t.value ? '#009ac712' : '#f8fafc',
+                    color: activeType === t.value ? '#009ac7' : '#8ba0b0',
+                }"
+            >
+                {{ t.label }}
             </button>
         </div>
 

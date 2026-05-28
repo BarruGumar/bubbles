@@ -1,9 +1,11 @@
 <script setup>
+import axios from 'axios';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PostCard from '@/Components/PostCard.vue';
 import PostCardSkeleton from '@/Components/PostCardSkeleton.vue';
+import PostReportForm from '@/Components/PostReportForm.vue';
 import SiteOwnerBadge from '@/Components/SiteOwnerBadge.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
@@ -167,6 +169,29 @@ function removeFriend() {
 
 function startConversation() {
     router.post(route('conversations.store'), { recipient_id: props.profileUser.id });
+}
+
+const showUserReport = ref(false);
+const userReportText = ref('');
+const userReportSending = ref(false);
+
+async function submitUserReport() {
+    const text = userReportText.value.trim();
+    if (!text || userReportSending.value) return;
+    userReportSending.value = true;
+    try {
+        await axios.post(route('users.report', props.profileUser.id), { reason: text });
+        showUserReport.value = false;
+        userReportText.value = '';
+        toast('Denúncia enviada.');
+    } catch (e) {
+        const msg = e?.response?.data?.errors?.reason?.[0]
+            ?? e?.response?.data?.message
+            ?? 'Erro ao enviar denúncia.';
+        toast(msg, 'error');
+    } finally {
+        userReportSending.value = false;
+    }
 }
 
 </script>
@@ -492,6 +517,34 @@ function startConversation() {
                                 </button>
                             </template>
                         </div>
+                    </div>
+
+                    <!-- Report user -->
+                    <div v-if="!isOwn && authUser" style="margin-top: 10px">
+                        <button
+                            v-if="!showUserReport"
+                            @click="showUserReport = true"
+                            style="
+                                font-size: 11px;
+                                color: #b0c0cc;
+                                background: none;
+                                border: none;
+                                cursor: pointer;
+                                padding: 0;
+                                transition: color .2s;
+                            "
+                            @mouseenter="$event.target.style.color = '#e05555'"
+                            @mouseleave="$event.target.style.color = '#b0c0cc'"
+                        >⚑ Denunciar utilizador</button>
+                        <PostReportForm
+                            v-else
+                            :text="userReportText"
+                            :sending="userReportSending"
+                            label="utilizador"
+                            @update:text="userReportText = $event"
+                            @submit="submitUserReport"
+                            @cancel="showUserReport = false; userReportText = ''"
+                        />
                     </div>
 
                     <p

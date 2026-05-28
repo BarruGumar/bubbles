@@ -2,6 +2,7 @@
 defineProps({
     text: { type: String, required: true },
     sending: { type: Boolean, default: false },
+    label: { type: String, default: 'post' },
 });
 
 const emit = defineEmits(['update:text', 'submit', 'cancel']);
@@ -17,7 +18,7 @@ const emit = defineEmits(['update:text', 'submit', 'cancel']);
             padding: 12px;
         "
     >
-        <p style="font-size: 12px; font-weight: 700; color: #e05555; margin: 0 0 8px">Denunciar post</p>
+        <p style="font-size: 12px; font-weight: 700; color: #e05555; margin: 0 0 8px">Denunciar {{ label }}</p>
         <p style="font-size: 11px; color: #8ba0b0; margin: 0 0 6px">A denúncia deve ter pelo menos 5 caracteres.</p>
         <textarea
             :value="text"

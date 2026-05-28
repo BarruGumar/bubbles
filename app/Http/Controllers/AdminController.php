@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserPunishment;
 use App\Services\AuditLogger;
 use App\Services\PunishmentService;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -306,27 +307,50 @@ class AdminController extends Controller
     public function reports(Request $request): Response
     {
         $status = $request->get('status', 'pending');
+        $type   = $request->get('type', 'all');
 
-        $reports = Report::with(['reporter', 'reportable', 'reportable.user'])
+        $reports = Report::with([
+                'reporter',
+                'reportable' => fn (MorphTo $m) => $m->morphWith([
+                    Post::class         => ['user'],
+                    CommunityPost::class => ['user'],
+                ]),
+            ])
             ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($type === 'post',           fn ($q) => $q->where('reportable_type', Post::class))
+            ->when($type === 'community_post', fn ($q) => $q->where('reportable_type', CommunityPost::class))
+            ->when($type === 'user',           fn ($q) => $q->where('reportable_type', User::class))
+            ->when($type === 'community',      fn ($q) => $q->where('reportable_type', Bubble::class))
             ->latest()
             ->paginate(20)
-            ->through(fn ($r) => [
-                'id'                 => $r->id,
-                'reason'             => $r->reason,
-                'status'             => $r->status,
-                'admin_note'         => $r->admin_note,
-                'type'               => class_basename($r->reportable_type),
-                'reporter_name'      => $r->reporter?->name ?? '–',
-                'reportable_content' => $r->reportable?->content ?? null,
-                'reportable_author'  => $r->reportable?->user?->name ?? null,
-                'reportable_user_id' => $r->reportable?->user_id ?? null,
-                'created_at'         => $r->created_at->diffForHumans(),
-            ]);
+            ->through(function ($r) {
+                $reportable = $r->reportable;
+                return [
+                    'id'          => $r->id,
+                    'reason'      => $r->reason,
+                    'status'      => $r->status,
+                    'admin_note'  => $r->admin_note,
+                    'type'        => class_basename($r->reportable_type),
+                    'reporter_name' => $r->reporter?->name ?? '–',
+                    'reportable_content' => match (true) {
+                        $reportable instanceof User   => $reportable->name . ' (@' . $reportable->username . ')',
+                        $reportable instanceof Bubble => 'Comunidade: ' . ($reportable->title ?? $reportable->label),
+                        default                       => $reportable?->content ?? null,
+                    },
+                    'reportable_author'  => ($reportable instanceof Post || $reportable instanceof CommunityPost)
+                        ? ($reportable->user?->name ?? null)
+                        : null,
+                    'reportable_user_id' => ($reportable instanceof Post || $reportable instanceof CommunityPost)
+                        ? ($reportable->user_id ?? null)
+                        : ($reportable instanceof User ? $reportable->id : null),
+                    'created_at' => $r->created_at->diffForHumans(),
+                ];
+            });
 
         return Inertia::render('Admin/Reports', [
             'reports'      => $reports,
             'statusFilter' => $status,
+            'typeFilter'   => $type,
         ]);
     }
 

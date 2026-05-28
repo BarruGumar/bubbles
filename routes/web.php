@@ -147,6 +147,8 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     // Reports
     Route::post('/posts/{post}/report', [ReportController::class, 'storePost'])->name('posts.report');
     Route::post('/community-posts/{post}/report', [ReportController::class, 'storeCommunityPost'])->name('community-posts.report');
+    Route::post('/users/{user}/report', [ReportController::class, 'storeUser'])->name('users.report');
+    Route::post('/c/{id}/report', [ReportController::class, 'storeCommunity'])->name('community.report');
 });
 
 // Admin panel

@@ -1,8 +1,11 @@
 <script setup>
-import { computed } from 'vue';
+import axios from 'axios';
+import { computed, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
+import PostReportForm from '@/Components/PostReportForm.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useAudio } from '@/Composables/useAudio';
+import { useToast } from '@/Composables/useToast';
 
 const props = defineProps({
     community: { type: Object, required: true },
@@ -16,6 +19,30 @@ const props = defineProps({
 });
 const emit = defineEmits(['open-edit']);
 const { playSfx } = useAudio();
+const { show: toast } = useToast();
+
+const showCommunityReport = ref(false);
+const communityReportText = ref('');
+const communityReportSending = ref(false);
+
+async function submitCommunityReport() {
+    const text = communityReportText.value.trim();
+    if (!text || communityReportSending.value) return;
+    communityReportSending.value = true;
+    try {
+        await axios.post(route('community.report', props.community.id), { reason: text });
+        showCommunityReport.value = false;
+        communityReportText.value = '';
+        toast('Denúncia enviada.');
+    } catch (e) {
+        const msg = e?.response?.data?.errors?.reason?.[0]
+            ?? e?.response?.data?.message
+            ?? 'Erro ao enviar denúncia.';
+        toast(msg, 'error');
+    } finally {
+        communityReportSending.value = false;
+    }
+}
 
 const activityLevel = computed(() => {
     const n = props.community.recent_posts_count ?? 0;
@@ -399,6 +426,34 @@ function leaveCommunity() {
                         }"
                     />
                 </div>
+            </div>
+
+            <!-- Report community -->
+            <div v-if="authUser && !isOwn" style="margin-top: 12px">
+                <button
+                    v-if="!showCommunityReport"
+                    @click="showCommunityReport = true"
+                    style="
+                        font-size: 11px;
+                        color: #b0c0cc;
+                        background: none;
+                        border: none;
+                        cursor: pointer;
+                        padding: 0;
+                        transition: color .2s;
+                    "
+                    @mouseenter="$event.target.style.color = '#e05555'"
+                    @mouseleave="$event.target.style.color = '#b0c0cc'"
+                >⚑ Denunciar comunidade</button>
+                <PostReportForm
+                    v-else
+                    :text="communityReportText"
+                    :sending="communityReportSending"
+                    label="comunidade"
+                    @update:text="communityReportText = $event"
+                    @submit="submitCommunityReport"
+                    @cancel="showCommunityReport = false; communityReportText = ''"
+                />
             </div>
         </div>
     </div>
