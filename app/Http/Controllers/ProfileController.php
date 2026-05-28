@@ -220,6 +220,24 @@ class ProfileController extends Controller
         return back()->with('status', 'banner-updated');
     }
 
+    public function removeAvatar(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $this->deleteCloudinaryImage($user->avatar_public_id);
+        $user->update(['avatar' => null, 'avatar_public_id' => null]);
+        AuditLogger::log('profile.avatar_remove', 'profile', $user);
+        return back()->with('status', 'avatar-removed');
+    }
+
+    public function removeBanner(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $this->deleteCloudinaryImage($user->banner_public_id);
+        $user->update(['banner' => null, 'banner_public_id' => null]);
+        AuditLogger::log('profile.banner_remove', 'profile', $user);
+        return back()->with('status', 'banner-removed');
+    }
+
     public function updateTheme(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate(['theme' => 'required|in:light,dark']);

@@ -61,7 +61,9 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::patch('/profile/theme', [ProfileController::class, 'updateTheme'])->name('profile.theme');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
+    Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.remove');
     Route::post('/profile/banner', [ProfileController::class, 'uploadBanner'])->name('profile.banner');
+    Route::delete('/profile/banner', [ProfileController::class, 'removeBanner'])->name('profile.banner.remove');
 
     // Feed
     Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
@@ -76,7 +78,9 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::patch('/c/{id}/posts/{post}', [CommunityController::class, 'updatePost'])->name('community.posts.update');
     Route::delete('/c/{id}/posts/{post}', [CommunityController::class, 'destroy'])->name('community.posts.destroy');
     Route::post('/c/{id}/image', [CommunityController::class, 'uploadImage'])->name('community.image');
+    Route::delete('/c/{id}/image', [CommunityController::class, 'removeImage'])->name('community.image.remove');
     Route::post('/c/{id}/banner', [CommunityController::class, 'uploadBanner'])->name('community.banner');
+    Route::delete('/c/{id}/banner', [CommunityController::class, 'removebannerImage'])->name('community.banner.remove');
 
     // Likes e comentários
     Route::post('/posts/{post}/like', [LikeController::class, 'togglePost'])->middleware('throttle:reactions')->name('posts.like');

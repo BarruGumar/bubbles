@@ -9,7 +9,7 @@ const props = defineProps({
     communityImagePreview: { type: String, default: null },
     communityBannerPreview: { type: String, default: null },
 });
-const emit = defineEmits(['update:modelValue', 'image-file-selected', 'banner-file-selected']);
+const emit = defineEmits(['update:modelValue', 'image-file-selected', 'banner-file-selected', 'remove-image', 'remove-banner']);
 
 const { playSfx } = useAudio();
 
@@ -206,6 +206,26 @@ function deleteCommunity() {
                                 >Alterar banner</span
                             >
                         </div>
+                        <!-- Remove banner button -->
+                        <button
+                            v-if="communityBannerPreview"
+                            type="button"
+                            @click.stop="emit('remove-banner')"
+                            style="
+                                position: absolute;
+                                top: 8px;
+                                right: 8px;
+                                padding: 4px 10px;
+                                border-radius: 99px;
+                                border: none;
+                                background: rgba(0,0,0,0.5);
+                                color: white;
+                                font-size: 10px;
+                                font-weight: 700;
+                                cursor: pointer;
+                                z-index: 2;
+                            "
+                        >Remover</button>
                     </div>
                     <div
                         :style="{
@@ -216,7 +236,7 @@ function deleteCommunity() {
                             borderTop: 'none',
                         }"
                     />
-                    <div style="position: absolute; bottom: -2px; left: 20px; z-index: 5">
+                    <div style="position: absolute; bottom: -2px; left: 20px; z-index: 5; display: flex; align-items: flex-end; gap: 8px">
                         <input
                             ref="imageInputRef"
                             type="file"
@@ -298,6 +318,23 @@ function deleteCommunity() {
                                 </svg>
                             </div>
                         </div>
+                        <button
+                            v-if="communityImagePreview"
+                            type="button"
+                            @click.stop="emit('remove-image')"
+                            style="
+                                padding: 3px 9px;
+                                border-radius: 99px;
+                                border: 1.5px solid #e0555544;
+                                background: white;
+                                color: #e05555;
+                                font-size: 10px;
+                                font-weight: 700;
+                                cursor: pointer;
+                                margin-bottom: 4px;
+                                white-space: nowrap;
+                            "
+                        >Remover</button>
                     </div>
                 </div>
 

@@ -302,6 +302,26 @@ class CommunityController extends Controller
         return back();
     }
 
+    public function removeImage(int $id): RedirectResponse
+    {
+        $bubble = Bubble::findOrFail($id);
+        Gate::authorize('manage', $bubble);
+        $this->deleteCloudinaryImage($bubble->community_image_public_id);
+        $bubble->update(['community_image' => null, 'community_image_public_id' => null]);
+        AuditLogger::log('community.image_removed', 'community', $bubble, [], $bubble->id);
+        return back();
+    }
+
+    public function removebannerImage(int $id): RedirectResponse
+    {
+        $bubble = Bubble::findOrFail($id);
+        Gate::authorize('manage', $bubble);
+        $this->deleteCloudinaryImage($bubble->community_banner_public_id);
+        $bubble->update(['community_banner' => null, 'community_banner_public_id' => null]);
+        AuditLogger::log('community.banner_removed', 'community', $bubble, [], $bubble->id);
+        return back();
+    }
+
     public function userCommunities(): Response
     {
         $user = auth()->user();

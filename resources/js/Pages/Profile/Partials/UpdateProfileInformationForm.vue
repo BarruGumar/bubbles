@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import ImageCropper from '@/Components/ImageCropper.vue';
 import { useAudio } from '@/Composables/useAudio';
 
@@ -112,6 +112,33 @@ function submitProfile() {
     playSfx('send');
     form.patch(route('profile.update'));
 }
+
+const removingAvatar = ref(false);
+const removingBanner = ref(false);
+
+function removeAvatar() {
+    removingAvatar.value = true;
+    router.delete(route('profile.avatar.remove'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            avatarPreview.value = null;
+            avatarForm.reset();
+        },
+        onFinish: () => { removingAvatar.value = false; },
+    });
+}
+
+function removeBanner() {
+    removingBanner.value = true;
+    router.delete(route('profile.banner.remove'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            bannerPreview.value = null;
+            bannerForm.reset();
+        },
+        onFinish: () => { removingBanner.value = false; },
+    });
+}
 </script>
 
 <template>
@@ -198,8 +225,9 @@ function submitProfile() {
             </div>
             <input ref="bannerInput" type="file" accept="image/*" style="display: none" @change="onBannerChange" />
 
-            <div v-if="bannerForm.banner" style="display: flex; align-items: center; gap: 10px; margin-top: 10px">
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap">
                 <button
+                    v-if="bannerForm.banner"
                     type="button"
                     :disabled="bannerForm.processing"
                     @click="submitBanner"
@@ -217,6 +245,26 @@ function submitProfile() {
                     }"
                 >
                     {{ bannerForm.processing ? 'A enviar...' : 'Guardar banner' }}
+                </button>
+                <button
+                    v-if="bannerPreview && !bannerForm.banner"
+                    type="button"
+                    :disabled="removingBanner"
+                    @click="removeBanner"
+                    :style="{
+                        padding: '8px 20px',
+                        borderRadius: '10px',
+                        border: '1.5px solid #e0555533',
+                        background: 'transparent',
+                        color: '#e05555',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        cursor: removingBanner ? 'not-allowed' : 'pointer',
+                        opacity: removingBanner ? 0.6 : 1,
+                        transition: 'opacity .2s',
+                    }"
+                >
+                    {{ removingBanner ? 'A remover...' : 'Remover banner' }}
                 </button>
                 <Transition name="fade">
                     <span v-if="status === 'banner-updated'" style="font-size: 11px; color: #2ea87e; font-weight: 600"
@@ -310,9 +358,10 @@ function submitProfile() {
                     Cor do perfil
                 </p>
 
-                <!-- Upload button appears after file is selected -->
-                <div v-if="avatarForm.avatar" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
+                <!-- Upload / remove buttons -->
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap">
                     <button
+                        v-if="avatarForm.avatar"
                         type="button"
                         :disabled="avatarForm.processing"
                         @click="submitAvatar"
@@ -329,6 +378,25 @@ function submitProfile() {
                         }"
                     >
                         {{ avatarForm.processing ? 'A enviar...' : 'Guardar foto' }}
+                    </button>
+                    <button
+                        v-if="avatarPreview && !avatarForm.avatar"
+                        type="button"
+                        :disabled="removingAvatar"
+                        @click="removeAvatar"
+                        :style="{
+                            padding: '7px 18px',
+                            borderRadius: '10px',
+                            border: '1.5px solid #e0555533',
+                            background: 'transparent',
+                            color: '#e05555',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: removingAvatar ? 'not-allowed' : 'pointer',
+                            opacity: removingAvatar ? 0.6 : 1,
+                        }"
+                    >
+                        {{ removingAvatar ? 'A remover...' : 'Remover foto' }}
                     </button>
                     <Transition name="fade">
                         <span

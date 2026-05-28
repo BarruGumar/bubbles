@@ -121,6 +121,26 @@ onUnmounted(() => {
 
 // ── Settings modal ────────────────────────────────────────────────
 const showEdit = ref(false);
+
+function onRemoveImage() {
+    router.delete(route('community.image.remove', props.community.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (communityImagePreview.value?.startsWith('blob:')) URL.revokeObjectURL(communityImagePreview.value);
+            communityImagePreview.value = null;
+        },
+    });
+}
+
+function onRemoveBanner() {
+    router.delete(route('community.banner.remove', props.community.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (communityBannerPreview.value?.startsWith('blob:')) URL.revokeObjectURL(communityBannerPreview.value);
+            communityBannerPreview.value = null;
+        },
+    });
+}
 </script>
 
 <template>
@@ -219,6 +239,8 @@ const showEdit = ref(false);
             :community-banner-preview="communityBannerPreview"
             @image-file-selected="openCropperWithFile($event, 'image')"
             @banner-file-selected="openCropperWithFile($event, 'banner')"
+            @remove-image="onRemoveImage"
+            @remove-banner="onRemoveBanner"
         />
     </AuthenticatedLayout>
 

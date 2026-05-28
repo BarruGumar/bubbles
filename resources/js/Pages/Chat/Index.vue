@@ -833,6 +833,7 @@ function switchConversation(convId) {
         preserveState: true,
         preserveScroll: true,
         only: ['messages', 'hasMoreMessages', 'activeConversation'],
+        onSuccess: () => router.reload({ only: ['auth'] }),
     });
 }
 
@@ -857,7 +858,10 @@ onMounted(() => {
     document.addEventListener('click', onDocClick);
     if (messagesEl.value) messagesEl.value.addEventListener('scroll', checkNearBottom);
     scrollToBottom();
-    if (props.activeConversation) startPolling();
+    if (props.activeConversation) {
+        startPolling();
+        router.reload({ only: ['auth'] });
+    }
 });
 
 onUnmounted(() => {
