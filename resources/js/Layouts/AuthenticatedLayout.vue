@@ -7,6 +7,7 @@ import AudioControls from '@/Components/AudioControls.vue';
 import AnnouncementBanner from '@/Components/AnnouncementBanner.vue';
 import AnnouncementModal from '@/Components/AnnouncementModal.vue';
 import { clImg } from '@/Composables/useCloudinary';
+import { useOnlineUsers } from '@/Composables/useOnlineUsers';
 import { useToast } from '@/Composables/useToast';
 import { useSearch } from '@/Composables/useSearch';
 import { useTheme } from '@/Composables/useTheme';
@@ -51,12 +52,22 @@ watch(
     (msg) => { if (msg) toast(msg, 'error'); },
 );
 
-const pendingFriends = computed(() => page.props.auth?.pending_friends_count ?? 0);
-const unreadMessages = computed(() => page.props.auth?.unread_messages_count ?? 0);
-const unreadNotifications = computed(() => page.props.auth?.unread_notifications_count ?? 0);
-watch(unreadNotifications, (newVal, oldVal) => {
-    if (newVal > oldVal) playSfx('notification');
-});
+const { onlineUsers } = useOnlineUsers();
+const isOnline = (userId) => userId != null && onlineUsers.value.has(userId);
+
+const pendingFriends = ref(page.props.auth?.pending_friends_count ?? 0);
+const unreadMessages = ref(page.props.auth?.unread_messages_count ?? 0);
+const unreadNotifications = ref(page.props.auth?.unread_notifications_count ?? 0);
+
+watch(() => page.props.auth?.pending_friends_count, (v) => { if (v !== undefined) pendingFriends.value = v; });
+watch(() => page.props.auth?.unread_messages_count, (v) => { if (v !== undefined) unreadMessages.value = v; });
+watch(() => page.props.auth?.unread_notifications_count, (v) => { if (v !== undefined) unreadNotifications.value = v; });
+
+// Registered at setup time (not onMounted) so it's ready before child pages mount and dispatch
+const _onMessagesRead = (e) => { unreadMessages.value = Math.max(0, unreadMessages.value - e.detail.delta); };
+const _onNotificationsRead = () => { unreadNotifications.value = 0; };
+window.addEventListener('messages-read', _onMessagesRead);
+window.addEventListener('notifications-read', _onNotificationsRead);
 const open = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref('');
@@ -152,22 +163,49 @@ function handleGlobalKey(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
 }
 
-let pollTimer = null;
-
 onMounted(() => {
     window.addEventListener('keydown', handleGlobalKey);
     window.addEventListener('resize', onResize);
     if (page.props.auth?.user) {
-        pollTimer = setInterval(() => {
-            router.reload({ only: ['auth'], preserveScroll: true, preserveState: true });
-        }, 15000);
+        window.Echo.private(`user.${page.props.auth.user.id}`)
+            .listen('.BadgeCountUpdated', (e) => {
+                if (e.type === 'friends') pendingFriends.value += e.delta;
+                if (e.type === 'messages') {
+                    const alreadyViewing = e.conversation_id && page.url.includes(`/conversations/${e.conversation_id}`);
+                    if (!alreadyViewing) unreadMessages.value += e.delta;
+                }
+                if (e.type === 'notifications') {
+                    unreadNotifications.value += e.delta;
+                    playSfx('notification');
+                }
+            });
+
+        window.Echo.join('online')
+            .here((members) => {
+                onlineUsers.value = new Set(members.map(m => m.id));
+            })
+            .joining((member) => {
+                const s = new Set(onlineUsers.value);
+                s.add(member.id);
+                onlineUsers.value = s;
+            })
+            .leaving((member) => {
+                const s = new Set(onlineUsers.value);
+                s.delete(member.id);
+                onlineUsers.value = s;
+            });
     }
 });
 
 onUnmounted(() => {
     window.removeEventListener('keydown', handleGlobalKey);
     window.removeEventListener('resize', onResize);
-    clearInterval(pollTimer);
+    window.removeEventListener('messages-read', _onMessagesRead);
+    window.removeEventListener('notifications-read', _onNotificationsRead);
+    if (page.props.auth?.user) {
+        window.Echo.leave(`user.${page.props.auth.user.id}`);
+        window.Echo.leave('online');
+    }
 });
 </script>
 
@@ -333,9 +371,12 @@ onUnmounted(() => {
                                     :style="{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 16px', cursor:'pointer', transition:'background 0.12s', background: activeSearchIdx === searchOffsets.users + i ? 'var(--item-hover)' : 'transparent' }"
                                     @mouseenter="activeSearchIdx = searchOffsets.users + i"
                                 >
-                                    <img v-if="u.avatar" :src="clImg(u.avatar, 72, 72, 'fill', 'face')" :style="{ width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:`2px solid ${u.avatar_color}`, flexShrink:'0' }" />
-                                    <div v-else :style="{ width:'36px', height:'36px', borderRadius:'50%', background:u.avatar_color, flexShrink:'0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'800', color:'white' }">
-                                        {{ (u.name ?? '?')[0].toUpperCase() }}
+                                    <div style="position:relative;flex-shrink:0">
+                                        <img v-if="u.avatar" :src="clImg(u.avatar, 72, 72, 'fill', 'face')" :style="{ width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:`2px solid ${u.avatar_color}` }" />
+                                        <div v-else :style="{ width:'36px', height:'36px', borderRadius:'50%', background:u.avatar_color, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'800', color:'white' }">
+                                            {{ (u.name ?? '?')[0].toUpperCase() }}
+                                        </div>
+                                        <span v-if="isOnline(u.id)" class="search-online-dot"></span>
                                     </div>
                                     <div style="flex:1;min-width:0">
                                         <p style="font-size:13px;font-weight:700;color:var(--text);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</p>
@@ -622,5 +663,13 @@ onUnmounted(() => {
     display: flex; align-items: center; justify-content: center;
 }
 .bnav-badge-blue { background: #009ac7; }
+
+/* ── Online dot (search results) ───────────────────────────────── */
+.search-online-dot {
+    position: absolute; bottom: 0; right: 0;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid var(--dropdown-bg, #fff);
+}
 
 </style>

@@ -40,9 +40,9 @@ playBgm('home');
 
 const page = usePage();
 const authUser = computed(() => page.props.auth?.user);
-const pendingFriends = computed(() => page.props.auth?.pending_friends_count ?? 0);
-const unreadMessages = computed(() => page.props.auth?.unread_messages_count ?? 0);
-const unreadNotifications = computed(() => page.props.auth?.unread_notifications_count ?? 0);
+const pendingFriends = ref(page.props.auth?.pending_friends_count ?? 0);
+const unreadMessages = ref(page.props.auth?.unread_messages_count ?? 0);
+const unreadNotifications = ref(page.props.auth?.unread_notifications_count ?? 0);
 const isAdmin = computed(() => ['admin', 'site_owner'].includes(authUser.value?.role));
 
 const feedOpen = ref(false);
@@ -299,7 +299,17 @@ onMounted(async () => {
     document.addEventListener('visibilitychange', onVisibilityChange);
     document.addEventListener('click', onDocClick);
     startLoop();
-    // auth polling handled by AuthenticatedLayout
+    if (authUser.value) {
+        window.Echo.private(`user.${authUser.value.id}`)
+            .listen('.BadgeCountUpdated', (e) => {
+                if (e.type === 'friends') pendingFriends.value += e.delta;
+                if (e.type === 'messages') unreadMessages.value += e.delta;
+                if (e.type === 'notifications') unreadNotifications.value += e.delta;
+            });
+        window.addEventListener('messages-read', (e) => {
+            unreadMessages.value = Math.max(0, unreadMessages.value - e.detail.delta);
+        });
+    }
 });
 
 onUnmounted(() => {
@@ -311,6 +321,7 @@ onUnmounted(() => {
     document.removeEventListener('visibilitychange', onVisibilityChange);
     document.removeEventListener('click', onDocClick);
     stopLoop();
+    if (authUser.value) window.Echo.leave(`user.${authUser.value.id}`);
 });
 
 async function handleCreate(data) {

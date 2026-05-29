@@ -1,15 +1,56 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { useOnlineUsers } from '@/Composables/useOnlineUsers';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useAudio } from '@/Composables/useAudio';
 
 const { playSfx } = useAudio();
+const { onlineUsers } = useOnlineUsers();
+const isOnline = (userId) => userId != null && onlineUsers.value.has(userId);
 
-defineProps({
+const props = defineProps({
     friends: Array,
     received: Array,
     sent: Array,
+});
+
+const page = usePage();
+const localFriends  = ref([...(props.friends  ?? [])]);
+const localReceived = ref([...(props.received ?? [])]);
+const localSent     = ref([...(props.sent     ?? [])]);
+
+watch(() => props.friends,  (v) => { localFriends.value  = [...(v ?? [])]; }, { deep: true });
+watch(() => props.received, (v) => { localReceived.value = [...(v ?? [])]; }, { deep: true });
+watch(() => props.sent,     (v) => { localSent.value     = [...(v ?? [])]; }, { deep: true });
+
+const handleFriendshipUpdated = (e) => {
+    if (e.event === 'request_received') {
+        if (!localReceived.value.some(f => f.friendId === e.friend.friendId)) {
+            localReceived.value.unshift(e.friend);
+        }
+        playSfx('notification');
+    } else if (e.event === 'request_accepted') {
+        if (!localFriends.value.some(f => f.id === e.friend.id)) {
+            localFriends.value.unshift(e.friend);
+        }
+        localSent.value = localSent.value.filter(f => f.friendId !== e.friend.friendId);
+    }
+};
+
+onMounted(() => {
+    if (page.props.auth?.user) {
+        window.Echo.private(`user.${page.props.auth.user.id}`)
+            .listen('.FriendshipUpdated', handleFriendshipUpdated);
+    }
+});
+
+onUnmounted(() => {
+    if (page.props.auth?.user) {
+        window.Echo.private(`user.${page.props.auth.user.id}`)
+            .stopListening('.FriendshipUpdated');
+    }
 });
 
 function formatInitial(name) {
@@ -40,7 +81,7 @@ function startConversation(friend) {
 
             <!-- Pedidos recebidos -->
             <div
-                v-if="received.length"
+                v-if="localReceived.length"
                 style="
                     background: rgba(255, 255, 255, 0.88);
                     backdrop-filter: blur(20px);
@@ -61,11 +102,11 @@ function startConversation(friend) {
                         margin: 0 0 16px;
                     "
                 >
-                    Pedidos recebidos · {{ received.length }}
+                    Pedidos recebidos · {{ localReceived.length }}
                 </p>
                 <div style="display: flex; flex-direction: column; gap: 14px">
                     <div
-                        v-for="req in received"
+                        v-for="req in localReceived"
                         :key="req.friendId"
                         style="display: flex; align-items: center; gap: 14px"
                     >
@@ -181,7 +222,7 @@ function startConversation(friend) {
 
             <!-- Pedidos enviados -->
             <div
-                v-if="sent.length"
+                v-if="localSent.length"
                 style="
                     background: rgba(255, 255, 255, 0.88);
                     backdrop-filter: blur(20px);
@@ -202,10 +243,10 @@ function startConversation(friend) {
                         margin: 0 0 16px;
                     "
                 >
-                    Pedidos enviados · {{ sent.length }}
+                    Pedidos enviados · {{ localSent.length }}
                 </p>
                 <div style="display: flex; flex-direction: column; gap: 14px">
-                    <div v-for="req in sent" :key="req.friendId" style="display: flex; align-items: center; gap: 14px">
+                    <div v-for="req in localSent" :key="req.friendId" style="display: flex; align-items: center; gap: 14px">
                         <Link :href="route('profile.show', req.username)" style="text-decoration: none; flex-shrink: 0">
                             <img
                                 v-if="req.avatar"
@@ -315,12 +356,12 @@ function startConversation(friend) {
                         margin: 0 0 16px;
                     "
                 >
-                    Amigos · {{ friends.length }}
+                    Amigos · {{ localFriends.length }}
                 </p>
 
                 <!-- Estado vazio -->
                 <div
-                    v-if="friends.length === 0 && received.length === 0 && sent.length === 0"
+                    v-if="localFriends.length === 0 && localReceived.length === 0 && localSent.length === 0"
                     style="text-align: center; padding: 40px 20px"
                 >
                     <p style="font-size: 32px; margin: 0 0 12px">🫧</p>
@@ -329,52 +370,55 @@ function startConversation(friend) {
                         Visita o perfil de alguém e envia um pedido de amizade.
                     </p>
                 </div>
-                <div v-else-if="friends.length === 0" style="text-align: center; padding: 20px">
+                <div v-else-if="localFriends.length === 0" style="text-align: center; padding: 20px">
                     <p style="font-size: 13px; color: #b0c0cc">Nenhum amigo aceite ainda.</p>
                 </div>
 
                 <div v-else style="display: flex; flex-direction: column; gap: 14px">
                     <div
-                        v-for="friend in friends"
+                        v-for="friend in localFriends"
                         :key="friend.friendId"
                         style="display: flex; align-items: center; gap: 14px"
                     >
-                        <Link
-                            :href="route('profile.show', friend.username)"
-                            style="text-decoration: none; flex-shrink: 0"
-                        >
-                            <img
-                                v-if="friend.avatar"
-                                :src="clImg(friend.avatar, 96, 96, 'fill', 'face')"
-                                :style="{
-                                    width: '46px',
-                                    height: '46px',
-                                    borderRadius: '50%',
-                                    objectFit: 'cover',
-                                    border: `2px solid ${friend.avatar_color}`,
-                                    boxShadow: `0 2px 8px ${friend.avatar_color}44`,
-                                    display: 'block',
-                                }"
-                            />
-                            <div
-                                v-else
-                                :style="{
-                                    width: '46px',
-                                    height: '46px',
-                                    borderRadius: '50%',
-                                    background: friend.avatar_color,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '17px',
-                                    fontWeight: '800',
-                                    color: 'white',
-                                    boxShadow: `0 2px 8px ${friend.avatar_color}44`,
-                                }"
+                        <div style="position:relative;flex-shrink:0">
+                            <Link
+                                :href="route('profile.show', friend.username)"
+                                style="text-decoration: none; display: block"
                             >
-                                {{ formatInitial(friend.name) }}
-                            </div>
-                        </Link>
+                                <img
+                                    v-if="friend.avatar"
+                                    :src="clImg(friend.avatar, 96, 96, 'fill', 'face')"
+                                    :style="{
+                                        width: '46px',
+                                        height: '46px',
+                                        borderRadius: '50%',
+                                        objectFit: 'cover',
+                                        border: `2px solid ${friend.avatar_color}`,
+                                        boxShadow: `0 2px 8px ${friend.avatar_color}44`,
+                                        display: 'block',
+                                    }"
+                                />
+                                <div
+                                    v-else
+                                    :style="{
+                                        width: '46px',
+                                        height: '46px',
+                                        borderRadius: '50%',
+                                        background: friend.avatar_color,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '17px',
+                                        fontWeight: '800',
+                                        color: 'white',
+                                        boxShadow: `0 2px 8px ${friend.avatar_color}44`,
+                                    }"
+                                >
+                                    {{ formatInitial(friend.name) }}
+                                </div>
+                            </Link>
+                            <span v-if="isOnline(friend.id)" class="online-dot"></span>
+                        </div>
 
                         <div class="list-content">
                         <Link
@@ -474,5 +518,13 @@ function startConversation(friend) {
         align-items: stretch;
         gap: 6px;
     }
+}
+
+.online-dot {
+    position: absolute; bottom: 1px; right: 1px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #22c55e;
+    border: 2.5px solid white;
+    box-shadow: 0 0 0 1px #22c55e44;
 }
 </style>

@@ -26,6 +26,11 @@ class CommunityController extends Controller
         $bubble = Bubble::withCount('memberships')->findOrFail($id);
         $creator = User::find($bubble->user_id);
 
+        $authUser = auth()->user();
+        if ($authUser && $authUser->isBannedFromCommunity($bubble)) {
+            abort(403, 'Estás banido desta comunidade.');
+        }
+
         $userId = auth()->id();
 
         $paginated = $bubble->communityPosts()

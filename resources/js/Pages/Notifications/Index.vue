@@ -1,11 +1,16 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { clImg } from '@/Composables/useCloudinary';
 
 const props = defineProps({
     notifications: { type: Array, default: () => [] },
 });
+
+const page = usePage();
+const localNotifications = ref([...props.notifications]);
+watch(() => props.notifications, (v) => { localNotifications.value = [...v]; }, { deep: true });
 
 function formatInitial(name) {
     return (name ?? '?')[0].toUpperCase();
@@ -49,7 +54,24 @@ function deleteAll() {
     router.delete(route('notifications.destroy-all'), {}, { preserveScroll: true });
 }
 
-const hasUnread = props.notifications.some((n) => !n.read);
+const hasUnread = computed(() => localNotifications.value.some((n) => !n.read));
+
+const handleNotificationCreated = (e) => { localNotifications.value.unshift(e.notification); };
+
+onMounted(() => {
+    window.dispatchEvent(new CustomEvent('notifications-read'));
+    if (page.props.auth?.user) {
+        window.Echo.private(`user.${page.props.auth.user.id}`)
+            .listen('.NotificationCreated', handleNotificationCreated);
+    }
+});
+
+onUnmounted(() => {
+    if (page.props.auth?.user) {
+        window.Echo.private(`user.${page.props.auth.user.id}`)
+            .stopListening('.NotificationCreated');
+    }
+});
 </script>
 
 <template>
@@ -83,7 +105,7 @@ const hasUnread = props.notifications.some((n) => !n.read);
                         Marcar todas como lidas
                     </button>
                     <button
-                        v-if="notifications.length > 0"
+                        v-if="localNotifications.length > 0"
                         @click="deleteAll"
                         style="
                             font-size: 12px;
@@ -106,7 +128,7 @@ const hasUnread = props.notifications.some((n) => !n.read);
 
             <!-- Empty -->
             <div
-                v-if="notifications.length === 0"
+                v-if="localNotifications.length === 0"
                 style="
                     text-align: center;
                     padding: 60px 20px;
@@ -133,7 +155,7 @@ const hasUnread = props.notifications.some((n) => !n.read);
             >
                 <component
                     :is="n.url ? Link : 'div'"
-                    v-for="(n, i) in notifications"
+                    v-for="(n, i) in localNotifications"
                     :key="n.id"
                     :href="n.url ?? undefined"
                     @click="!n.read && markRead(n.id)"

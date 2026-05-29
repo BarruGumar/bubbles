@@ -66,7 +66,7 @@ class AuditLogger
                 continue;
             }
             if (is_string($value)) {
-                $value = mb_substr($value, 0, 500);
+                $value = mb_substr(strip_tags($value), 0, 500);
             }
             $result[$key] = $value;
         }

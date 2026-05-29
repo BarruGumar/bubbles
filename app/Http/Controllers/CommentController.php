@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\BadgeCountUpdated;
+use App\Events\NotificationCreated;
 use App\Models\Comment;
 use App\Models\CommunityPost;
 use App\Models\Post;
@@ -11,6 +13,7 @@ use App\Support\FormatsPostResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class CommentController extends Controller
 {
@@ -34,12 +37,19 @@ class CommentController extends Controller
         ]);
 
         if ($post->user_id !== auth()->id()) {
-            $post->user->notify(new PostCommented(
-                auth()->user(),
-                $post->id,
-                $request->input('content'),
-                'post'
-            ));
+            $notif = new PostCommented(auth()->user(), $post->id, $request->input('content'), 'post');
+            $post->user->notify($notif);
+            $notifData = $notif->toArray($post->user);
+            broadcast(new BadgeCountUpdated($post->user->id, 'notifications', 1));
+            broadcast(new NotificationCreated($post->user->id, [
+                'id'         => (string) Str::uuid(),
+                'type'       => $notifData['type'],
+                'message'    => $notifData['message'],
+                'data'       => $notifData,
+                'read'       => false,
+                'created_at' => 'agora',
+                'url'        => $notifData['url'] ?? null,
+            ]));
         }
 
         return $this->postResponse();
@@ -69,13 +79,19 @@ class CommentController extends Controller
         ], $post->bubble_id);
 
         if ($post->user_id !== auth()->id()) {
-            $post->user->notify(new PostCommented(
-                auth()->user(),
-                $post->id,
-                $request->input('content'),
-                'community_post',
-                $post->bubble_id
-            ));
+            $notif = new PostCommented(auth()->user(), $post->id, $request->input('content'), 'community_post', $post->bubble_id);
+            $post->user->notify($notif);
+            $notifData = $notif->toArray($post->user);
+            broadcast(new BadgeCountUpdated($post->user->id, 'notifications', 1));
+            broadcast(new NotificationCreated($post->user->id, [
+                'id'         => (string) Str::uuid(),
+                'type'       => $notifData['type'],
+                'message'    => $notifData['message'],
+                'data'       => $notifData,
+                'read'       => false,
+                'created_at' => 'agora',
+                'url'        => $notifData['url'] ?? null,
+            ]));
         }
 
         return $this->postResponse();

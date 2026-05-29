@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\BadgeCountUpdated;
+use App\Events\NotificationCreated;
 use App\Models\CommunityPost;
 use App\Models\Post;
 use App\Notifications\PostLiked;
 use App\Support\FormatsPostResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
 
 class LikeController extends Controller
 {
@@ -17,9 +20,20 @@ class LikeController extends Controller
     {
         $liked = $this->toggle($post);
 
-        // Notify the post owner on new like (not on unlike, not if it's their own post)
         if ($liked && $post->user_id !== auth()->id()) {
-            $post->user->notify(new PostLiked(auth()->user(), $post->id, 'post'));
+            $notif = new PostLiked(auth()->user(), $post->id, 'post');
+            $post->user->notify($notif);
+            $notifData = $notif->toArray($post->user);
+            broadcast(new BadgeCountUpdated($post->user->id, 'notifications', 1));
+            broadcast(new NotificationCreated($post->user->id, [
+                'id'         => (string) Str::uuid(),
+                'type'       => $notifData['type'],
+                'message'    => $notifData['message'],
+                'data'       => $notifData,
+                'read'       => false,
+                'created_at' => 'agora',
+                'url'        => $notifData['url'] ?? null,
+            ]));
         }
 
         return $this->postResponse();
@@ -30,7 +44,19 @@ class LikeController extends Controller
         $liked = $this->toggle($post);
 
         if ($liked && $post->user_id !== auth()->id()) {
-            $post->user->notify(new PostLiked(auth()->user(), $post->id, 'community_post', $post->bubble_id));
+            $notif = new PostLiked(auth()->user(), $post->id, 'community_post', $post->bubble_id);
+            $post->user->notify($notif);
+            $notifData = $notif->toArray($post->user);
+            broadcast(new BadgeCountUpdated($post->user->id, 'notifications', 1));
+            broadcast(new NotificationCreated($post->user->id, [
+                'id'         => (string) Str::uuid(),
+                'type'       => $notifData['type'],
+                'message'    => $notifData['message'],
+                'data'       => $notifData,
+                'read'       => false,
+                'created_at' => 'agora',
+                'url'        => $notifData['url'] ?? null,
+            ]));
         }
 
         return $this->postResponse();

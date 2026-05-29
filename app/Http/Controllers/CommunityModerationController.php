@@ -76,6 +76,13 @@ class CommunityModerationController extends Controller
             'role' => 'required|in:member,moderator,admin',
         ]);
 
+        $isOwner = $user->id === $bubble->user_id;
+        $isMember = $bubble->memberships()->where('user_id', $user->id)->exists();
+        abort_if(! $isOwner && ! $isMember, 422, 'Este utilizador não é membro desta comunidade.');
+
+        // Não se pode alterar o role do criador
+        abort_if($isOwner, 422, 'Não é possível alterar o papel do criador da comunidade.');
+
         $this->punishments->updateCommunityRole($user, $bubble, auth()->user(), $data['role']);
 
         return back()->with('status', 'Papel do membro atualizado.');

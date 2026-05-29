@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\BadgeCountUpdated;
+use App\Events\FriendshipUpdated;
+use App\Events\NotificationCreated;
 use App\Models\Friend;
 use App\Models\User;
 use App\Notifications\FriendRequestAccepted;
 use App\Notifications\FriendRequestReceived;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -79,12 +83,34 @@ class FriendController extends Controller
         })->exists();
 
         if (! $exists) {
-            Friend::create([
-                'user_id' => auth()->id(),
+            $friendRecord = Friend::create([
+                'user_id'   => auth()->id(),
                 'friend_id' => $target->id,
-                'status' => 'pending',
+                'status'    => 'pending',
             ]);
-            $target->notify(new FriendRequestReceived(auth()->user()));
+            $notif = new FriendRequestReceived(auth()->user());
+            $target->notify($notif);
+            $notifData = $notif->toArray($target);
+
+            broadcast(new BadgeCountUpdated($target->id, 'friends', 1));
+            broadcast(new BadgeCountUpdated($target->id, 'notifications', 1));
+            broadcast(new NotificationCreated($target->id, [
+                'id'         => (string) Str::uuid(),
+                'type'       => $notifData['type'],
+                'message'    => $notifData['message'],
+                'data'       => $notifData,
+                'read'       => false,
+                'created_at' => 'agora',
+                'url'        => $notifData['url'] ?? null,
+            ]));
+            broadcast(new FriendshipUpdated($target->id, 'request_received', [
+                'friendId'    => $friendRecord->id,
+                'id'          => auth()->id(),
+                'name'        => auth()->user()->name,
+                'username'    => auth()->user()->username,
+                'avatar'      => auth()->user()->avatar,
+                'avatar_color' => auth()->user()->avatar_color ?? '#009ac7',
+            ]));
         }
 
         return back();
@@ -97,8 +123,28 @@ class FriendController extends Controller
 
         $friend->update(['status' => 'accepted']);
 
-        // Notify the original sender that their request was accepted
-        $friend->user->notify(new FriendRequestAccepted(auth()->user()));
+        $notif = new FriendRequestAccepted(auth()->user());
+        $friend->user->notify($notif);
+        $notifData = $notif->toArray($friend->user);
+
+        broadcast(new BadgeCountUpdated($friend->user->id, 'notifications', 1));
+        broadcast(new NotificationCreated($friend->user->id, [
+            'id'         => (string) Str::uuid(),
+            'type'       => $notifData['type'],
+            'message'    => $notifData['message'],
+            'data'       => $notifData,
+            'read'       => false,
+            'created_at' => 'agora',
+            'url'        => $notifData['url'] ?? null,
+        ]));
+        broadcast(new FriendshipUpdated($friend->user->id, 'request_accepted', [
+            'friendId'    => $friend->id,
+            'id'          => auth()->id(),
+            'name'        => auth()->user()->name,
+            'username'    => auth()->user()->username,
+            'avatar'      => auth()->user()->avatar,
+            'avatar_color' => auth()->user()->avatar_color ?? '#009ac7',
+        ]));
 
         return back();
     }

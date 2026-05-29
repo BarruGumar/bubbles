@@ -7,6 +7,7 @@ import { clImg } from '@/Composables/useCloudinary';
 import { useClipboardImage } from '@/Composables/useClipboardImage';
 import { compressImage } from '@/Composables/useImageCompressor';
 import { useAudio } from '@/Composables/useAudio';
+import { useOnlineUsers } from '@/Composables/useOnlineUsers';
 import axios from 'axios';
 
 const props = defineProps({
@@ -20,6 +21,9 @@ const props = defineProps({
 const page = usePage();
 const authUser = computed(() => page.props.auth?.user);
 const { playSfx, playClick } = useAudio();
+
+const { onlineUsers } = useOnlineUsers();
+const isOnline = (userId) => userId != null && onlineUsers.value.has(userId);
 
 // ── Refs ──────────────────────────────────────────────────────
 const messagesEl = ref(null);
@@ -260,18 +264,6 @@ const unreadBelowCount = ref(0);
 const messagesReady = ref(false);
 let pendingImageCount = 0;
 let messagesReadyTimer = null;
-
-// ── Polling ───────────────────────────────────────────────────
-let pollTimer = null;   // null = stopped, -1 = running (no timer scheduled yet), N = setTimeout ID
-let pollFailures = 0;
-// Scan from end, skip temp string IDs (optimistic messages in flight), return last confirmed ID.
-const lastMsgId = computed(() => {
-    for (let i = localMessages.value.length - 1; i >= 0; i--) {
-        const id = localMessages.value[i].id;
-        if (typeof id === 'number') return id;
-    }
-    return 0;
-});
 
 // ── Typing indicator ──────────────────────────────────────────
 const isOtherTyping = ref(false);
@@ -567,76 +559,50 @@ function bumpConversation(convId, lastMessage) {
     localConversations.value = arr;
 }
 
-async function poll() {
-    if (!props.activeConversation) { pollTimer = null; return; }
-
-    const isHidden = document.hidden;
-    let gotNewMessages = false;
-
-    if (!isHidden) {
-        try {
-            const res = await axios.get(route('conversations.poll', props.activeConversation.id), {
-                params: { after: lastMsgId.value },
+function subscribeToConversation(id) {
+    if (!id) return;
+    window.Echo.private(`conversation.${id}`)
+        .listen('.MessageSent', (e) => {
+            if (localMessages.value.some(m => m.id === e.message.id)) return;
+            const msg = { ...e.message, is_own: e.message.author.id === authUser.value?.id };
+            localMessages.value = [...localMessages.value, msg];
+            bumpConversation(e.conversation_id, {
+                content: msg.content,
+                created_at: msg.created_at,
+                is_own: msg.is_own,
             });
-            pollFailures = 0;
-            const newMsgs = res.data?.messages ?? [];
-            if (newMsgs.length) {
-                const existingIds = new Set(localMessages.value.map(m => m.id));
-                const fresh = newMsgs.filter(m => !existingIds.has(m.id));
-                if (fresh.length) {
-                    gotNewMessages = true;
-                    localMessages.value = [...localMessages.value, ...fresh];
-                    if (isNearBottom.value) {
-                        scrollToBottom();
-                    } else {
-                        const fromOthers = fresh.filter(m => !m.is_own).length;
-                        if (fromOthers > 0) unreadBelowCount.value += fromOthers;
-                    }
-                    const lastFresh = fresh[fresh.length - 1];
-                    bumpConversation(props.activeConversation.id, {
-                        content: lastFresh.content,
-                        created_at: lastFresh.created_at,
-                        is_own: lastFresh.is_own,
-                    });
+            if (!msg.is_own) {
+                playSfx('message');
+                markAsRead();
+                if (isNearBottom.value) {
+                    scrollToBottom();
+                } else {
+                    unreadBelowCount.value += 1;
                 }
+            } else {
+                scrollToBottom();
             }
-            if (res.data?.other_last_read_at) otherLastReadAt.value = res.data.other_last_read_at;
-
-            // Update typing indicator from poll response
-            const typingUsers = res.data?.typing_users ?? [];
-            isOtherTyping.value = typingUsers.length > 0;
+        })
+        .listen('.TypingUpdated', (e) => {
+            isOtherTyping.value = e.is_typing;
             clearTimeout(typingExpireTimer);
-            if (isOtherTyping.value) {
+            if (e.is_typing) {
                 typingExpireTimer = setTimeout(() => { isOtherTyping.value = false; }, 8_000);
             }
-        } catch {
-            pollFailures = Math.min(pollFailures + 1, 5);
-        }
-    }
-
-    // Reschedule only if polling is still active (not stopped by stopPolling)
-    if (pollTimer !== null) {
-        let delay;
-        if (isHidden) {
-            delay = 30_000; // 30s when tab is hidden — no point hammering the server
-        } else if (pollFailures > 0) {
-            delay = Math.min(2_000 * (2 ** pollFailures), 30_000);
-        } else if (gotNewMessages) {
-            delay = 1_500; // quick follow-up: there may be more messages incoming
-        } else {
-            delay = 2_000; // base interval (down from 3s)
-        }
-        pollTimer = setTimeout(poll, delay);
-    }
+        })
+        .listen('.MessageRead', (e) => {
+            if (e.read_by_user_id !== authUser.value?.id) {
+                otherLastReadAt.value = e.read_at;
+            }
+        });
 }
 
-function startPolling() {
-    if (pollTimer !== null) return;
-    pollFailures = 0;
-    pollTimer = -1; // sentinel: polling active, timer not yet set
-    poll();
+async function markAsRead() {
+    if (!props.activeConversation) return;
+    try {
+        await axios.post(route('conversations.read', props.activeConversation.id));
+    } catch {}
 }
-function stopPolling() { clearTimeout(pollTimer); pollTimer = null; pollFailures = 0; }
 
 // ── Image ─────────────────────────────────────────────────────
 function onImageChange(e) {
@@ -828,23 +794,21 @@ function switchConversation(convId) {
     if (isMobile.value) showSidebar.value = false;
     if (convId === props.activeConversation?.id) return;
     const ci = localConversations.value.findIndex(c => c.id === convId);
-    if (ci !== -1) localConversations.value[ci] = { ...localConversations.value[ci], unread_count: 0 };
+    if (ci !== -1) {
+        const unread = localConversations.value[ci].unread_count ?? 0;
+        localConversations.value[ci] = { ...localConversations.value[ci], unread_count: 0 };
+        if (unread > 0) {
+            window.dispatchEvent(new CustomEvent('messages-read', { detail: { delta: unread } }));
+        }
+    }
     router.visit(route('conversations.show', convId), {
         preserveState: true,
         preserveScroll: true,
         only: ['messages', 'hasMoreMessages', 'activeConversation'],
-        onSuccess: () => router.reload({ only: ['auth'] }),
     });
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────
-function onVisibilityChange() {
-    if (!document.hidden && props.activeConversation && pollTimer !== null) {
-        clearTimeout(pollTimer);
-        pollTimer = -1;
-        poll();
-    }
-}
 function onDocClick(e) {
     if (bgPickerOpen.value && bgPickerEl.value && !bgPickerEl.value.contains(e.target)) bgPickerOpen.value = false;
 }
@@ -854,31 +818,32 @@ onMounted(() => {
     loadChatBg();
     if (props.activeConversation && isMobile.value) showSidebar.value = false;
     window.addEventListener('resize', checkMobile);
-    document.addEventListener('visibilitychange', onVisibilityChange);
     document.addEventListener('click', onDocClick);
     if (messagesEl.value) messagesEl.value.addEventListener('scroll', checkNearBottom);
     scrollToBottom();
     if (props.activeConversation) {
-        startPolling();
-        router.reload({ only: ['auth'] });
+        subscribeToConversation(props.activeConversation.id);
+        const conv = localConversations.value.find(c => c.id === props.activeConversation.id);
+        if (conv?.unread_count > 0) {
+            window.dispatchEvent(new CustomEvent('messages-read', { detail: { delta: conv.unread_count } }));
+        }
     }
 });
 
 onUnmounted(() => {
     window.removeEventListener('resize', checkMobile);
-    document.removeEventListener('visibilitychange', onVisibilityChange);
     document.removeEventListener('click', onDocClick);
     if (messagesEl.value) messagesEl.value.removeEventListener('scroll', checkNearBottom);
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
-    stopPolling();
+    if (props.activeConversation?.id) window.Echo.leave(`conversation.${props.activeConversation.id}`);
     clearTypingState();
     clearTimeout(sentTimer);
 });
 
 watch(
     () => props.activeConversation?.id,
-    (newId) => {
-        stopPolling();
+    (newId, oldId) => {
+        if (oldId) window.Echo.leave(`conversation.${oldId}`);
         clearTypingState();
         localMessages.value = [...props.messages];
         hasMore.value = props.hasMoreMessages;
@@ -891,7 +856,7 @@ watch(
         otherLastReadAt.value = props.activeConversation?.other_last_read_at ?? null;
         loadChatBg();
         scrollToBottom();
-        if (newId) startPolling();
+        if (newId) subscribeToConversation(newId);
     },
     { flush: 'post' },
 );
@@ -977,6 +942,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                             <template v-else>
                                 <img v-if="conv.other_user?.avatar" :src="clImg(conv.other_user.avatar, 88, 88, 'fill', 'face')" class="s-avatar" :style="{ border: `2px solid ${conv.other_user.avatar_color}`, boxShadow: `0 2px 8px ${conv.other_user.avatar_color}33` }" loading="lazy" />
                                 <div v-else class="s-avatar-init" :style="{ background: conv.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(conv.other_user?.name) }}</div>
+                                <span v-if="isOnline(conv.other_user?.id)" class="online-dot"></span>
                             </template>
                         </div>
                         <div class="conv-info">
@@ -1048,11 +1014,16 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 
                         <!-- Direct header -->
                         <template v-else>
-                            <img v-if="activeConversation.other_user?.avatar" :src="clImg(activeConversation.other_user.avatar, 80, 80, 'fill', 'face')" class="h-avatar" :style="{ border: `2px solid ${activeConversation.other_user.avatar_color}`, boxShadow: `0 2px 8px ${activeConversation.other_user.avatar_color}44` }" />
-                            <div v-else class="h-avatar-init" :style="{ background: activeConversation.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(activeConversation.other_user?.name) }}</div>
+                            <div style="position:relative;flex-shrink:0">
+                                <img v-if="activeConversation.other_user?.avatar" :src="clImg(activeConversation.other_user.avatar, 80, 80, 'fill', 'face')" class="h-avatar" :style="{ border: `2px solid ${activeConversation.other_user.avatar_color}`, boxShadow: `0 2px 8px ${activeConversation.other_user.avatar_color}44` }" />
+                                <div v-else class="h-avatar-init" :style="{ background: activeConversation.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(activeConversation.other_user?.name) }}</div>
+                                <span v-if="isOnline(activeConversation.other_user?.id)" class="online-dot online-dot-lg"></span>
+                            </div>
                             <div class="header-info">
                                 <p class="header-name">{{ activeConversation.other_user?.name }}</p>
-                                <p v-if="activeConversation.other_user?.username" class="header-username">@{{ activeConversation.other_user.username }}</p>
+                                <p class="header-username" :style="{ color: isOnline(activeConversation.other_user?.id) ? '#22c55e' : undefined }">
+                                    {{ isOnline(activeConversation.other_user?.id) ? 'Online' : (activeConversation.other_user?.username ? '@' + activeConversation.other_user.username : '') }}
+                                </p>
                             </div>
                         </template>
 
@@ -1594,6 +1565,18 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 }
 
 .s-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0; }
+
+.online-dot {
+    position: absolute; bottom: 1px; right: 1px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid var(--nav-bg, #fff);
+    box-shadow: 0 0 0 1px #22c55e44;
+}
+.online-dot-lg {
+    width: 13px; height: 13px;
+    bottom: 2px; right: 2px;
+}
 .s-avatar-init {
     width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;

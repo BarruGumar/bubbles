@@ -116,6 +116,7 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::delete('/messages/{message}', [ConversationController::class, 'destroyMessage'])->name('messages.destroy');
     Route::get('/conversations/{conversation}/poll', [ConversationController::class, 'poll'])->name('conversations.poll');
     Route::post('/conversations/{conversation}/typing', [ConversationController::class, 'typing'])->name('conversations.typing');
+    Route::post('/conversations/{conversation}/read', [ConversationController::class, 'markRead'])->name('conversations.read');
 
     // Grupos
     Route::get('/groups/friends', [GroupController::class, 'friends'])->name('groups.friends');

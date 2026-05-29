@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\BadgeCountUpdated;
+use App\Events\MessageRead;
+use App\Events\MessageSent;
+use App\Events\TypingUpdated;
 use App\Http\Requests\StoreMessageRequest;
 use App\Models\Conversation;
 use App\Models\Friend;
@@ -142,7 +146,16 @@ class ConversationController extends Controller
 
         $message->load(['user', 'replyTo.user']);
 
-        return response()->json(['message' => $this->formatMessage($message)]);
+        $formatted = $this->formatMessage($message);
+
+        broadcast(new MessageSent($conversation->id, $formatted))->toOthers();
+
+        $conversation->participants()
+            ->where('users.id', '!=', auth()->id())
+            ->get()
+            ->each(fn ($p) => broadcast(new BadgeCountUpdated($p->id, 'messages', 1, $conversation->id)));
+
+        return response()->json(['message' => $formatted]);
     }
 
     /**
@@ -228,6 +241,35 @@ class ConversationController extends Controller
         } else {
             cache()->forget($key);
         }
+
+        broadcast(new TypingUpdated(
+            $conversation->id,
+            $userId,
+            auth()->user()->name,
+            $request->boolean('is_typing'),
+        ))->toOthers();
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function markRead(Conversation $conversation): JsonResponse
+    {
+        $userId = auth()->id();
+
+        abort_unless(
+            $conversation->participants()->where('user_id', $userId)->exists(),
+            403
+        );
+
+        $conversation->participants()->updateExistingPivot($userId, [
+            'last_read_at' => now(),
+        ]);
+
+        broadcast(new MessageRead(
+            $conversation->id,
+            $userId,
+            now()->toISOString(),
+        ))->toOthers();
 
         return response()->json(['ok' => true]);
     }
