@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Bubble;
 use App\Models\Post;
 use App\Models\User;
+use App\Models\UserBlock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -42,10 +43,19 @@ class SearchController extends Controller
         $safe = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q);
         $like = '%' . $safe . '%';
 
+        $blockedIds = [];
+        if ($authId = auth()->id()) {
+            $blockedIds = UserBlock::where('blocker_id', $authId)->pluck('blocked_id')
+                ->merge(UserBlock::where('blocked_id', $authId)->pluck('blocker_id'))
+                ->unique()
+                ->all();
+        }
+
         $users = User::where(function ($query) use ($like) {
                 $query->where('name', 'like', $like)
                       ->orWhere('username', 'like', $like);
             })
+            ->when($blockedIds, fn ($q) => $q->whereNotIn('id', $blockedIds))
             ->limit($limit + 5)
             ->get(['id', 'name', 'username', 'avatar', 'avatar_color', 'bio'])
             ->map(fn ($u) => [

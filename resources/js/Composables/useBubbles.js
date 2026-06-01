@@ -4,6 +4,17 @@ import axios from 'axios'
 const COLORS = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b']
 let _localId = -1
 
+const STORAGE_KEY = (userId) => `bubbles_pos_${userId}`
+
+function loadStoredPositions(userId) {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY(userId))
+        return stored ? JSON.parse(stored) : {}
+    } catch {
+        return {}
+    }
+}
+
 // Tamanho dinâmico baseado no número de membros; reduzido em ecrãs pequenos
 function sizeFromMembers(n) {
     const base = Math.min(70 + Math.sqrt(n ?? 0) * 9, 220)
@@ -29,7 +40,19 @@ export function useBubbles() {
     const hoveredId = ref(null)
     const connectSource = ref(null)
 
-    async function load() {
+    function savePositions(userId) {
+        if (!userId) return
+        try {
+            const positions = {}
+            bubbles.value.forEach((b) => {
+                if (b.id > 0) positions[b.id] = { x: Math.round(b.x), y: Math.round(b.y) }
+            })
+            localStorage.setItem(STORAGE_KEY(userId), JSON.stringify(positions))
+        } catch {}
+    }
+
+    async function load(userId) {
+        const storedPos = userId ? loadStoredPositions(userId) : {}
         try {
             const { data } = await axios.get('/api/bubbles')
             if (Array.isArray(data) && data.length > 0) {
@@ -39,10 +62,14 @@ export function useBubbles() {
                     const size = sizeFromMembers(b.members)
                     const angle = (i / data.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.6
                     const dist = 20 + Math.random() * 50
+                    const stored = storedPos[b.id]
+                    // Clamp stored position to current viewport (handles window resize)
+                    const sx = stored ? Math.max(60, Math.min(stored.x, window.innerWidth - size - 60)) : null
+                    const sy = stored ? Math.max(60, Math.min(stored.y, window.innerHeight - size - 60)) : null
                     return makeLocal({
                         id: b.id,
-                        x: cx - size / 2 + Math.cos(angle) * dist,
-                        y: cy - size / 2 + Math.sin(angle) * dist,
+                        x: sx ?? cx - size / 2 + Math.cos(angle) * dist,
+                        y: sy ?? cy - size / 2 + Math.sin(angle) * dist,
                         label: b.label,
                         color: b.color ?? '#009ac7',
                         size,
@@ -51,8 +78,9 @@ export function useBubbles() {
                         image: b.community_image ?? null,
                         avatars: b.avatars ?? [],
                         persisted: true,
-                        vx: Math.cos(angle) * 1.1,
-                        vy: Math.sin(angle) * 1.1,
+                        // No initial velocity for bubbles with stored positions — they're already placed
+                        vx: stored ? 0 : Math.cos(angle) * 1.1,
+                        vy: stored ? 0 : Math.sin(angle) * 1.1,
                     })
                 })
             } else {
@@ -121,5 +149,5 @@ export function useBubbles() {
         })
     }
 
-    return { bubbles, hoveredId, connectSource, load, add, toggleSelect }
+    return { bubbles, hoveredId, connectSource, load, add, toggleSelect, savePositions }
 }

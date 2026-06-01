@@ -88,6 +88,10 @@ class ConversationController extends Controller
         $recipientId = (int) $request->input('recipient_id');
         abort_if($recipientId === auth()->id(), 422);
 
+        $recipient = \App\Models\User::findOrFail($recipientId);
+        $me = auth()->user();
+        abort_if($me->hasBlocked($recipient) || $me->isBlockedBy($recipient), 422);
+
         $conversation = Conversation::where('type', 'direct')
             ->whereHas('participants', fn ($q) => $q->where('user_id', auth()->id()))
             ->whereHas('participants', fn ($q) => $q->where('user_id', $recipientId))

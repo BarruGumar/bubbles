@@ -74,17 +74,19 @@ class FriendController extends Controller
     public function send(string $username): RedirectResponse
     {
         $target = User::where('username', $username)->firstOrFail();
-        abort_if(auth()->id() === $target->id, 422);
+        $user = auth()->user();
+        abort_if($user->id === $target->id, 422);
+        abort_if($user->hasBlocked($target) || $user->isBlockedBy($target), 422);
 
-        $exists = Friend::where(function ($q) use ($target) {
-            $q->where('user_id', auth()->id())->where('friend_id', $target->id);
-        })->orWhere(function ($q) use ($target) {
-            $q->where('user_id', $target->id)->where('friend_id', auth()->id());
+        $exists = Friend::where(function ($q) use ($user, $target) {
+            $q->where('user_id', $user->id)->where('friend_id', $target->id);
+        })->orWhere(function ($q) use ($user, $target) {
+            $q->where('user_id', $target->id)->where('friend_id', $user->id);
         })->exists();
 
         if (! $exists) {
             $friendRecord = Friend::create([
-                'user_id'   => auth()->id(),
+                'user_id'   => $user->id,
                 'friend_id' => $target->id,
                 'status'    => 'pending',
             ]);

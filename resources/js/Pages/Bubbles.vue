@@ -30,7 +30,7 @@ const props = defineProps({
     hasCommunities: { type: Boolean, default: false },
 });
 
-const { bubbles, hoveredId, connectSource, load, add, toggleSelect } = useBubbles();
+const { bubbles, hoveredId, connectSource, load, add, toggleSelect, savePositions } = useBubbles();
 const ready = ref(false);
 const { connections, friendConnections, load: loadConnections, loadFriendConnections, connect } = useConnections();
 const { step } = usePhysics();
@@ -163,6 +163,13 @@ const {
     toggleSelect(id);
 });
 
+// Save bubble positions to localStorage whenever a drag ends
+watch(dragging, (newVal, oldVal) => {
+    if (oldVal !== null && newVal === null) {
+        savePositions(authUser.value?.id);
+    }
+});
+
 function onWindowMouseMove(e) {
     moveDrag(e, bubbles.value);
 }
@@ -247,6 +254,7 @@ function onKeyDown(e) {
 
 let animId = null;
 let lastTime = 0;
+let _saveOnUnload = null;
 
 function badgeObstacles() {
     if (!friendConnections.value.length) return [];
@@ -290,7 +298,9 @@ function onVisibilityChange() {
 onMounted(async () => {
     // Refresh CSRF token before any authenticated API calls (Sanctum SPA requirement)
     try { await axios.get('/sanctum/csrf-cookie'); } catch { /* non-fatal */ }
-    await Promise.all([load(), loadConnections(), loadFriendConnections()]);
+    await Promise.all([load(authUser.value?.id), loadConnections(), loadFriendConnections()]);
+    _saveOnUnload = () => savePositions(authUser.value?.id);
+    window.addEventListener('beforeunload', _saveOnUnload);
     ready.value = true;
     window.addEventListener('mousemove', onWindowMouseMove);
     window.addEventListener('mouseup', onWindowMouseUp);
@@ -331,6 +341,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+    savePositions(authUser.value?.id);
+    if (_saveOnUnload) window.removeEventListener('beforeunload', _saveOnUnload);
     window.removeEventListener('mousemove', onWindowMouseMove);
     window.removeEventListener('mouseup', onWindowMouseUp);
     window.removeEventListener('keydown', onKeyDown);

@@ -6,11 +6,18 @@ use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Tests\TestCase;
 
 class CommentFeatureTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware(ThrottleRequests::class);
+    }
 
     private function makePost(User $user): Post
     {
@@ -52,6 +59,33 @@ class CommentFeatureTest extends TestCase
             'user_id' => $commenter->id,
             'content' => 'Great post!',
         ]);
+    }
+
+    public function test_banned_user_cannot_comment(): void
+    {
+        $owner  = User::factory()->create();
+        $banned = User::factory()->create(['role' => 'banned']);
+        $post   = $this->makePost($owner);
+
+        // CheckActivePunishments middleware logs out banned users and redirects to '/'
+        $this->actingAs($banned)
+            ->post("/posts/{$post->id}/comments", ['content' => 'Hi'])
+            ->assertRedirect('/');
+
+        $this->assertDatabaseEmpty('comments');
+    }
+
+    public function test_suspended_user_cannot_comment(): void
+    {
+        $owner     = User::factory()->create();
+        $suspended = User::factory()->create(['role' => 'suspended']);
+        $post      = $this->makePost($owner);
+
+        $this->actingAs($suspended)
+            ->post("/posts/{$post->id}/comments", ['content' => 'Hi'])
+            ->assertForbidden();
+
+        $this->assertDatabaseEmpty('comments');
     }
 
     public function test_comment_content_is_required(): void

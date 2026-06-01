@@ -17,6 +17,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\BlockController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
@@ -150,6 +151,10 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::delete('/notifications', [NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
+
+    // Blocking
+    Route::post('/users/{username}/block', [BlockController::class, 'store'])->name('users.block');
+    Route::delete('/users/{username}/block', [BlockController::class, 'destroy'])->name('users.unblock');
 
     // Reports
     Route::post('/posts/{post}/report', [ReportController::class, 'storePost'])->middleware('throttle:reports')->name('posts.report');
