@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Http\Resources\AuthUserResource;
 use App\Models\Announcement;
 use App\Models\Friend;
 use App\Models\Message;
@@ -68,7 +67,7 @@ class HandleInertiaRequests extends Middleware
                     ->all();
             },
             'auth' => [
-                'user' => $user ? new AuthUserResource($user) : null,
+                'user' => $user,
                 'pending_friends_count' => $user
                     ? Cache::remember("user:{$user->id}:badge:friends", 60, fn () =>
                         Friend::where('friend_id', $user->id)
