@@ -654,7 +654,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     @mouseenter="$event.currentTarget.style.background = '#009ac714'"
                     @mouseleave="$event.currentTarget.style.background = 'transparent'"
                     title="Notificações"
-                    @click="playClick()"
+                    @click="playSfx('notificationPage')"
                 >
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                         <path

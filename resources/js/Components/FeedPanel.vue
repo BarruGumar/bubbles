@@ -1,6 +1,9 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import PostCard from '@/Components/PostCard.vue';
+import { useAudio } from '@/Composables/useAudio';
+
+const { playClick } = useAudio();
 
 defineProps({
     open: { type: Boolean, default: false },
@@ -58,6 +61,7 @@ defineProps({
                 <Link
                     :href="route('feed.index')"
                     style="font-size: 11px; font-weight: 700; color: #009ac7; text-decoration: none"
+                    @click="playClick()"
                     >Ver tudo →</Link
                 >
             </div>
