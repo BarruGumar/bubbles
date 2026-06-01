@@ -105,7 +105,7 @@ class PostFeatureTest extends TestCase
         $user = User::factory()->create();
         $post = $this->makePost($user);
 
-        $this->actingAs($user)->delete("/posts/{$post->id}")->assertRedirect();
+        $this->actingAs($user)->delete("/posts/{$post->id}")->assertOk()->assertJson(['ok' => true]);
 
         $this->assertSoftDeleted('posts', ['id' => $post->id]);
     }
@@ -127,7 +127,7 @@ class PostFeatureTest extends TestCase
         $moderator = User::factory()->create(['role' => 'moderator']);
         $post = $this->makePost($owner);
 
-        $this->actingAs($moderator)->delete("/posts/{$post->id}")->assertRedirect();
+        $this->actingAs($moderator)->delete("/posts/{$post->id}")->assertOk()->assertJson(['ok' => true]);
 
         $this->assertSoftDeleted('posts', ['id' => $post->id]);
     }

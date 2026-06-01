@@ -57,6 +57,6 @@ class Conversation extends Model
 
     public function userRole(int $userId): ?string
     {
-        return $this->participants()->where('user_id', $userId)->value('role');
+        return $this->participants()->where('user_id', $userId)->value('conversation_user.role');
     }
 }

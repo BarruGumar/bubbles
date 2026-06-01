@@ -3,10 +3,13 @@
 namespace Tests\Unit;
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_admin_is_admin_and_moderator_but_not_suspended(): void
     {
         $user = new User(['role' => 'admin']);

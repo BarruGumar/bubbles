@@ -66,6 +66,7 @@ class AuditLogger
                 continue;
             }
             if (is_string($value)) {
+                $value = preg_replace('/<(script|style)[^>]*>.*?<\/(script|style)>/is', '', $value);
                 $value = mb_substr(strip_tags($value), 0, 500);
             }
             $result[$key] = $value;

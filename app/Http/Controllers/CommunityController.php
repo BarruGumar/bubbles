@@ -200,6 +200,11 @@ class CommunityController extends Controller
         abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
         abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
         abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
+
+        $isOwner = $bubble->user_id === $user->id;
+        $isMember = $isOwner || $bubble->memberships()->where('user_id', $user->id)->where('status', 'active')->exists();
+        abort_unless($isMember, 403, 'Não és membro desta comunidade.');
+
         abort_if($user->isBannedFromCommunity($bubble), 403, 'Estás banido desta comunidade.');
         abort_if($user->isMutedInCommunity($bubble), 403, 'Estás em silêncio nesta comunidade.');
 

@@ -39,7 +39,8 @@ class FriendFeatureTest extends TestCase
         $sender = User::factory()->create(['role' => 'banned']);
         User::factory()->create(['username' => 'alice']);
 
-        $this->actingAs($sender)->post('/friends/alice')->assertForbidden();
+        // Banned users are logged out and redirected to '/' by CheckActivePunishments middleware
+        $this->actingAs($sender)->post('/friends/alice')->assertRedirect('/');
 
         $this->assertDatabaseEmpty('friends');
     }

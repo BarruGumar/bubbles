@@ -52,8 +52,8 @@ class GroupChatTest extends TestCase
 
         $conv = Conversation::where('name', 'My Group')->first();
         $this->assertCount(3, $conv->participants);
-        $this->assertEquals('owner', $conv->participants()->where('user_id', $owner->id)->value('role'));
-        $this->assertEquals('member', $conv->participants()->where('user_id', $m1->id)->value('role'));
+        $this->assertEquals('owner', $conv->participants()->where('user_id', $owner->id)->value('conversation_user.role'));
+        $this->assertEquals('member', $conv->participants()->where('user_id', $m1->id)->value('conversation_user.role'));
     }
 
     public function test_cannot_create_group_with_only_one_participant(): void
@@ -180,7 +180,7 @@ class GroupChatTest extends TestCase
             ->assertOk()
             ->assertJson(['role' => 'admin']);
 
-        $this->assertEquals('admin', $group->participants()->where('user_id', $m1->id)->value('role'));
+        $this->assertEquals('admin', $group->participants()->where('user_id', $m1->id)->value('conversation_user.role'));
     }
 
     public function test_member_cannot_promote(): void
@@ -242,8 +242,8 @@ class GroupChatTest extends TestCase
             ->patchJson("/groups/{$group->id}/owner", ['user_id' => $m1->id])
             ->assertOk();
 
-        $this->assertEquals('owner', $group->participants()->where('user_id', $m1->id)->value('role'));
-        $this->assertEquals('admin', $group->participants()->where('user_id', $owner->id)->value('role'));
+        $this->assertEquals('owner', $group->participants()->where('user_id', $m1->id)->value('conversation_user.role'));
+        $this->assertEquals('admin', $group->participants()->where('user_id', $owner->id)->value('conversation_user.role'));
         $this->assertEquals($m1->id, $group->fresh()->owner_id);
     }
 
