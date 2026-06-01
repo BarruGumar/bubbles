@@ -20,7 +20,10 @@ class UserController extends Controller
         $actor = auth()->user();
 
         $users = User::when($q, fn ($query) => $query->where('name', 'like', "%$q%")->orWhere('username', 'like', "%$q%"))
-            ->withCount(['punishments as active_punishments_count' => fn ($q) => $q->active()])
+            ->withCount([
+                'punishments as active_punishments_count' => fn ($q) => $q->active(),
+                'posts as posts_count'                    => fn ($q) => $q->withTrashed(),
+            ])
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->through(fn ($u) => [
@@ -31,7 +34,7 @@ class UserController extends Controller
                 'role'                     => $u->role,
                 'avatar'                   => $u->avatar,
                 'avatar_color'             => $u->avatar_color ?? '#009ac7',
-                'posts_count'              => $u->posts()->withTrashed()->count(),
+                'posts_count'              => $u->posts_count,
                 'active_punishments_count' => $u->active_punishments_count,
                 'is_banned'                => $u->isBanned(),
                 'is_suspended'             => $u->isSuspended(),

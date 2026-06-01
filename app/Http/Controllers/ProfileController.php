@@ -22,7 +22,7 @@ class ProfileController extends Controller
 
     public function show(string $username): Response
     {
-        $profileUser = User::where('username', $username)->firstOrFail();
+        $profileUser = User::where('username', $username)->withCount('posts')->firstOrFail();
         $isOwn = auth()->check() && auth()->id() === $profileUser->id;
 
         $userId = auth()->id();
@@ -123,7 +123,7 @@ class ProfileController extends Controller
                 'banner' => $profileUser->banner,
                 'role' => $profileUser->role,
                 'created_at' => $profileUser->created_at->format('M Y'),
-                'posts_count' => $profileUser->posts()->count(),
+                'posts_count' => $profileUser->posts_count,
             ],
             'posts' => $posts,
             'nextCursor' => $paginated->nextCursor()?->encode(),

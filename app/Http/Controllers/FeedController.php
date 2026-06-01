@@ -7,6 +7,7 @@ use App\Models\CommunityPost;
 use App\Models\Friend;
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,17 +28,21 @@ class FeedController extends Controller
         $user = $request->user();
         $authId = $user->id;
 
-        $friendIds = Friend::where('status', 'accepted')
-            ->where(fn ($q) => $q->where('user_id', $authId)->orWhere('friend_id', $authId))
-            ->select(['user_id', 'friend_id'])
-            ->get()
-            ->map(fn ($f) => $f->user_id === $authId ? $f->friend_id : $f->user_id)
-            ->toArray();
+        $friendIds = Cache::remember("user:{$authId}:friend_ids", now()->addMinutes(5), function () use ($authId) {
+            return Friend::where('status', 'accepted')
+                ->where(fn ($q) => $q->where('user_id', $authId)->orWhere('friend_id', $authId))
+                ->select(['user_id', 'friend_id'])
+                ->get()
+                ->map(fn ($f) => $f->user_id === $authId ? $f->friend_id : $f->user_id)
+                ->toArray();
+        });
 
-        $communityIds = $user->communities()->pluck('bubbles.id')
-            ->merge(Bubble::where('user_id', $authId)->pluck('id'))
-            ->unique()
-            ->toArray();
+        $communityIds = Cache::remember("user:{$authId}:community_ids", now()->addMinutes(5), function () use ($user, $authId) {
+            return $user->communities()->pluck('bubbles.id')
+                ->merge(Bubble::where('user_id', $authId)->pluck('id'))
+                ->unique()
+                ->toArray();
+        });
 
         $withLikes = fn ($q) => $q->where('user_id', $authId);
 

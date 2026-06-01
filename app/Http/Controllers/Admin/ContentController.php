@@ -118,7 +118,7 @@ class ContentController extends Controller
         $q = $request->get('q');
 
         $communities = Bubble::when($q, fn ($query) => $query->where('community_title', 'like', "%$q%")->orWhere('label', 'like', "%$q%"))
-            ->withCount('memberships')
+            ->withCount(['memberships', 'communityPosts'])
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->through(fn ($b) => [
@@ -127,7 +127,7 @@ class ContentController extends Controller
                 'title'       => $b->community_title ?: $b->label,
                 'color'       => $b->color ?? '#009ac7',
                 'members'     => $b->memberships_count,
-                'posts_count' => $b->communityPosts()->count(),
+                'posts_count' => $b->community_posts_count,
                 'created_at'  => $b->created_at->format('d/m/Y'),
             ]);
 

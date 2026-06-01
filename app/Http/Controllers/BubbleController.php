@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -26,7 +27,7 @@ class BubbleController extends Controller
     public function index(): JsonResponse
     {
         $memberIds = auth()->check()
-            ? auth()->user()->communities()->pluck('bubbles.id')->toArray()
+            ? Cache::remember('user:' . auth()->id() . ':community_ids', now()->addMinutes(5), fn () => auth()->user()->communities()->pluck('bubbles.id')->toArray())
             : [];
 
         $bubbles = Bubble::withCount('memberships')->latest('id')->get()->map(fn ($b) => [
@@ -64,6 +65,8 @@ class BubbleController extends Controller
 
         $bubble = Bubble::create($data);
         $bubble->memberships()->attach(auth()->id());
+
+        Cache::forget('user:' . auth()->id() . ':community_ids');
 
         AuditLogger::log('community.created', 'community', $bubble, [
             'label' => $bubble->label,
@@ -109,6 +112,8 @@ class BubbleController extends Controller
             'label' => $bubble->label,
         ], $bubble->id);
 
+        Cache::forget('user:' . auth()->id() . ':community_ids');
+
         $bubble->delete();
 
         return response()->json(status: 204);
@@ -122,14 +127,15 @@ class BubbleController extends Controller
 
         $user = auth()->user();
 
-        $friendIds = Friend::where('status', 'accepted')
-            ->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)->orWhere('friend_id', $user->id);
-            })
-            ->get()
-            ->map(fn ($f) => $f->user_id === $user->id ? $f->friend_id : $f->user_id)
-            ->unique()
-            ->values();
+        $friendIds = collect(Cache::remember("user:{$user->id}:friend_ids", now()->addMinutes(5), function () use ($user) {
+            return Friend::where('status', 'accepted')
+                ->where(fn ($q) => $q->where('user_id', $user->id)->orWhere('friend_id', $user->id))
+                ->get()
+                ->map(fn ($f) => $f->user_id === $user->id ? $f->friend_id : $f->user_id)
+                ->unique()
+                ->values()
+                ->toArray();
+        }));
 
         if ($friendIds->isEmpty()) {
             return response()->json([]);

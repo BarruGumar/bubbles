@@ -13,6 +13,7 @@ use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,7 +24,11 @@ class CommunityController extends Controller
 
     public function show(int $id): Response
     {
-        $bubble = Bubble::withCount('memberships')->findOrFail($id);
+        $bubble = Bubble::withCount([
+            'memberships',
+            'communityPosts',
+            'communityPosts as recent_posts_count' => fn ($q) => $q->where('created_at', '>=', now()->subDays(7)),
+        ])->findOrFail($id);
         $creator = User::find($bubble->user_id);
 
         $authUser = auth()->user();
@@ -115,8 +120,8 @@ class CommunityController extends Controller
                     'Partilha conteúdo relevante para o tema.',
                 ],
                 'members' => $bubble->memberships_count,
-                'posts_count' => $bubble->communityPosts()->count(),
-                'recent_posts_count' => $bubble->communityPosts()->where('created_at', '>=', now()->subDays(7))->count(),
+                'posts_count' => $bubble->community_posts_count,
+                'recent_posts_count' => $bubble->recent_posts_count,
                 'member_avatars' => $memberAvatars,
                 'creator' => $creator ? [
                     'id' => $creator->id,
@@ -172,6 +177,8 @@ class CommunityController extends Controller
         $bubble = Bubble::findOrFail($id);
         $bubble->memberships()->syncWithoutDetaching([auth()->id()]);
 
+        Cache::forget('user:' . auth()->id() . ':community_ids');
+
         AuditLogger::log('community.joined', 'community', $bubble, [], $bubble->id);
 
         return back();
@@ -186,6 +193,8 @@ class CommunityController extends Controller
         }
 
         $bubble->memberships()->detach(auth()->id());
+
+        Cache::forget('user:' . auth()->id() . ':community_ids');
 
         AuditLogger::log('community.left', 'community', $bubble, [], $bubble->id);
 

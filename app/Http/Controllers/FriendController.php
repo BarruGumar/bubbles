@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Notifications\FriendRequestAccepted;
 use App\Notifications\FriendRequestReceived;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -125,6 +126,9 @@ class FriendController extends Controller
 
         $friend->update(['status' => 'accepted']);
 
+        Cache::forget("user:{$friend->user_id}:friend_ids");
+        Cache::forget('user:' . auth()->id() . ':friend_ids');
+
         $notif = new FriendRequestAccepted(auth()->user());
         $friend->user->notify($notif);
         $notifData = $notif->toArray($friend->user);
@@ -157,6 +161,9 @@ class FriendController extends Controller
             $friend->user_id !== auth()->id() && $friend->friend_id !== auth()->id(),
             403
         );
+
+        Cache::forget("user:{$friend->user_id}:friend_ids");
+        Cache::forget("user:{$friend->friend_id}:friend_ids");
 
         $friend->delete();
 
