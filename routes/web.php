@@ -1,6 +1,12 @@
 <?php
 
-use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncements;
+use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogs;
+use App\Http\Controllers\Admin\ContentController as AdminContent;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
+use App\Http\Controllers\Admin\PunishmentController as AdminPunishments;
+use App\Http\Controllers\Admin\ReportController as AdminReports;
+use App\Http\Controllers\Admin\UserController as AdminUsers;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\CommunityModerationController;
@@ -146,45 +152,51 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::delete('/notifications', [NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
 
     // Reports
-    Route::post('/posts/{post}/report', [ReportController::class, 'storePost'])->name('posts.report');
-    Route::post('/community-posts/{post}/report', [ReportController::class, 'storeCommunityPost'])->name('community-posts.report');
-    Route::post('/users/{user}/report', [ReportController::class, 'storeUser'])->name('users.report');
-    Route::post('/c/{id}/report', [ReportController::class, 'storeCommunity'])->name('community.report');
+    Route::post('/posts/{post}/report', [ReportController::class, 'storePost'])->middleware('throttle:reports')->name('posts.report');
+    Route::post('/community-posts/{post}/report', [ReportController::class, 'storeCommunityPost'])->middleware('throttle:reports')->name('community-posts.report');
+    Route::post('/users/{user}/report', [ReportController::class, 'storeUser'])->middleware('throttle:reports')->name('users.report');
+    Route::post('/c/{id}/report', [ReportController::class, 'storeCommunity'])->middleware('throttle:reports')->name('community.report');
 });
 
 // Admin panel
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
-    Route::get('/users', [AdminController::class, 'users'])->name('users');
-    Route::patch('/users/{user}/role', [AdminController::class, 'updateUserRole'])->name('users.role');
-    Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
-    Route::get('/posts', [AdminController::class, 'posts'])->name('posts');
-    Route::delete('/posts/{id}/force', [AdminController::class, 'destroyPost'])->name('posts.destroy');
-    Route::post('/posts/{id}/restore', [AdminController::class, 'restorePost'])->name('posts.restore');
-    Route::get('/community-posts', [AdminController::class, 'communityPosts'])->name('community-posts');
-    Route::delete('/community-posts/{id}/force', [AdminController::class, 'destroyCommunityPost'])->name('community-posts.destroy');
-    Route::post('/community-posts/{id}/restore', [AdminController::class, 'restoreCommunityPost'])->name('community-posts.restore');
-    Route::get('/communities', [AdminController::class, 'communities'])->name('communities');
-    Route::delete('/communities/{bubble}', [AdminController::class, 'destroyCommunity'])->name('communities.destroy');
-    Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
-    Route::patch('/reports/{report}/resolve', [AdminController::class, 'resolveReport'])->name('reports.resolve');
-    Route::patch('/reports/{report}/dismiss', [AdminController::class, 'dismissReport'])->name('reports.dismiss');
+    Route::get('/', AdminDashboard::class)->name('dashboard');
+
+    // Users
+    Route::get('/users', [AdminUsers::class, 'index'])->name('users');
+    Route::patch('/users/{user}/role', [AdminUsers::class, 'updateRole'])->name('users.role');
+    Route::delete('/users/{user}', [AdminUsers::class, 'destroy'])->name('users.destroy');
+
+    // Content (posts, community posts, communities)
+    Route::get('/posts', [AdminContent::class, 'posts'])->name('posts');
+    Route::delete('/posts/{id}/force', [AdminContent::class, 'destroyPost'])->name('posts.destroy');
+    Route::post('/posts/{id}/restore', [AdminContent::class, 'restorePost'])->name('posts.restore');
+    Route::get('/community-posts', [AdminContent::class, 'communityPosts'])->name('community-posts');
+    Route::delete('/community-posts/{id}/force', [AdminContent::class, 'destroyCommunityPost'])->name('community-posts.destroy');
+    Route::post('/community-posts/{id}/restore', [AdminContent::class, 'restoreCommunityPost'])->name('community-posts.restore');
+    Route::get('/communities', [AdminContent::class, 'communities'])->name('communities');
+    Route::delete('/communities/{bubble}', [AdminContent::class, 'destroyCommunity'])->name('communities.destroy');
+
+    // Reports
+    Route::get('/reports', [AdminReports::class, 'index'])->name('reports');
+    Route::patch('/reports/{report}/resolve', [AdminReports::class, 'resolve'])->name('reports.resolve');
+    Route::patch('/reports/{report}/dismiss', [AdminReports::class, 'dismiss'])->name('reports.dismiss');
 
     // Punishments
-    Route::get('/punishments', [AdminController::class, 'punishments'])->name('punishments');
-    Route::post('/punishments', [AdminController::class, 'createPunishment'])->name('punishments.store');
-    Route::patch('/punishments/{punishment}/revoke', [AdminController::class, 'revokePunishment'])->name('punishments.revoke');
+    Route::get('/punishments', [AdminPunishments::class, 'index'])->name('punishments');
+    Route::post('/punishments', [AdminPunishments::class, 'store'])->name('punishments.store');
+    Route::patch('/punishments/{punishment}/revoke', [AdminPunishments::class, 'revoke'])->name('punishments.revoke');
 
     // Audit Logs
-    Route::get('/audit-logs', [AdminController::class, 'auditLogs'])->name('audit-logs');
-    Route::delete('/audit-logs', [AdminController::class, 'destroyAllAuditLogs'])->name('audit-logs.destroy-all');
-    Route::delete('/audit-logs/{log}', [AdminController::class, 'destroyAuditLog'])->name('audit-logs.destroy');
+    Route::get('/audit-logs', [AdminAuditLogs::class, 'index'])->name('audit-logs');
+    Route::delete('/audit-logs', [AdminAuditLogs::class, 'destroyAll'])->name('audit-logs.destroy-all');
+    Route::delete('/audit-logs/{log}', [AdminAuditLogs::class, 'destroy'])->name('audit-logs.destroy');
 
     // Announcements
-    Route::get('/announcements', [AdminController::class, 'announcements'])->name('announcements');
-    Route::post('/announcements', [AdminController::class, 'storeAnnouncement'])->name('announcements.store');
-    Route::patch('/announcements/{announcement}/toggle', [AdminController::class, 'toggleAnnouncement'])->name('announcements.toggle');
-    Route::delete('/announcements/{announcement}', [AdminController::class, 'destroyAnnouncement'])->name('announcements.destroy');
+    Route::get('/announcements', [AdminAnnouncements::class, 'index'])->name('announcements');
+    Route::post('/announcements', [AdminAnnouncements::class, 'store'])->name('announcements.store');
+    Route::patch('/announcements/{announcement}/toggle', [AdminAnnouncements::class, 'toggle'])->name('announcements.toggle');
+    Route::delete('/announcements/{announcement}', [AdminAnnouncements::class, 'destroy'])->name('announcements.destroy');
 });
 
 require __DIR__.'/auth.php';

@@ -16,6 +16,7 @@ import { useToast } from '@/Composables/useToast';
 import { useTheme } from '@/Composables/useTheme';
 import { useSearch } from '@/Composables/useSearch';
 import { useAudio } from '@/Composables/useAudio';
+import { useOnlineUsers } from '@/Composables/useOnlineUsers';
 import AudioControls from '@/Components/AudioControls.vue';
 import AnnouncementBanner from '@/Components/AnnouncementBanner.vue';
 import AnnouncementModal from '@/Components/AnnouncementModal.vue';
@@ -296,6 +297,7 @@ onMounted(async () => {
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('touchmove', onWindowTouchMove, { passive: false });
     window.addEventListener('touchend', onWindowTouchEnd, { passive: false });
+    window.addEventListener('resize', onMobileResize);
     document.addEventListener('visibilitychange', onVisibilityChange);
     document.addEventListener('click', onDocClick);
     startLoop();
@@ -309,6 +311,22 @@ onMounted(async () => {
         window.addEventListener('messages-read', (e) => {
             unreadMessages.value = Math.max(0, unreadMessages.value - e.detail.delta);
         });
+
+        const { onlineUsers } = useOnlineUsers();
+        window.Echo.join('online')
+            .here((members) => {
+                onlineUsers.value = new Set(members.map(m => m.id));
+            })
+            .joining((member) => {
+                const s = new Set(onlineUsers.value);
+                s.add(member.id);
+                onlineUsers.value = s;
+            })
+            .leaving((member) => {
+                const s = new Set(onlineUsers.value);
+                s.delete(member.id);
+                onlineUsers.value = s;
+            });
     }
 });
 
@@ -318,10 +336,14 @@ onUnmounted(() => {
     window.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('touchmove', onWindowTouchMove);
     window.removeEventListener('touchend', onWindowTouchEnd);
+    window.removeEventListener('resize', onMobileResize);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     document.removeEventListener('click', onDocClick);
     stopLoop();
-    if (authUser.value) window.Echo.leave(`user.${authUser.value.id}`);
+    if (authUser.value) {
+        window.Echo.leave(`user.${authUser.value.id}`);
+        window.Echo.leave('online');
+    }
 });
 
 async function handleCreate(data) {
@@ -367,9 +389,10 @@ function toggleTrends() {
     trendsOpen.value = !trendsOpen.value;
     playSfx(trendsOpen.value ? 'openGlobal' : 'closeGlobal');
 }
-const isMobile = window.innerWidth < 640;
-const mobilePanelLeft = `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`;
-const mobilePanelTop = `${window.innerHeight / 2 - 140}px`;
+const isMobile = ref(window.innerWidth < 640);
+const mobilePanelLeft = computed(() => `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`);
+const mobilePanelTop = computed(() => `${window.innerHeight / 2 - 140}px`);
+function onMobileResize() { isMobile.value = window.innerWidth < 640; }
 </script>
 
 <template>

@@ -58,5 +58,9 @@ class AppServiceProvider extends ServiceProvider
         // Criação de bolhas/comunidades: 5 por hora
         RateLimiter::for('create-community', fn (Request $req) => Limit::perHour(5)->by($req->user()?->id ?: $req->ip())
         );
+
+        // Denúncias: 10 por hora por utilizador
+        RateLimiter::for('reports', fn (Request $req) => Limit::perHour(10)->by($req->user()?->id ?: $req->ip())
+        );
     }
 }
