@@ -19,5 +19,8 @@ Broadcast::channel('user.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('online', function ($user) {
+    if ($user->isBanned()) {
+        return false;
+    }
     return ['id' => $user->id, 'name' => $user->name];
 });

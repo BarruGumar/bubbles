@@ -2,26 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreCommunityPostRequest;
-use App\Http\Requests\UpdateCommunitySettingsRequest;
 use App\Models\Bubble;
 use App\Models\CommunityPost;
 use App\Models\User;
 use App\Services\AuditLogger;
-use App\Support\ImageUploadPresets;
-use App\Support\StoresImages;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CommunityController extends Controller
 {
-    use StoresImages;
-
     public function show(int $id): Response
     {
         $bubble = Bubble::withCount([
@@ -94,8 +85,8 @@ class CommunityController extends Controller
             ->values()
             ->toArray();
 
-        $isOwn = auth()->check() && auth()->id() === $bubble->user_id;
-        $authUser = auth()->user();
+        $isOwn      = auth()->check() && auth()->id() === $bubble->user_id;
+        $authUser   = auth()->user();
         $canModerate = $authUser && $authUser->canModerateCommunity($bubble);
         $canManage   = $authUser && $authUser->canManageCommunity($bubble);
 
@@ -137,41 +128,6 @@ class CommunityController extends Controller
         ]);
     }
 
-    public function updateSettings(UpdateCommunitySettingsRequest $request, int $id): RedirectResponse
-    {
-        $bubble = Bubble::findOrFail($id);
-        Gate::authorize('manage', $bubble);
-
-        $data = $request->validated();
-
-        if (isset($data['color'])) {
-            $data['community_cover_color'] = $data['color'];
-        }
-
-        $bubble->update($data);
-
-        AuditLogger::log('community.settings_updated', 'community', $bubble, [
-            'fields_changed' => array_keys($data),
-        ], $bubble->id);
-
-        return back()->with('status', 'community-updated');
-    }
-
-    public function deleteCommunity(int $id): RedirectResponse
-    {
-        $bubble = Bubble::findOrFail($id);
-        Gate::authorize('manage', $bubble);
-
-        AuditLogger::log('community.deleted', 'community', null, [
-            'community_id' => $bubble->id,
-            'label' => $bubble->label,
-        ], $bubble->id);
-
-        $bubble->delete();
-
-        return redirect()->route('bubbles');
-    }
-
     public function join(int $id): RedirectResponse
     {
         $bubble = Bubble::findOrFail($id);
@@ -198,146 +154,6 @@ class CommunityController extends Controller
 
         AuditLogger::log('community.left', 'community', $bubble, [], $bubble->id);
 
-        return back();
-    }
-
-    public function store(StoreCommunityPostRequest $request, int $id): RedirectResponse
-    {
-        $user   = $request->user();
-        $bubble = Bubble::findOrFail($id);
-
-        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
-        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
-        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
-
-        $isOwner = $bubble->user_id === $user->id;
-        $isMember = $isOwner || $bubble->memberships()->where('user_id', $user->id)->where('status', 'active')->exists();
-        abort_unless($isMember, 403, 'Não és membro desta comunidade.');
-
-        abort_if($user->isBannedFromCommunity($bubble), 403, 'Estás banido desta comunidade.');
-        abort_if($user->isMutedInCommunity($bubble), 403, 'Estás em silêncio nesta comunidade.');
-
-        $imageUrl = null;
-        $imagePid = null;
-        $videoUrl = null;
-        $videoPid = null;
-
-        if ($request->hasFile('image')) {
-            ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
-                $request->file('image'),
-                'bubbles/posts',
-                ImageUploadPresets::post()
-            );
-        }
-
-        if ($request->hasFile('video')) {
-            ['url' => $videoUrl, 'public_id' => $videoPid] = $this->storeVideoWithMeta(
-                $request->file('video'),
-                'bubbles/posts'
-            );
-        }
-
-        $communityPost = $bubble->communityPosts()->create([
-            'user_id' => auth()->id(),
-            'content' => $request->content,
-            'image' => $imageUrl,
-            'image_public_id' => $imagePid,
-            'video' => $videoUrl,
-            'video_public_id' => $videoPid,
-        ]);
-
-        AuditLogger::log('community_post.created', 'content', $communityPost, [
-            'has_image' => $imageUrl !== null,
-            'has_video' => $videoUrl !== null,
-        ], $bubble->id);
-
-        return back();
-    }
-
-    public function updatePost(Request $request, int $id, CommunityPost $post): JsonResponse
-    {
-        Gate::authorize('update', $post);
-
-        $data = $request->validate(['content' => 'required|string|min:1|max:1000']);
-        $post->update(['content' => $data['content']]);
-
-        AuditLogger::log('community_post.updated', 'content', $post, [], $id);
-
-        return response()->json(['content' => $post->content]);
-    }
-
-    public function destroy(int $id, CommunityPost $post): JsonResponse
-    {
-        Gate::authorize('delete', $post);
-
-        $imagePid = $post->image_public_id;
-        $videoPid = $post->video_public_id;
-
-        AuditLogger::log('community_post.deleted', 'content', $post, [], $id);
-
-        $post->delete();
-
-        app()->terminating(fn () => $this->deleteCloudinaryImage($imagePid));
-        app()->terminating(fn () => $this->deleteCloudinaryVideo($videoPid));
-
-        return response()->json(['ok' => true]);
-    }
-
-    public function uploadImage(Request $request, int $id): RedirectResponse
-    {
-        $bubble = Bubble::findOrFail($id);
-        Gate::authorize('manage', $bubble);
-        $request->validate(['image' => 'required|image|max:2048']);
-
-        $this->deleteCloudinaryImage($bubble->community_image_public_id);
-
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
-            $request->file('image'),
-            'bubbles/communities',
-            ImageUploadPresets::communityImage($id)
-        );
-
-        $bubble->update(['community_image' => $url, 'community_image_public_id' => $pid]);
-
-        return back();
-    }
-
-    public function uploadBanner(Request $request, int $id): RedirectResponse
-    {
-        $bubble = Bubble::findOrFail($id);
-        Gate::authorize('manage', $bubble);
-        $request->validate(['banner' => 'required|image|max:4096']);
-
-        $this->deleteCloudinaryImage($bubble->community_banner_public_id);
-
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
-            $request->file('banner'),
-            'bubbles/communities',
-            ImageUploadPresets::communityBanner($id)
-        );
-
-        $bubble->update(['community_banner' => $url, 'community_banner_public_id' => $pid]);
-
-        return back();
-    }
-
-    public function removeImage(int $id): RedirectResponse
-    {
-        $bubble = Bubble::findOrFail($id);
-        Gate::authorize('manage', $bubble);
-        $this->deleteCloudinaryImage($bubble->community_image_public_id);
-        $bubble->update(['community_image' => null, 'community_image_public_id' => null]);
-        AuditLogger::log('community.image_removed', 'community', $bubble, [], $bubble->id);
-        return back();
-    }
-
-    public function removebannerImage(int $id): RedirectResponse
-    {
-        $bubble = Bubble::findOrFail($id);
-        Gate::authorize('manage', $bubble);
-        $this->deleteCloudinaryImage($bubble->community_banner_public_id);
-        $bubble->update(['community_banner' => null, 'community_banner_public_id' => null]);
-        AuditLogger::log('community.banner_removed', 'community', $bubble, [], $bubble->id);
         return back();
     }
 

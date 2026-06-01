@@ -9,7 +9,10 @@ use App\Http\Controllers\Admin\ReportController as AdminReports;
 use App\Http\Controllers\Admin\UserController as AdminUsers;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\CommunityMediaController;
 use App\Http\Controllers\CommunityModerationController;
+use App\Http\Controllers\CommunityPostController;
+use App\Http\Controllers\CommunitySettingsController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FriendController;
@@ -81,13 +84,13 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
 
     // Posts de comunidade
-    Route::post('/c/{id}/posts', [CommunityController::class, 'store'])->middleware('throttle:posts')->name('community.posts.store');
-    Route::patch('/c/{id}/posts/{post}', [CommunityController::class, 'updatePost'])->name('community.posts.update');
-    Route::delete('/c/{id}/posts/{post}', [CommunityController::class, 'destroy'])->name('community.posts.destroy');
-    Route::post('/c/{id}/image', [CommunityController::class, 'uploadImage'])->name('community.image');
-    Route::delete('/c/{id}/image', [CommunityController::class, 'removeImage'])->name('community.image.remove');
-    Route::post('/c/{id}/banner', [CommunityController::class, 'uploadBanner'])->name('community.banner');
-    Route::delete('/c/{id}/banner', [CommunityController::class, 'removebannerImage'])->name('community.banner.remove');
+    Route::post('/c/{id}/posts', [CommunityPostController::class, 'store'])->middleware('throttle:posts')->name('community.posts.store');
+    Route::patch('/c/{id}/posts/{post}', [CommunityPostController::class, 'update'])->name('community.posts.update');
+    Route::delete('/c/{id}/posts/{post}', [CommunityPostController::class, 'destroy'])->name('community.posts.destroy');
+    Route::post('/c/{id}/image', [CommunityMediaController::class, 'uploadImage'])->name('community.image');
+    Route::delete('/c/{id}/image', [CommunityMediaController::class, 'removeImage'])->name('community.image.remove');
+    Route::post('/c/{id}/banner', [CommunityMediaController::class, 'uploadBanner'])->name('community.banner');
+    Route::delete('/c/{id}/banner', [CommunityMediaController::class, 'removeBanner'])->name('community.banner.remove');
 
     // Likes e comentários
     Route::post('/posts/{post}/like', [LikeController::class, 'togglePost'])->middleware('throttle:reactions')->name('posts.like');
@@ -99,8 +102,8 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
     // Community settings + delete (criador apenas)
-    Route::put('/c/{id}/settings', [CommunityController::class, 'updateSettings'])->name('community.update');
-    Route::delete('/c/{id}', [CommunityController::class, 'deleteCommunity'])->name('community.delete');
+    Route::put('/c/{id}/settings', [CommunitySettingsController::class, 'update'])->name('community.update');
+    Route::delete('/c/{id}', [CommunitySettingsController::class, 'destroy'])->name('community.delete');
 
     // Community membership
     Route::post('/c/{id}/join', [CommunityController::class, 'join'])->name('community.join');
