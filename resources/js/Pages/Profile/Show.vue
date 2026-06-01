@@ -1,6 +1,7 @@
 <script setup>
 import axios from 'axios';
 import { computed, onUnmounted, ref, watch } from 'vue';
+import { useOnlineUsers } from '@/Composables/useOnlineUsers';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PostCard from '@/Components/PostCard.vue';
@@ -63,6 +64,8 @@ function loadMore() {
 }
 
 const authUser = computed(() => usePage().props.auth?.user);
+const { onlineUsers } = useOnlineUsers();
+const isOnline = (userId) => userId != null && onlineUsers.value.has(userId);
 
 const postForm = useForm({ content: '', image: null, video: null });
 const charCount = computed(() => postForm.content.length);
@@ -265,6 +268,10 @@ async function submitUserReport() {
                                 v-if="profileUser.role === 'site_owner'"
                                 style="position: absolute; bottom: 0; right: 0; font-size: 20px; line-height: 1"
                             >👑</span>
+                            <span
+                                v-else-if="!isOwn && isOnline(profileUser.id)"
+                                style="position:absolute;bottom:4px;right:4px;width:16px;height:16px;border-radius:50%;background:#22c55e;border:3px solid white;box-shadow:0 0 0 1px #22c55e44"
+                            ></span>
                         </div>
                     </div>
                 </div>

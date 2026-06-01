@@ -53,6 +53,38 @@ const otherLastReadAt = ref(props.activeConversation?.other_last_read_at ?? null
 const isGroup  = computed(() => props.activeConversation?.type === 'group');
 const isDirect = computed(() => !isGroup.value);
 
+// ── Typing label ──────────────────────────────────────────────
+const typingLabel = computed(() => {
+    if (!isGroup.value) return `${props.activeConversation?.other_user?.name ?? ''} está a digitar…`;
+    const names = typingUsers.value.map(u => u.name);
+    if (names.length === 1) return `${names[0]} está a digitar…`;
+    if (names.length === 2) return `${names[0]} e ${names[1]} estão a digitar…`;
+    return `${names[0]} e mais ${names.length - 1} estão a digitar…`;
+});
+
+// ── Group read receipts ───────────────────────────────────────
+const groupReadAt = ref({});  // { userId: isoString }
+
+const groupSeenPerMessage = computed(() => {
+    if (!isGroup.value) return {};
+    const result = {};
+    const participants = (props.activeConversation?.participants ?? []).filter(p => p.id !== authUser.value?.id);
+    for (const p of participants) {
+        const readAt = groupReadAt.value[p.id];
+        if (!readAt) continue;
+        const readDate = new Date(readAt);
+        let lastSeenId = null;
+        for (const m of localMessages.value) {
+            if (m.is_own && !m._sending && new Date(m.created_at) <= readDate) lastSeenId = m.id;
+        }
+        if (lastSeenId !== null) {
+            if (!result[lastSeenId]) result[lastSeenId] = [];
+            result[lastSeenId].push(p);
+        }
+    }
+    return result;
+});
+
 // ── Group creation modal ──────────────────────────────────────
 const showGroupModal    = ref(false);
 const groupModalName    = ref('');
@@ -266,10 +298,10 @@ let pendingImageCount = 0;
 let messagesReadyTimer = null;
 
 // ── Typing indicator ──────────────────────────────────────────
-const isOtherTyping = ref(false);
-let typingExpireTimer = null;  // fail-safe: clears indicator if poll stops arriving
-let typingStopTimer = null;    // debounce: sends typing_stop after 2.5s of no input
-let lastTypingSentAt = 0;      // timestamp of last typing_start sent (for 3s throttle)
+const typingUsers = ref([]);   // [{id, name}] — supports multiple typers in groups
+const typingExpireTimers = {}; // per-user fail-safe timers
+let typingStopTimer = null;
+let lastTypingSentAt = 0;
 
 // ── Chat background ───────────────────────────────────────────
 const BG_PRESETS = [
@@ -543,9 +575,9 @@ function stopTyping() {
 
 function clearTypingState() {
     stopTyping();
-    clearTimeout(typingExpireTimer);
-    typingExpireTimer = null;
-    isOtherTyping.value = false;
+    Object.values(typingExpireTimers).forEach(t => clearTimeout(t));
+    Object.keys(typingExpireTimers).forEach(k => delete typingExpireTimers[k]);
+    typingUsers.value = [];
 }
 
 // ── Polling ───────────────────────────────────────────────────
@@ -584,15 +616,28 @@ function subscribeToConversation(id) {
             }
         })
         .listen('.TypingUpdated', (e) => {
-            isOtherTyping.value = e.is_typing;
-            clearTimeout(typingExpireTimer);
             if (e.is_typing) {
-                typingExpireTimer = setTimeout(() => { isOtherTyping.value = false; }, 8_000);
+                if (!typingUsers.value.some(u => u.id === e.user_id)) {
+                    typingUsers.value = [...typingUsers.value, { id: e.user_id, name: e.user_name }];
+                }
+                clearTimeout(typingExpireTimers[e.user_id]);
+                typingExpireTimers[e.user_id] = setTimeout(() => {
+                    typingUsers.value = typingUsers.value.filter(u => u.id !== e.user_id);
+                    delete typingExpireTimers[e.user_id];
+                }, 8_000);
+            } else {
+                clearTimeout(typingExpireTimers[e.user_id]);
+                delete typingExpireTimers[e.user_id];
+                typingUsers.value = typingUsers.value.filter(u => u.id !== e.user_id);
             }
         })
         .listen('.MessageRead', (e) => {
             if (e.read_by_user_id !== authUser.value?.id) {
-                otherLastReadAt.value = e.read_at;
+                if (isGroup.value) {
+                    groupReadAt.value = { ...groupReadAt.value, [e.read_by_user_id]: e.read_at };
+                } else {
+                    otherLastReadAt.value = e.read_at;
+                }
             }
         });
 }
@@ -827,6 +872,21 @@ onMounted(() => {
         if (conv?.unread_count > 0) {
             window.dispatchEvent(new CustomEvent('messages-read', { detail: { delta: conv.unread_count } }));
         }
+        if (props.activeConversation.type === 'group' && props.activeConversation.participants) {
+            const map = {};
+            for (const p of props.activeConversation.participants) {
+                if (p.id !== authUser.value?.id && p.last_read_at) map[p.id] = p.last_read_at;
+            }
+            groupReadAt.value = map;
+        }
+    }
+    if (authUser.value) {
+        window.Echo.private(`user.${authUser.value.id}`)
+            .listen('.ConversationCreated', (e) => {
+                if (!localConversations.value.some(c => c.id === e.conversation.id)) {
+                    localConversations.value = [e.conversation, ...localConversations.value];
+                }
+            });
     }
 });
 
@@ -838,6 +898,9 @@ onUnmounted(() => {
     if (props.activeConversation?.id) window.Echo.leave(`conversation.${props.activeConversation.id}`);
     clearTypingState();
     clearTimeout(sentTimer);
+    if (authUser.value) {
+        window.Echo.private(`user.${authUser.value.id}`).stopListening('.ConversationCreated');
+    }
 });
 
 watch(
@@ -854,6 +917,15 @@ watch(
         pendingImageCount = 0;
         clearTimeout(messagesReadyTimer);
         otherLastReadAt.value = props.activeConversation?.other_last_read_at ?? null;
+        if (props.activeConversation?.type === 'group' && props.activeConversation.participants) {
+            const map = {};
+            for (const p of props.activeConversation.participants) {
+                if (p.id !== authUser.value?.id && p.last_read_at) map[p.id] = p.last_read_at;
+            }
+            groupReadAt.value = map;
+        } else {
+            groupReadAt.value = {};
+        }
         loadChatBg();
         scrollToBottom();
         if (newId) subscribeToConversation(newId);
@@ -1304,6 +1376,13 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                                                     <img v-if="activeConversation.other_user?.avatar" :src="clImg(activeConversation.other_user.avatar, 32, 32, 'fill', 'face')" class="seen-avatar" :style="{ border: `1px solid ${activeConversation.other_user.avatar_color}` }" />
                                                     <div v-else class="seen-initial" :style="{ background: activeConversation.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(activeConversation.other_user?.name) }}</div>
                                                 </span>
+                                                <span v-if="isGroup && item.is_own && groupSeenPerMessage[item.id]?.length" class="msg-seen">
+                                                    <template v-for="p in (groupSeenPerMessage[item.id] ?? []).slice(0, 5)" :key="p.id">
+                                                        <img v-if="p.avatar" :src="clImg(p.avatar, 32, 32, 'fill', 'face')" class="seen-avatar" :style="{ border: `1px solid ${p.avatar_color}` }" :title="p.name" />
+                                                        <div v-else class="seen-initial" :style="{ background: p.avatar_color }" :title="p.name">{{ avatarInitial(p.name) }}</div>
+                                                    </template>
+                                                    <span v-if="groupSeenPerMessage[item.id].length > 5" class="seen-overflow">+{{ groupSeenPerMessage[item.id].length - 5 }}</span>
+                                                </span>
                                             </div>
                                         </template>
                                     </div>
@@ -1313,9 +1392,16 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                                 <div v-if="item.image_url && !item.content && !item.reply_to && editingId !== item.id" class="msg-meta img-only-meta">
                                     <span class="msg-ts">{{ formatTime(item.created_at) }}</span>
                                     <span v-if="item.is_edited" class="msg-ts-edited">editado</span>
-                                    <span v-if="item.is_own && item.id === lastSeenMessageId" class="msg-seen">
+                                    <span v-if="isDirect && item.is_own && item.id === lastSeenMessageId" class="msg-seen">
                                         <img v-if="activeConversation.other_user?.avatar" :src="clImg(activeConversation.other_user.avatar, 32, 32, 'fill', 'face')" class="seen-avatar" :style="{ border: `1px solid ${activeConversation.other_user.avatar_color}` }" />
                                         <div v-else class="seen-initial" :style="{ background: activeConversation.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(activeConversation.other_user?.name) }}</div>
+                                    </span>
+                                    <span v-if="isGroup && item.is_own && groupSeenPerMessage[item.id]?.length" class="msg-seen">
+                                        <template v-for="p in (groupSeenPerMessage[item.id] ?? []).slice(0, 5)" :key="p.id">
+                                            <img v-if="p.avatar" :src="clImg(p.avatar, 32, 32, 'fill', 'face')" class="seen-avatar" :style="{ border: `1px solid ${p.avatar_color}` }" :title="p.name" />
+                                            <div v-else class="seen-initial" :style="{ background: p.avatar_color }" :title="p.name">{{ avatarInitial(p.name) }}</div>
+                                        </template>
+                                        <span v-if="groupSeenPerMessage[item.id].length > 5" class="seen-overflow">+{{ groupSeenPerMessage[item.id].length - 5 }}</span>
                                     </span>
                                 </div>
                             </div>
@@ -1334,13 +1420,13 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 
                     <!-- Typing indicator -->
                     <Transition name="typing-slide">
-                        <div v-if="isOtherTyping" class="typing-bar">
+                        <div v-if="typingUsers.length > 0" class="typing-bar">
                             <div class="typing-bubble">
                                 <div class="typing-dots">
                                     <span></span><span></span><span></span>
                                 </div>
                             </div>
-                            <span class="typing-label">{{ isGroup ? 'Alguém está a digitar…' : `${activeConversation.other_user?.name} está a digitar…` }}</span>
+                            <span class="typing-label">{{ typingLabel }}</span>
                         </div>
                     </Transition>
 
@@ -1823,6 +1909,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
     display: flex; align-items: center; justify-content: center;
     font-size: 7px; font-weight: 800; color: white;
 }
+.seen-overflow { font-size: 9px; color: #8ba0b0; font-weight: 700; margin-left: 1px; }
 
 /* ── Delete confirm ───────────────────────────────────────────── */
 .delete-confirm {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\BadgeCountUpdated;
+use App\Events\ConversationCreated;
 use App\Events\MessageRead;
 use App\Events\MessageSent;
 use App\Events\TypingUpdated;
@@ -85,16 +86,36 @@ class ConversationController extends Controller
         $recipientId = (int) $request->input('recipient_id');
         abort_if($recipientId === auth()->id(), 422);
 
-        $conversation = Conversation::whereHas('participants', fn ($q) => $q->where('user_id', auth()->id()))
+        $conversation = Conversation::where('type', 'direct')
+            ->whereHas('participants', fn ($q) => $q->where('user_id', auth()->id()))
             ->whereHas('participants', fn ($q) => $q->where('user_id', $recipientId))
             ->first();
 
+        $isNew = false;
         if (! $conversation) {
+            $isNew = true;
             $conversation = Conversation::create([]);
             $conversation->participants()->attach([
                 auth()->id() => ['last_read_at' => null],
                 $recipientId => ['last_read_at' => null],
             ]);
+        }
+
+        if ($isNew) {
+            $me = auth()->user();
+            broadcast(new ConversationCreated($recipientId, [
+                'id'           => $conversation->id,
+                'type'         => 'direct',
+                'unread_count' => 0,
+                'last_message' => null,
+                'other_user'   => [
+                    'id'           => $me->id,
+                    'name'         => $me->name,
+                    'username'     => $me->username,
+                    'avatar'       => $me->avatar,
+                    'avatar_color' => $me->avatar_color ?? '#009ac7',
+                ],
+            ]));
         }
 
         return redirect()->route('conversations.show', $conversation->id);
@@ -331,6 +352,9 @@ class ConversationController extends Controller
                 'avatar'       => $p->avatar,
                 'avatar_color' => $p->avatar_color ?? '#009ac7',
                 'role'         => $p->pivot->role,
+                'last_read_at' => $p->pivot->last_read_at
+                    ? \Carbon\Carbon::parse($p->pivot->last_read_at)->toISOString()
+                    : null,
             ])
             ->values();
 
