@@ -639,6 +639,16 @@ function subscribeToConversation(id) {
                     otherLastReadAt.value = e.read_at;
                 }
             }
+        })
+        .listen('.MessageUpdated', (e) => {
+            localMessages.value = localMessages.value.map((m) =>
+                m.id === e.message_id
+                    ? { ...m, content: e.content, is_edited: e.is_edited }
+                    : m
+            );
+        })
+        .listen('.MessageDeleted', (e) => {
+            localMessages.value = localMessages.value.filter((m) => m.id !== e.message_id);
         });
 }
 

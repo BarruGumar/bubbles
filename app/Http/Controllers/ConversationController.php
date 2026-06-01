@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Events\BadgeCountUpdated;
 use App\Events\ConversationCreated;
+use App\Events\MessageDeleted;
 use App\Events\MessageRead;
 use App\Events\MessageSent;
+use App\Events\MessageUpdated;
 use App\Events\TypingUpdated;
 use App\Http\Requests\StoreMessageRequest;
 use App\Models\Conversation;
@@ -301,18 +303,32 @@ class ConversationController extends Controller
         $request->validate(['content' => 'required|string|max:2000']);
         $message->update(['content' => $request->input('content')]);
 
-        return response()->json($this->formatMessage($message->fresh()->load('user')));
+        $fresh = $message->fresh()->load('user');
+        $formatted = $this->formatMessage($fresh);
+
+        broadcast(new MessageUpdated(
+            $message->conversation_id,
+            $message->id,
+            $fresh->content,
+            $formatted['is_edited'],
+        ))->toOthers();
+
+        return response()->json($formatted);
     }
 
     public function destroyMessage(Message $message): JsonResponse
     {
         abort_unless($message->user_id === auth()->id(), 403);
         $conv = $message->conversation;
+        $conversationId = $conv->id;
+        $messageId = $message->id;
         $isLast = $conv->last_message_id === $message->id;
         $message->delete();
         if ($isLast) {
             $conv->update(['last_message_id' => $conv->messages()->latest()->value('id')]);
         }
+
+        broadcast(new MessageDeleted($conversationId, $messageId))->toOthers();
 
         return response()->json(['ok' => true]);
     }
