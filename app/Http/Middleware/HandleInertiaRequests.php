@@ -6,6 +6,7 @@ use App\Models\Announcement;
 use App\Models\Friend;
 use App\Models\Message;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -68,26 +69,32 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $user,
                 'pending_friends_count' => $user
-                    ? Friend::where('friend_id', $user->id)
-                        ->where('status', 'pending')
-                        ->count()
+                    ? Cache::remember("user:{$user->id}:badge:friends", 60, fn () =>
+                        Friend::where('friend_id', $user->id)
+                            ->where('status', 'pending')
+                            ->count()
+                    )
                     : 0,
                 'unread_messages_count' => $user
-                    ? Message::join('conversation_user as cu', function ($join) use ($user) {
-                        $join->on('cu.conversation_id', '=', 'messages.conversation_id')
-                            ->where('cu.user_id', $user->id);
-                    })
-                        ->where('messages.user_id', '!=', $user->id)
-                        ->where(function ($q) {
-                            $q->whereNull('cu.last_read_at')
-                                ->orWhereRaw('messages.created_at > cu.last_read_at');
+                    ? Cache::remember("user:{$user->id}:badge:messages", 60, fn () =>
+                        Message::join('conversation_user as cu', function ($join) use ($user) {
+                            $join->on('cu.conversation_id', '=', 'messages.conversation_id')
+                                ->where('cu.user_id', $user->id);
                         })
-                        ->count()
+                            ->where('messages.user_id', '!=', $user->id)
+                            ->where(function ($q) {
+                                $q->whereNull('cu.last_read_at')
+                                    ->orWhereRaw('messages.created_at > cu.last_read_at');
+                            })
+                            ->count()
+                    )
                     : 0,
                 'unread_notifications_count' => $user
-                    ? $user->unreadNotifications()
-                        ->where('type', '!=', \App\Notifications\MessageReceived::class)
-                        ->count()
+                    ? Cache::remember("user:{$user->id}:badge:notifications", 60, fn () =>
+                        $user->unreadNotifications()
+                            ->where('type', '!=', \App\Notifications\MessageReceived::class)
+                            ->count()
+                    )
                     : 0,
             ],
         ];

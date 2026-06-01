@@ -6,6 +6,7 @@ use App\Models\Bubble;
 use App\Models\CommunityPost;
 use App\Models\Friend;
 use App\Models\Post;
+use App\Models\UserBlock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
@@ -44,6 +45,11 @@ class FeedController extends Controller
                 ->toArray();
         });
 
+        $blockedIds = UserBlock::where('blocker_id', $authId)->pluck('blocked_id')
+            ->merge(UserBlock::where('blocked_id', $authId)->pluck('blocker_id'))
+            ->unique()
+            ->all();
+
         $withLikes = fn ($q) => $q->where('user_id', $authId);
 
         $withComments = fn ($q) => $q->with('user')->orderBy('created_at')->limit(5);
@@ -51,6 +57,7 @@ class FeedController extends Controller
         $friendPosts = Post::with(['user', 'likes' => $withLikes, 'comments' => $withComments])
             ->withCount('likes')
             ->whereIn('user_id', $friendIds)
+            ->when($blockedIds, fn ($q) => $q->whereNotIn('user_id', $blockedIds))
             ->latest()
             ->limit(15)
             ->get()
@@ -59,6 +66,7 @@ class FeedController extends Controller
         $communityPosts = CommunityPost::with(['user', 'bubble', 'likes' => $withLikes, 'comments' => $withComments])
             ->withCount('likes')
             ->whereIn('bubble_id', $communityIds)
+            ->when($blockedIds, fn ($q) => $q->whereNotIn('user_id', $blockedIds))
             ->latest()
             ->limit(15)
             ->get()
@@ -68,6 +76,7 @@ class FeedController extends Controller
         if ($friendPosts->isEmpty() && $communityPosts->isEmpty()) {
             $recentPosts = Post::with(['user', 'likes' => $withLikes, 'comments' => $withComments])
                 ->withCount('likes')
+                ->when($blockedIds, fn ($q) => $q->whereNotIn('user_id', $blockedIds))
                 ->latest()
                 ->limit(10)
                 ->get()
