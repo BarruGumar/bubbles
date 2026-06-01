@@ -17,7 +17,7 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const { show: toast } = useToast();
 const { isDark, toggle: toggleTheme } = useTheme();
-const { playBgm, playClick, stopBgm, playSfx, currentBgmKey } = useAudio();
+const { playBgm, playClick, stopBgm, playSfx, playNotifSfx, currentBgmKey } = useAudio();
 
 // ── BGM: change track whenever the Inertia page URL changes ───────
 const bgmKeyForUrl = computed(() => {
@@ -79,7 +79,7 @@ function openSearch() { searchOpen.value = true; }
 
 function handleGlobalKey(e) {
     if (e.key === 'Escape') closeSearchOverlay();
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); playSfx('search'); }
 }
 
 onMounted(() => {
@@ -95,7 +95,7 @@ onMounted(() => {
                 }
                 if (e.type === 'notifications') {
                     unreadNotifications.value += e.delta;
-                    playSfx('notification');
+                    playNotifSfx();
                 }
             });
 
@@ -137,7 +137,7 @@ onUnmounted(() => {
 
                 <!-- Left: logo + nav links -->
                 <div style="display:flex;align-items:center;gap:24px;flex-shrink:0">
-                    <Link href="/bubbles" style="text-decoration:none">
+                    <Link href="/bubbles" style="text-decoration:none" @click="playSfx('bubblesHomePage')">
                         <span style="font-weight:900;font-size:20px;color:#009ac7;letter-spacing:-1px">bubbles</span>
                     </Link>
                     <Link v-if="!isMobile" href="/bubbles" class="nav-link" @click="playClick()">Explorar</Link>
@@ -159,14 +159,14 @@ onUnmounted(() => {
                     <AudioControls v-if="user" />
 
                     <!-- Search button -->
-                    <button @click.stop="openSearch" class="icon-btn-nav" title="Pesquisar (Ctrl+K)">
+                    <button @click.stop="openSearch(); playSfx('search')" class="icon-btn-nav" title="Pesquisar (Ctrl+K)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
                     </button>
 
                     <!-- Notifications bell -->
-                    <Link v-if="user" :href="route('notifications.index')" class="icon-btn-nav" style="position:relative;text-decoration:none" title="Notificações">
+                    <Link v-if="user" :href="route('notifications.index')" class="icon-btn-nav" style="position:relative;text-decoration:none" title="Notificações" @click="playSfx('notificationPage')">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>

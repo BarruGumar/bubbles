@@ -4,11 +4,12 @@ import { BGM as BGM_MAP, SFX as SFX_MAP } from '@/Constants/audioMap';
 // ── Module-level singleton ────────────────────────────────────────
 // All state lives here so every component shares the same instance.
 
-const bgmVolume  = ref(0.30);
-const sfxVolume  = ref(0.45);
-const bgmEnabled = ref(true);
-const sfxEnabled = ref(true);
-const muted      = ref(false);
+const bgmVolume        = ref(0.30);
+const sfxVolume        = ref(0.45);
+const bgmEnabled       = ref(true);
+const sfxEnabled       = ref(true);
+const muted            = ref(false);
+const notifSoundEnabled = ref(true);
 const currentBgmKey = ref(null); // track we want to play (for UI + restart logic)
 
 let bgmAudio      = null;   // the live <audio> element
@@ -31,20 +32,22 @@ function loadPrefs() {
         if (!p) return;
         if (typeof p.bgmVolume  === 'number')  bgmVolume.value  = p.bgmVolume;
         if (typeof p.sfxVolume  === 'number')  sfxVolume.value  = p.sfxVolume;
-        if (typeof p.bgmEnabled === 'boolean') bgmEnabled.value = p.bgmEnabled;
-        if (typeof p.sfxEnabled === 'boolean') sfxEnabled.value = p.sfxEnabled;
-        if (typeof p.muted      === 'boolean') muted.value      = p.muted;
+        if (typeof p.bgmEnabled        === 'boolean') bgmEnabled.value        = p.bgmEnabled;
+        if (typeof p.sfxEnabled        === 'boolean') sfxEnabled.value        = p.sfxEnabled;
+        if (typeof p.muted             === 'boolean') muted.value             = p.muted;
+        if (typeof p.notifSoundEnabled === 'boolean') notifSoundEnabled.value = p.notifSoundEnabled;
     } catch { /* ignore */ }
 }
 
 function savePrefs() {
     try {
         localStorage.setItem(LS_KEY, JSON.stringify({
-            bgmVolume:  bgmVolume.value,
-            sfxVolume:  sfxVolume.value,
-            bgmEnabled: bgmEnabled.value,
-            sfxEnabled: sfxEnabled.value,
-            muted:      muted.value,
+            bgmVolume:        bgmVolume.value,
+            sfxVolume:        sfxVolume.value,
+            bgmEnabled:       bgmEnabled.value,
+            sfxEnabled:       sfxEnabled.value,
+            muted:            muted.value,
+            notifSoundEnabled: notifSoundEnabled.value,
         }));
     } catch { /* ignore */ }
 }
@@ -289,6 +292,16 @@ function setSfxEnabled(v) {
     savePrefs();
 }
 
+function setNotifSoundEnabled(v) {
+    notifSoundEnabled.value = !!v;
+    savePrefs();
+}
+
+function playNotifSfx() {
+    if (!notifSoundEnabled.value) return;
+    playSfx('notification');
+}
+
 // ── Composable export ─────────────────────────────────────────────
 export function useAudio() {
     return {
@@ -299,6 +312,7 @@ export function useAudio() {
         sfxEnabled,
         muted,
         currentBgmKey,
+        notifSoundEnabled,
         // BGM
         playBgm,
         stopBgm,
@@ -306,6 +320,7 @@ export function useAudio() {
         playSfx,
         playClick,
         playHoverBubble,
+        playNotifSfx,
         // Controls
         setBgmVolume,
         setSfxVolume,
@@ -313,5 +328,6 @@ export function useAudio() {
         toggleMuted,
         setBgmEnabled,
         setSfxEnabled,
+        setNotifSoundEnabled,
     };
 }

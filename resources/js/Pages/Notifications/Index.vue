@@ -3,12 +3,14 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { clImg } from '@/Composables/useCloudinary';
+import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     notifications: { type: Array, default: () => [] },
 });
 
 const page = usePage();
+const { notifSoundEnabled, setNotifSoundEnabled, playClick } = useAudio();
 const localNotifications = ref([...props.notifications]);
 watch(() => props.notifications, (v) => { localNotifications.value = [...v]; }, { deep: true });
 
@@ -84,7 +86,33 @@ onUnmounted(() => {
                 <h1 style="font-size: 22px; font-weight: 900; color: #3a6478; margin: 0; letter-spacing: -0.02em">
                     Notificações
                 </h1>
-                <div style="display: flex; gap: 8px">
+                <div style="display: flex; gap: 8px; align-items: center">
+                    <!-- Toggle som de notificações -->
+                    <button
+                        @click="setNotifSoundEnabled(!notifSoundEnabled); playClick()"
+                        :title="notifSoundEnabled ? 'Silenciar notificações' : 'Ativar som de notificações'"
+                        :style="{
+                            fontSize: '13px',
+                            fontWeight: '700',
+                            color: notifSoundEnabled ? '#009ac7' : '#8ba0b0',
+                            background: 'none',
+                            border: `1.5px solid ${notifSoundEnabled ? '#009ac733' : '#8ba0b033'}`,
+                            borderRadius: '99px',
+                            padding: '6px 14px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                        }"
+                    >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            <line v-if="!notifSoundEnabled" x1="3" y1="3" x2="21" y2="21"/>
+                        </svg>
+                        {{ notifSoundEnabled ? 'Som On' : 'Som Off' }}
+                    </button>
                     <button
                         v-if="hasUnread"
                         @click="markAllRead"

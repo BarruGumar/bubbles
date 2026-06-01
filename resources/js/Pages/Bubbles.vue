@@ -48,6 +48,11 @@ const isAdmin = computed(() => ['admin', 'site_owner'].includes(authUser.value?.
 
 const feedOpen = ref(false);
 const menuOpen = ref(false);
+
+function toggleFeed() {
+    if (!feedOpen.value) playSfx('verFeed');
+    feedOpen.value = !feedOpen.value;
+}
 const menuEl = ref(null);
 
 watch(
@@ -482,7 +487,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
 
                 <!-- Pesquisa -->
                 <button
-                    @click.stop="openSearch(); playClick()"
+                    @click.stop="openSearch(); playSfx('search')"
                     :style="{
                         width: '36px',
                         height: '36px',
@@ -517,7 +522,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
 
                 <!-- Feed toggle -->
                 <button
-                    @click.stop="feedOpen = !feedOpen; playClick()"
+                    @click.stop="toggleFeed()"
                     :style="{
                         width: '36px',
                         height: '36px',
@@ -551,7 +556,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
 
                 <!-- Hamburger → Nova bolha -->
                 <button
-                    @click.stop="showAdd = !showAdd; playClick()"
+                    @click.stop="showAdd = !showAdd; playSfx('newBubble')"
                     :style="{
                         width: '36px',
                         height: '36px',
