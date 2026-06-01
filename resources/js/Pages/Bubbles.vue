@@ -36,7 +36,7 @@ const { connections, friendConnections, load: loadConnections, loadFriendConnect
 const { step } = usePhysics();
 const { show: toast } = useToast();
 const { isDark, toggle: toggleTheme } = useTheme();
-const { playSfx, playClick, playHoverBubble, playBgm, stopBgm } = useAudio();
+const { playSfx, playClick, playHoverBubble, playBgm, stopBgm, playNotifSfx } = useAudio();
 playBgm('home');
 
 const page = usePage();
@@ -321,7 +321,7 @@ onMounted(async () => {
             .listen('.BadgeCountUpdated', (e) => {
                 if (e.type === 'friends') pendingFriends.value += e.delta;
                 if (e.type === 'messages') unreadMessages.value += e.delta;
-                if (e.type === 'notifications') unreadNotifications.value += e.delta;
+                if (e.type === 'notifications') { unreadNotifications.value += e.delta; playNotifSfx(); }
             });
         window.addEventListener('messages-read', (e) => {
             unreadMessages.value = Math.max(0, unreadMessages.value - e.detail.delta);
