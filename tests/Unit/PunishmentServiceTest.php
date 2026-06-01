@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\Bubble;
 use App\Models\User;
 use App\Models\UserPunishment;
+use App\Services\CommunityModerationService;
 use App\Services\PunishmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
@@ -16,11 +17,13 @@ class PunishmentServiceTest extends TestCase
     use RefreshDatabase;
 
     private PunishmentService $service;
+    private CommunityModerationService $communityService;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->service = new PunishmentService();
+        $this->communityService = new CommunityModerationService();
     }
 
     private function admin(): User
@@ -193,7 +196,7 @@ class PunishmentServiceTest extends TestCase
         $this->attachMember($bubble, $member);
         Auth::login($owner);
 
-        $this->service->banFromCommunity($member, $bubble, $owner, [
+        $this->communityService->banFromCommunity($member, $bubble, $owner, [
             'reason'       => 'Spam repetido.',
             'banned_until' => null,
         ]);
@@ -215,7 +218,7 @@ class PunishmentServiceTest extends TestCase
 
         $this->expectException(HttpException::class);
 
-        $this->service->banFromCommunity($owner, $bubble, $moderator, [
+        $this->communityService->banFromCommunity($owner, $bubble, $moderator, [
             'reason' => 'Tentativa indevida.',
         ]);
     }
@@ -234,7 +237,7 @@ class PunishmentServiceTest extends TestCase
 
         Auth::login($owner);
 
-        $this->service->unbanFromCommunity($member, $bubble, $owner);
+        $this->communityService->unbanFromCommunity($member, $bubble, $owner);
 
         $this->assertDatabaseHas('community_user', [
             'community_id' => $bubble->id,
@@ -253,7 +256,7 @@ class PunishmentServiceTest extends TestCase
         $this->attachMember($bubble, $member);
         Auth::login($owner);
 
-        $this->service->muteInCommunity($member, $bubble, $owner, [
+        $this->communityService->muteInCommunity($member, $bubble, $owner, [
             'reason'      => 'Tom agressivo.',
             'muted_until' => null,
         ]);
@@ -279,7 +282,7 @@ class PunishmentServiceTest extends TestCase
 
         Auth::login($owner);
 
-        $this->service->unmuteInCommunity($member, $bubble, $owner);
+        $this->communityService->unmuteInCommunity($member, $bubble, $owner);
 
         $this->assertDatabaseHas('community_user', [
             'community_id' => $bubble->id,

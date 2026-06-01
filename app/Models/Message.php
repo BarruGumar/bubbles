@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Message extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = ['conversation_id', 'user_id', 'content', 'image_url', 'reply_to_id'];
 
     public function conversation(): BelongsTo

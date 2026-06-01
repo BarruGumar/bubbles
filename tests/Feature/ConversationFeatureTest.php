@@ -209,7 +209,7 @@ class ConversationFeatureTest extends TestCase
             ->deleteJson("/messages/{$msg->id}")
             ->assertOk();
 
-        $this->assertDatabaseMissing('messages', ['id' => $msg->id]);
+        $this->assertSoftDeleted('messages', ['id' => $msg->id]);
     }
 
     public function test_non_owner_cannot_delete_message(): void

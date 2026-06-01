@@ -10,7 +10,11 @@ defineProps({
     feed: { type: Array, default: () => [] },
     authUser: { type: Object, default: null },
     isMobile: { type: Boolean, default: false },
+    hasMore: { type: Boolean, default: false },
+    loading: { type: Boolean, default: false },
 });
+
+const emit = defineEmits(['load-more']);
 </script>
 
 <template>
@@ -98,6 +102,36 @@ defineProps({
                         "
                         :community="item.community ?? null"
                     />
+
+                    <!-- Load more -->
+                    <div style="text-align: center; padding: 8px 0 4px">
+                        <button
+                            v-if="hasMore"
+                            :disabled="loading"
+                            style="
+                                background: rgba(0, 154, 199, 0.08);
+                                border: 1.5px solid #009ac730;
+                                border-radius: 16px;
+                                padding: 7px 20px;
+                                font-size: 12px;
+                                font-weight: 700;
+                                color: #009ac7;
+                                cursor: pointer;
+                                width: 100%;
+                                transition: background 0.15s, opacity 0.15s;
+                            "
+                            :style="loading ? 'opacity: 0.6; cursor: default' : ''"
+                            @click="emit('load-more')"
+                        >
+                            {{ loading ? 'A carregar…' : 'Carregar mais' }}
+                        </button>
+                        <p
+                            v-else-if="feed.length > 0"
+                            style="font-size: 11px; color: var(--text-3); margin: 0"
+                        >
+                            Fim do feed
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

@@ -7,6 +7,7 @@ use App\Models\CommunityPost;
 use App\Models\Friend;
 use App\Models\Post;
 use App\Models\UserBlock;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
@@ -28,6 +29,10 @@ class FeedController extends Controller
     {
         $user = $request->user();
         $authId = $user->id;
+
+        $cursor = $request->query('cursor')
+            ? Carbon::createFromTimestamp((int) $request->query('cursor'))
+            : null;
 
         $friendIds = Cache::remember("user:{$authId}:friend_ids", now()->addMinutes(5), function () use ($authId) {
             return Friend::where('status', 'accepted')
@@ -58,6 +63,7 @@ class FeedController extends Controller
             ->withCount('likes')
             ->whereIn('user_id', $friendIds)
             ->when($blockedIds, fn ($q) => $q->whereNotIn('user_id', $blockedIds))
+            ->when($cursor, fn ($q) => $q->where('created_at', '<', $cursor))
             ->latest()
             ->limit(15)
             ->get()
@@ -67,6 +73,7 @@ class FeedController extends Controller
             ->withCount('likes')
             ->whereIn('bubble_id', $communityIds)
             ->when($blockedIds, fn ($q) => $q->whereNotIn('user_id', $blockedIds))
+            ->when($cursor, fn ($q) => $q->where('created_at', '<', $cursor))
             ->latest()
             ->limit(15)
             ->get()
@@ -77,22 +84,30 @@ class FeedController extends Controller
             $recentPosts = Post::with(['user', 'likes' => $withLikes, 'comments' => $withComments])
                 ->withCount('likes')
                 ->when($blockedIds, fn ($q) => $q->whereNotIn('user_id', $blockedIds))
+                ->when($cursor, fn ($q) => $q->where('created_at', '<', $cursor))
                 ->latest()
                 ->limit(10)
                 ->get()
                 ->map(fn ($p) => $this->mapPost($p, $authId));
         }
 
-        $feed = $friendPosts->concat($communityPosts)->concat($recentPosts)
+        $merged = $friendPosts->concat($communityPosts)->concat($recentPosts)
             ->sortByDesc('_ts')
-            ->take(20)
+            ->take(20);
+
+        $hasMore    = $merged->count() === 20;
+        $nextCursor = $hasMore ? $merged->last()['_ts'] : null;
+
+        $feed = $merged
             ->map(fn ($item) => collect($item)->except('_ts')->all())
             ->values();
 
         return [
-            'feed' => $feed,
-            'hasFriends' => count($friendIds) > 0,
-            'hasCommunities' => count($communityIds) > 0,
+            'feed'            => $feed,
+            'hasFriends'      => count($friendIds) > 0,
+            'hasCommunities'  => count($communityIds) > 0,
+            'hasMore'         => $hasMore,
+            'nextCursor'      => $nextCursor,
         ];
     }
 

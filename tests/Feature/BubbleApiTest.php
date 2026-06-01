@@ -148,7 +148,7 @@ class BubbleApiTest extends TestCase
             ->deleteJson("/api/bubbles/{$bubble->id}")
             ->assertStatus(204);
 
-        $this->assertDatabaseMissing('bubbles', ['id' => $bubble->id]);
+        $this->assertSoftDeleted('bubbles', ['id' => $bubble->id]);
     }
 
     public function test_non_owner_cannot_delete_bubble(): void

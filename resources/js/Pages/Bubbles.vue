@@ -28,6 +28,8 @@ const props = defineProps({
     feed: { type: Array, default: () => [] },
     hasFriends: { type: Boolean, default: false },
     hasCommunities: { type: Boolean, default: false },
+    hasMore: { type: Boolean, default: false },
+    nextCursor: { type: Number, default: null },
 });
 
 const { bubbles, hoveredId, connectSource, load, add, toggleSelect, savePositions } = useBubbles();
@@ -49,9 +51,44 @@ const isAdmin = computed(() => ['admin', 'site_owner'].includes(authUser.value?.
 const feedOpen = ref(false);
 const menuOpen = ref(false);
 
+const localFeed = ref([...props.feed]);
+const localCursor = ref(props.nextCursor);
+const localHasMore = ref(props.hasMore);
+const feedLoading = ref(false);
+
+watch(
+    () => props.feed,
+    (fresh) => {
+        localFeed.value = [...fresh];
+        localCursor.value = props.nextCursor;
+        localHasMore.value = props.hasMore;
+    },
+);
+
 function toggleFeed() {
     if (!feedOpen.value) playSfx('verFeed');
     feedOpen.value = !feedOpen.value;
+}
+
+function loadMoreFeed() {
+    if (feedLoading.value || !localHasMore.value) return;
+    feedLoading.value = true;
+
+    router.get(
+        route('feed.index'),
+        { cursor: localCursor.value },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['feed', 'hasMore', 'nextCursor'],
+            onSuccess: (page) => {
+                localFeed.value.push(...page.props.feed);
+                localCursor.value = page.props.nextCursor;
+                localHasMore.value = page.props.hasMore;
+            },
+            onFinish: () => { feedLoading.value = false; },
+        },
+    );
 }
 const menuEl = ref(null);
 
@@ -1648,9 +1685,12 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
         <!-- FEED PANEL -->
         <FeedPanel
             :open="feedOpen"
-            :feed="props.feed"
+            :feed="localFeed"
             :auth-user="authUser"
             :isMobile="isMobile"
+            :has-more="localHasMore"
+            :loading="feedLoading"
+            @load-more="loadMoreFeed"
         />
 
         <ToastContainer />

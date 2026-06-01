@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserBlock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,6 +44,9 @@ class SearchController extends Controller
         $safe = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q);
         $like = '%' . $safe . '%';
 
+        // FULLTEXT index lookup (MySQL only, min 3 chars due to innodb_ft_min_token_size)
+        $useFulltext = mb_strlen($q) >= 3 && DB::connection()->getDriverName() === 'mysql';
+
         $blockedIds = [];
         if ($authId = auth()->id()) {
             $blockedIds = UserBlock::where('blocker_id', $authId)->pluck('blocked_id')
@@ -51,10 +55,11 @@ class SearchController extends Controller
                 ->all();
         }
 
-        $users = User::where(function ($query) use ($like) {
-                $query->where('name', 'like', $like)
-                      ->orWhere('username', 'like', $like);
-            })
+        $users = User::when(
+                $useFulltext,
+                fn ($b) => $b->whereFullText(['name', 'username'], $q . '*', ['mode' => 'boolean']),
+                fn ($b) => $b->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('username', 'like', $like))
+            )
             ->when($blockedIds, fn ($q) => $q->whereNotIn('id', $blockedIds))
             ->limit($limit + 5)
             ->get(['id', 'name', 'username', 'avatar', 'avatar_color', 'bio'])
@@ -72,11 +77,13 @@ class SearchController extends Controller
             ->map(fn ($u) => collect($u)->except('_score')->all())
             ->values();
 
-        $communities = Bubble::where(function ($query) use ($like) {
-                $query->where('label', 'like', $like)
-                      ->orWhere('community_title', 'like', $like)
-                      ->orWhere('community_description', 'like', $like);
-            })
+        $communities = Bubble::when(
+                $useFulltext,
+                fn ($b) => $b->whereFullText(['label', 'community_title', 'community_description'], $q . '*', ['mode' => 'boolean']),
+                fn ($b) => $b->where(fn ($w) => $w->where('label', 'like', $like)
+                    ->orWhere('community_title', 'like', $like)
+                    ->orWhere('community_description', 'like', $like))
+            )
             ->select(['id', 'label', 'community_title', 'community_description', 'color', 'community_image'])
             ->withCount('memberships')
             ->limit($limit + 5)
@@ -96,7 +103,11 @@ class SearchController extends Controller
             ->map(fn ($b) => collect($b)->except('_score')->all())
             ->values();
 
-        $posts = Post::where('content', 'like', $like)
+        $posts = Post::when(
+                $useFulltext,
+                fn ($b) => $b->whereFullText(['content'], $q . '*', ['mode' => 'boolean']),
+                fn ($b) => $b->where('content', 'like', $like)
+            )
             ->with(['user' => fn ($q) => $q->select(['id', 'name', 'username', 'avatar', 'avatar_color', 'role'])])
             ->latest()
             ->limit($limit)

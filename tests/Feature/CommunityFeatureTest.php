@@ -194,7 +194,7 @@ class CommunityFeatureTest extends TestCase
 
         $this->actingAs($owner)->delete("/c/{$bubble->id}")->assertRedirect();
 
-        $this->assertDatabaseMissing('bubbles', ['id' => $bubble->id]);
+        $this->assertSoftDeleted('bubbles', ['id' => $bubble->id]);
     }
 
     public function test_non_owner_cannot_delete_community(): void

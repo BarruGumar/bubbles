@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bubble;
 use App\Models\User;
-use App\Services\PunishmentService;
+use App\Services\CommunityModerationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +14,7 @@ use Inertia\Response;
 
 class CommunityModerationController extends Controller
 {
-    public function __construct(private PunishmentService $punishments) {}
+    public function __construct(private CommunityModerationService $punishments) {}
 
     // ── Member list ───────────────────────────────────────────────
 

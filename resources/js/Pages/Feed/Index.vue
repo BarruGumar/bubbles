@@ -1,16 +1,53 @@
 <script setup>
-import { computed } from 'vue';
-import { Head, usePage } from '@inertiajs/vue3';
+import { ref, watch, computed } from 'vue';
+import { Head, usePage, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PostCard from '@/Components/PostCard.vue';
 
-defineProps({
+const props = defineProps({
     feed: { type: Array, default: () => [] },
     hasFriends: { type: Boolean, default: false },
     hasCommunities: { type: Boolean, default: false },
+    hasMore: { type: Boolean, default: false },
+    nextCursor: { type: Number, default: null },
 });
 
 const authUser = computed(() => usePage().props.auth?.user);
+
+const items = ref([...props.feed]);
+const cursor = ref(props.nextCursor);
+const moreAvailable = ref(props.hasMore);
+const loading = ref(false);
+
+watch(
+    () => props.feed,
+    (fresh) => {
+        items.value = [...fresh];
+        cursor.value = props.nextCursor;
+        moreAvailable.value = props.hasMore;
+    },
+);
+
+function loadMore() {
+    if (loading.value || !moreAvailable.value) return;
+    loading.value = true;
+
+    router.get(
+        route('feed.index'),
+        { cursor: cursor.value },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['feed', 'hasMore', 'nextCursor'],
+            onSuccess: (page) => {
+                items.value.push(...page.props.feed);
+                cursor.value = page.props.nextCursor;
+                moreAvailable.value = page.props.hasMore;
+            },
+            onFinish: () => { loading.value = false; },
+        },
+    );
+}
 </script>
 
 <template>
@@ -28,7 +65,7 @@ const authUser = computed(() => usePage().props.auth?.user);
 
             <!-- Empty — no friends or communities -->
             <div
-                v-if="!hasFriends && !hasCommunities && feed.length === 0"
+                v-if="!hasFriends && !hasCommunities && items.length === 0"
                 style="
                     text-align: center;
                     padding: 60px 20px;
@@ -46,7 +83,7 @@ const authUser = computed(() => usePage().props.auth?.user);
 
             <!-- Hint when we show recent instead -->
             <div
-                v-else-if="!hasFriends && !hasCommunities && feed.length > 0"
+                v-else-if="!hasFriends && !hasCommunities && items.length > 0"
                 style="
                     background: rgba(0, 154, 199, 0.06);
                     border: 1px solid #009ac722;
@@ -65,9 +102,9 @@ const authUser = computed(() => usePage().props.auth?.user);
             </div>
 
             <!-- Feed -->
-            <div v-if="feed.length > 0" style="display: flex; flex-direction: column; gap: 12px">
+            <div v-if="items.length > 0" style="display: flex; flex-direction: column; gap: 12px">
                 <PostCard
-                    v-for="item in feed"
+                    v-for="item in items"
                     :key="`${item._type}-${item.id}`"
                     :post="item"
                     :author="item.author"
@@ -88,6 +125,35 @@ const authUser = computed(() => usePage().props.auth?.user);
                     "
                     :community="item.community ?? null"
                 />
+
+                <!-- Load more -->
+                <div style="text-align: center; padding: 16px 0 0">
+                    <button
+                        v-if="moreAvailable"
+                        :disabled="loading"
+                        style="
+                            background: rgba(0, 154, 199, 0.08);
+                            border: 1.5px solid #009ac730;
+                            border-radius: 20px;
+                            padding: 10px 28px;
+                            font-size: 13px;
+                            font-weight: 700;
+                            color: #009ac7;
+                            cursor: pointer;
+                            transition: background 0.15s, opacity 0.15s;
+                        "
+                        :style="loading ? 'opacity: 0.6; cursor: default' : ''"
+                        @click="loadMore"
+                    >
+                        {{ loading ? 'A carregar…' : 'Carregar mais' }}
+                    </button>
+                    <p
+                        v-else
+                        style="font-size: 12px; color: #8ba0b0; margin: 0"
+                    >
+                        Chegaste ao fim do feed
+                    </p>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>
