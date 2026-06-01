@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('audit:prune --days=180')->weekly()->sundays()->at('03:00');
+Schedule::command('punishments:expire')->everyFiveMinutes();
