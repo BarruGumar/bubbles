@@ -148,11 +148,16 @@ class ConversationController extends Controller
             );
         }
 
+        $replyToId = $request->input('reply_to_id');
+        if ($replyToId && ! $conversation->messages()->where('id', $replyToId)->exists()) {
+            abort(422);
+        }
+
         $message = $conversation->messages()->create([
             'user_id' => auth()->id(),
             'content' => $request->input('content'),
             'image_url' => $imageUrl,
-            'reply_to_id' => $request->input('reply_to_id'),
+            'reply_to_id' => $replyToId,
         ]);
 
         $conversation->update(['last_message_id' => $message->id]);
