@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('audit:prune --days=180')->weekly()->sundays()->at('03:00');
 Schedule::command('punishments:expire')->everyFiveMinutes();
+Schedule::command('users:prune-unverified')->everyFifteenMinutes();

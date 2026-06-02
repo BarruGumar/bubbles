@@ -6,13 +6,21 @@ import { clImg } from '@/Composables/useCloudinary';
 import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
-    notifications: { type: Array, default: () => [] },
+    notifications: { type: Object, default: () => ({ data: [], current_page: 1, last_page: 1 }) },
 });
 
 const page = usePage();
 const { notifSoundEnabled, setNotifSoundEnabled, playClick } = useAudio();
-const localNotifications = ref([...props.notifications]);
-watch(() => props.notifications, (v) => { localNotifications.value = [...v]; }, { deep: true });
+const localNotifications = ref([...props.notifications.data]);
+const isLoadingMore = ref(false);
+
+watch(() => props.notifications, (paginator) => {
+    if (paginator.current_page > 1) {
+        localNotifications.value.push(...paginator.data);
+    } else {
+        localNotifications.value = [...paginator.data];
+    }
+}, { deep: true });
 
 function formatInitial(name) {
     return (name ?? '?')[0].toUpperCase();
@@ -57,6 +65,20 @@ function deleteAll() {
 }
 
 const hasUnread = computed(() => localNotifications.value.some((n) => !n.read));
+const hasMore = computed(() => props.notifications.current_page < props.notifications.last_page);
+
+function loadMore() {
+    isLoadingMore.value = true;
+    router.get(
+        route('notifications.index'),
+        { page: props.notifications.current_page + 1 },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => { isLoadingMore.value = false; },
+        }
+    );
+}
 
 const handleNotificationCreated = (e) => { localNotifications.value.unshift(e.notification); };
 
@@ -329,6 +351,26 @@ onUnmounted(() => {
                         </button>
                     </div>
                 </component>
+            </div>
+            <!-- Carregar mais -->
+            <div v-if="hasMore" style="text-align: center; margin-top: 20px">
+                <button
+                    @click="loadMore"
+                    :disabled="isLoadingMore"
+                    :style="{
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: isLoadingMore ? '#b0c0cc' : '#009ac7',
+                        background: 'none',
+                        border: `1.5px solid ${isLoadingMore ? '#b0c0cc33' : '#009ac733'}`,
+                        borderRadius: '99px',
+                        padding: '8px 24px',
+                        cursor: isLoadingMore ? 'default' : 'pointer',
+                        transition: 'all 0.2s',
+                    }"
+                >
+                    {{ isLoadingMore ? 'A carregar…' : 'Carregar mais' }}
+                </button>
             </div>
         </div>
     </AuthenticatedLayout>

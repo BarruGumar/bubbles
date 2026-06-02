@@ -66,5 +66,13 @@ class AppServiceProvider extends ServiceProvider
         // Pesquisa: 30 por minuto por utilizador/IP
         RateLimiter::for('search', fn (Request $req) => Limit::perMinute(30)->by($req->user()?->id ?: $req->ip())
         );
+
+        // Registo: 10 tentativas por hora por IP
+        RateLimiter::for('register', fn (Request $req) => Limit::perHour(10)->by($req->ip())
+        );
+
+        // Reset de password: 5 pedidos por hora por IP
+        RateLimiter::for('password-reset', fn (Request $req) => Limit::perHour(5)->by($req->ip())
+        );
     }
 }

@@ -14,16 +14,15 @@ class NotificationController extends Controller
             ->notifications()
             ->where('type', '!=', \App\Notifications\MessageReceived::class)
             ->latest()
-            ->limit(60)
-            ->get()
-            ->map(fn ($n) => [
-                'id' => $n->id,
-                'type' => $n->data['type'] ?? 'generic',
-                'message' => $n->data['message'] ?? '',
-                'data' => $n->data,
-                'read' => ! is_null($n->read_at),
+            ->paginate(30)
+            ->through(fn ($n) => [
+                'id'         => $n->id,
+                'type'       => $n->data['type'] ?? 'generic',
+                'message'    => $n->data['message'] ?? '',
+                'data'       => $n->data,
+                'read'       => ! is_null($n->read_at),
                 'created_at' => $n->created_at->diffForHumans(),
-                'url' => $n->data['url'] ?? null,
+                'url'        => $n->data['url'] ?? null,
             ]);
 
         return Inertia::render('Notifications/Index', [
@@ -39,12 +38,16 @@ class NotificationController extends Controller
             ->first()
             ?->markAsRead();
 
+        \Illuminate\Support\Facades\Cache::forget('user:' . auth()->id() . ':badge:notifications');
+
         return back();
     }
 
     public function markAllRead(): RedirectResponse
     {
         auth()->user()->unreadNotifications->markAsRead();
+
+        \Illuminate\Support\Facades\Cache::forget('user:' . auth()->id() . ':badge:notifications');
 
         return back();
     }
@@ -56,12 +59,16 @@ class NotificationController extends Controller
             ->where('id', $id)
             ->delete();
 
+        \Illuminate\Support\Facades\Cache::forget('user:' . auth()->id() . ':badge:notifications');
+
         return back();
     }
 
     public function destroyAll(): RedirectResponse
     {
         auth()->user()->notifications()->delete();
+
+        \Illuminate\Support\Facades\Cache::forget('user:' . auth()->id() . ':badge:notifications');
 
         return back();
     }

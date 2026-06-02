@@ -11,17 +11,29 @@ const { onlineUsers } = useOnlineUsers();
 const isOnline = (userId) => userId != null && onlineUsers.value.has(userId);
 
 const props = defineProps({
-    friends: Array,
+    friends:  { type: Object, default: () => ({ data: [], current_page: 1, last_page: 1, total: 0 }) },
     received: Array,
-    sent: Array,
+    sent:     Array,
+    search:   { type: String, default: '' },
 });
 
 const page = usePage();
-const localFriends  = ref([...(props.friends  ?? [])]);
+const localFriends  = ref([...(props.friends.data ?? [])]);
 const localReceived = ref([...(props.received ?? [])]);
 const localSent     = ref([...(props.sent     ?? [])]);
+const localTotal    = ref(props.friends.total ?? 0);
+const isLoadingMoreFriends = ref(false);
+const searchTerm = ref(props.search ?? '');
+let searchTimer = null;
 
-watch(() => props.friends,  (v) => { localFriends.value  = [...(v ?? [])]; }, { deep: true });
+watch(() => props.friends, (paginator) => {
+    if (paginator.current_page > 1) {
+        localFriends.value.push(...(paginator.data ?? []));
+    } else {
+        localFriends.value = [...(paginator.data ?? [])];
+    }
+    localTotal.value = paginator.total ?? 0;
+}, { deep: true });
 watch(() => props.received, (v) => { localReceived.value = [...(v ?? [])]; }, { deep: true });
 watch(() => props.sent,     (v) => { localSent.value     = [...(v ?? [])]; }, { deep: true });
 
@@ -34,6 +46,7 @@ const handleFriendshipUpdated = (e) => {
     } else if (e.event === 'request_accepted') {
         if (!localFriends.value.some(f => f.id === e.friend.id)) {
             localFriends.value.unshift(e.friend);
+            localTotal.value++;
         }
         localSent.value = localSent.value.filter(f => f.friendId !== e.friend.friendId);
     }
@@ -62,11 +75,42 @@ function accept(friendId) {
 }
 
 function reject(friendId) {
+    const wasAccepted = localFriends.value.some(f => f.friendId === friendId);
+    if (wasAccepted) localTotal.value--;
+    localFriends.value = localFriends.value.filter(f => f.friendId !== friendId);
+    localReceived.value = localReceived.value.filter(f => f.friendId !== friendId);
+    localSent.value = localSent.value.filter(f => f.friendId !== friendId);
     router.delete(route('friends.reject', friendId), { preserveScroll: true });
 }
 
 function startConversation(friend) {
     router.post(route('conversations.store'), { recipient_id: friend.id });
+}
+
+const hasMoreFriends = computed(() => props.friends.current_page < props.friends.last_page);
+
+function onSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+        router.get(
+            route('friends.index'),
+            { search: searchTerm.value || undefined },
+            { preserveScroll: true, preserveState: true }
+        );
+    }, 300);
+}
+
+function loadMoreFriends() {
+    isLoadingMoreFriends.value = true;
+    router.get(
+        route('friends.index'),
+        { page: props.friends.current_page + 1, search: searchTerm.value || undefined },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => { isLoadingMoreFriends.value = false; },
+        }
+    );
 }
 </script>
 
@@ -346,6 +390,36 @@ function startConversation(friend) {
                     padding: 20px;
                 "
             >
+                <!-- Pesquisa -->
+                <div style="position: relative; margin-bottom: 16px">
+                    <svg
+                        style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #b0c0cc; pointer-events: none"
+                        width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                    >
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input
+                        v-model="searchTerm"
+                        @input="onSearch"
+                        type="text"
+                        placeholder="Pesquisar amigos…"
+                        style="
+                            width: 100%;
+                            box-sizing: border-box;
+                            padding: 9px 16px 9px 34px;
+                            border-radius: 99px;
+                            border: 1.5px solid #009ac720;
+                            background: rgba(255,255,255,0.7);
+                            font-size: 13px;
+                            color: #3a6478;
+                            outline: none;
+                            transition: border-color 0.2s;
+                        "
+                        @focus="$event.target.style.borderColor = '#009ac750'"
+                        @blur="$event.target.style.borderColor = '#009ac720'"
+                    />
+                </div>
+
                 <p
                     style="
                         font-size: 10px;
@@ -356,7 +430,7 @@ function startConversation(friend) {
                         margin: 0 0 16px;
                     "
                 >
-                    Amigos · {{ localFriends.length }}
+                    Amigos · {{ localTotal }}
                 </p>
 
                 <!-- Estado vazio -->
@@ -492,6 +566,27 @@ function startConversation(friend) {
                         </div><!-- /list-actions -->
                         </div><!-- /list-content -->
                     </div>
+                </div>
+
+                <!-- Carregar mais amigos -->
+                <div v-if="hasMoreFriends" style="text-align: center; margin-top: 20px">
+                    <button
+                        @click="loadMoreFriends"
+                        :disabled="isLoadingMoreFriends"
+                        :style="{
+                            fontSize: '13px',
+                            fontWeight: '700',
+                            color: isLoadingMoreFriends ? '#b0c0cc' : '#009ac7',
+                            background: 'none',
+                            border: `1.5px solid ${isLoadingMoreFriends ? '#b0c0cc33' : '#009ac733'}`,
+                            borderRadius: '99px',
+                            padding: '8px 24px',
+                            cursor: isLoadingMoreFriends ? 'default' : 'pointer',
+                            transition: 'all 0.2s',
+                        }"
+                    >
+                        {{ isLoadingMoreFriends ? 'A carregar…' : 'Carregar mais' }}
+                    </button>
                 </div>
             </div>
         </div>

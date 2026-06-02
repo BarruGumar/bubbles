@@ -90,6 +90,7 @@ class ProfileController extends Controller
                     ->orWhere('friend_id', $profileUser->id);
             })
             ->with(['user', 'friend'])
+            ->limit(12)
             ->get();
 
         $profileFriends = $friendRecords->map(function ($f) use ($profileUser) {

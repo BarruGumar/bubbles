@@ -20,21 +20,34 @@ class FriendController extends Controller
     public function index(): Response
     {
         $userId = auth()->id();
+        $search = trim(request('search', ''));
 
         $friends = Friend::where(function ($q) use ($userId) {
             $q->where('user_id', $userId)->orWhere('friend_id', $userId);
         })->where('status', 'accepted')
+            ->when($search, function ($q) use ($search, $userId) {
+                $q->where(function ($q2) use ($search, $userId) {
+                    $q2->where('user_id', $userId)
+                        ->whereHas('friend', fn ($u) => $u->where('name', 'like', "%{$search}%")
+                            ->orWhere('username', 'like', "%{$search}%"));
+                })->orWhere(function ($q2) use ($search, $userId) {
+                    $q2->where('friend_id', $userId)
+                        ->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%")
+                            ->orWhere('username', 'like', "%{$search}%"));
+                });
+            })
             ->with(['user', 'friend'])
-            ->get()
-            ->map(function ($f) use ($userId) {
+            ->latest()
+            ->paginate(30)
+            ->through(function ($f) use ($userId) {
                 $other = $f->user_id === $userId ? $f->friend : $f->user;
 
                 return [
-                    'friendId' => $f->id,
-                    'id' => $other->id,
-                    'name' => $other->name,
-                    'username' => $other->username,
-                    'avatar' => $other->avatar,
+                    'friendId'    => $f->id,
+                    'id'          => $other->id,
+                    'name'        => $other->name,
+                    'username'    => $other->username,
+                    'avatar'      => $other->avatar,
                     'avatar_color' => $other->avatar_color ?? '#009ac7',
                 ];
             });
@@ -66,9 +79,10 @@ class FriendController extends Controller
             ]);
 
         return Inertia::render('Friends/Index', [
-            'friends' => $friends->values(),
+            'friends'  => $friends,
             'received' => $received->values(),
-            'sent' => $sent->values(),
+            'sent'     => $sent->values(),
+            'search'   => $search,
         ]);
     }
 
@@ -128,6 +142,7 @@ class FriendController extends Controller
 
         Cache::forget("user:{$friend->user_id}:friend_ids");
         Cache::forget('user:' . auth()->id() . ':friend_ids');
+        Cache::forget("user:{$friend->friend_id}:badge:friends");
 
         $notif = new FriendRequestAccepted(auth()->user());
         $friend->user->notify($notif);
@@ -164,6 +179,7 @@ class FriendController extends Controller
 
         Cache::forget("user:{$friend->user_id}:friend_ids");
         Cache::forget("user:{$friend->friend_id}:friend_ids");
+        Cache::forget("user:{$friend->friend_id}:badge:friends");
 
         $friend->delete();
 
