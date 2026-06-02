@@ -185,8 +185,8 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                             style="font-size:11px; background:none; border:none;
                                    cursor:pointer; padding:0; transition:color 0.2s, opacity 0.2s"
                             :style="{ color: deletingId === c.id ? '#e05555' : '#c0c8d0', opacity: deletingId === c.id ? 0.5 : 1 }"
-                            @mouseenter="if (deletingId !== c.id) $event.target.style.color='#e05555'"
-                            @mouseleave="if (deletingId !== c.id) $event.target.style.color='#c0c8d0'">
+                            @mouseenter="deletingId !== c.id && ($event.target.style.color='#e05555')"
+                            @mouseleave="deletingId !== c.id && ($event.target.style.color='#c0c8d0')">
                             {{ deletingId === c.id ? '…' : 'Apagar' }}
                         </button>
                     </div>
@@ -291,8 +291,8 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                                 style="font-size:10px; background:none; border:none;
                                        cursor:pointer; padding:0; transition:color 0.2s, opacity 0.2s"
                                 :style="{ color: deletingId === r.id ? '#e05555' : '#c0c8d0', opacity: deletingId === r.id ? 0.5 : 1 }"
-                                @mouseenter="if (deletingId !== r.id) $event.target.style.color='#e05555'"
-                                @mouseleave="if (deletingId !== r.id) $event.target.style.color='#c0c8d0'">
+                                @mouseenter="deletingId !== r.id && ($event.target.style.color='#e05555')"
+                                @mouseleave="deletingId !== r.id && ($event.target.style.color='#c0c8d0')">
                                 {{ deletingId === r.id ? '…' : 'Apagar' }}
                             </button>
                         </div>
