@@ -52,8 +52,10 @@ Route::get('/u/{username}', [ProfileController::class, 'show'])->name('profile.s
 Route::get('/c/{id}', [CommunityController::class, 'show'])->name('community.show');
 
 // Search — public (filters private data internally)
-Route::get('/search', [SearchController::class, 'index'])->name('search.index');
-Route::get('/api/search', [SearchController::class, 'api'])->name('search.api');
+Route::middleware('throttle:search')->group(function () {
+    Route::get('/search', [SearchController::class, 'index'])->name('search.index');
+    Route::get('/api/search', [SearchController::class, 'api'])->name('search.api');
+});
 
 // Acknowledge punishment notification — allowed even while suspended
 Route::middleware(['auth'])->post('/punishment/{punishment}/acknowledge', function (\App\Models\UserPunishment $punishment) {

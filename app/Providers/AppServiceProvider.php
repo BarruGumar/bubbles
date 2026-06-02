@@ -62,5 +62,9 @@ class AppServiceProvider extends ServiceProvider
         // Denúncias: 10 por hora por utilizador
         RateLimiter::for('reports', fn (Request $req) => Limit::perHour(10)->by($req->user()?->id ?: $req->ip())
         );
+
+        // Pesquisa: 30 por minuto por utilizador/IP
+        RateLimiter::for('search', fn (Request $req) => Limit::perMinute(30)->by($req->user()?->id ?: $req->ip())
+        );
     }
 }

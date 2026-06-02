@@ -22,10 +22,12 @@ class AuditLogController extends Controller
         $from        = $request->get('from');
         $to          = $request->get('to');
 
+        $actionLike = $action ? ('%' . addcslashes($action, '%_\\') . '%') : null;
+
         $logs = AuditLog::with(['actor', 'targetUser', 'community'])
             ->when($userId, fn ($q) => $q->where(fn ($q2) => $q2->where('actor_id', $userId)->orWhere('target_user_id', $userId)))
             ->when($ip,          fn ($q) => $q->where('ip_address', $ip))
-            ->when($action,      fn ($q) => $q->where('action', 'like', "%$action%"))
+            ->when($actionLike,  fn ($q) => $q->where('action', 'like', $actionLike))
             ->when($category,    fn ($q) => $q->where('category', $category))
             ->when($communityId, fn ($q) => $q->where('community_id', $communityId))
             ->when($from,        fn ($q) => $q->where('created_at', '>=', $from))

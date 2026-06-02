@@ -16,11 +16,12 @@ class ContentController extends Controller
 {
     public function posts(Request $request): Response
     {
-        $q = $request->get('q');
+        $q    = $request->get('q');
+        $like = $q ? ('%' . addcslashes($q, '%_\\') . '%') : null;
 
         $posts = Post::withTrashed()
             ->with('user')
-            ->when($q, fn ($query) => $query->where('content', 'like', "%$q%"))
+            ->when($like, fn ($query) => $query->where('content', 'like', $like))
             ->latest()
             ->paginate(20)
             ->through(fn ($p) => [
@@ -65,11 +66,12 @@ class ContentController extends Controller
 
     public function communityPosts(Request $request): Response
     {
-        $q = $request->get('q');
+        $q    = $request->get('q');
+        $like = $q ? ('%' . addcslashes($q, '%_\\') . '%') : null;
 
         $posts = CommunityPost::withTrashed()
             ->with(['user', 'bubble'])
-            ->when($q, fn ($query) => $query->where('content', 'like', "%$q%"))
+            ->when($like, fn ($query) => $query->where('content', 'like', $like))
             ->latest()
             ->paginate(20)
             ->through(fn ($p) => [
@@ -115,9 +117,10 @@ class ContentController extends Controller
 
     public function communities(Request $request): Response
     {
-        $q = $request->get('q');
+        $q    = $request->get('q');
+        $like = $q ? ('%' . addcslashes($q, '%_\\') . '%') : null;
 
-        $communities = Bubble::when($q, fn ($query) => $query->where('community_title', 'like', "%$q%")->orWhere('label', 'like', "%$q%"))
+        $communities = Bubble::when($like, fn ($query) => $query->where('community_title', 'like', $like)->orWhere('label', 'like', $like))
             ->withCount(['memberships', 'communityPosts'])
             ->orderBy('created_at', 'desc')
             ->paginate(20)

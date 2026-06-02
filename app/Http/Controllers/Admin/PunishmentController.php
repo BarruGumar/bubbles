@@ -22,11 +22,12 @@ class PunishmentController extends Controller
         $q      = $request->get('q');
         $type   = $request->get('type');
         $status = $request->get('status', 'active');
+        $like   = $q ? ('%' . addcslashes($q, '%_\\') . '%') : null;
 
         $list = UserPunishment::with(['user', 'issuedBy', 'revokedBy'])
-            ->when($q, fn ($query) => $query->whereHas(
+            ->when($like, fn ($query) => $query->whereHas(
                 'user',
-                fn ($u) => $u->where('name', 'like', "%$q%")->orWhere('username', 'like', "%$q%")
+                fn ($u) => $u->where('name', 'like', $like)->orWhere('username', 'like', $like)
             ))
             ->when($type, fn ($query) => $query->where('type', $type))
             ->when($status === 'active',  fn ($query) => $query->active())

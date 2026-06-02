@@ -18,8 +18,9 @@ class UserController extends Controller
     {
         $q = $request->get('q');
         $actor = auth()->user();
+        $like = $q ? ('%' . addcslashes($q, '%_\\') . '%') : null;
 
-        $users = User::when($q, fn ($query) => $query->where('name', 'like', "%$q%")->orWhere('username', 'like', "%$q%"))
+        $users = User::when($like, fn ($query) => $query->where('name', 'like', $like)->orWhere('username', 'like', $like))
             ->withCount([
                 'punishments as active_punishments_count' => fn ($q) => $q->active(),
                 'posts as posts_count'                    => fn ($q) => $q->withTrashed(),

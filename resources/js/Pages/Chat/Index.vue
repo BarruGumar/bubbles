@@ -882,6 +882,7 @@ onMounted(() => {
         if (conv?.unread_count > 0) {
             window.dispatchEvent(new CustomEvent('messages-read', { detail: { delta: conv.unread_count } }));
         }
+        markAsRead();
         if (props.activeConversation.type === 'group' && props.activeConversation.participants) {
             const map = {};
             for (const p of props.activeConversation.participants) {
@@ -938,7 +939,10 @@ watch(
         }
         loadChatBg();
         scrollToBottom();
-        if (newId) subscribeToConversation(newId);
+        if (newId) {
+            subscribeToConversation(newId);
+            markAsRead();
+        }
     },
     { flush: 'post' },
 );

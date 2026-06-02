@@ -67,7 +67,18 @@ class HandleInertiaRequests extends Middleware
                     ->all();
             },
             'auth' => [
-                'user' => $user,
+                'user' => $user ? [
+                    'id'                => $user->id,
+                    'name'              => $user->name,
+                    'email'             => $user->email,
+                    'username'          => $user->username,
+                    'bio'               => $user->bio,
+                    'avatar'            => $user->avatar,
+                    'avatar_color'      => $user->avatar_color,
+                    'banner'            => $user->banner,
+                    'role'              => $user->role,
+                    'email_verified_at' => $user->email_verified_at,
+                ] : null,
                 'pending_friends_count' => $user
                     ? Cache::remember("user:{$user->id}:badge:friends", 60, fn () =>
                         Friend::where('friend_id', $user->id)

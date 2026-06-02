@@ -25,11 +25,12 @@ class CommunityModerationController extends Controller
 
         $q      = $request->get('q');
         $filter = $request->get('filter', 'all'); // all | staff | banned | muted
+        $like   = $q ? ('%' . addcslashes($q, '%_\\') . '%') : null;
 
         $query = $bubble->memberships()
-            ->when($q, fn ($query) => $query->where(function ($q2) use ($q) {
-                $q2->where('users.name', 'like', "%{$q}%")
-                   ->orWhere('users.username', 'like', "%{$q}%");
+            ->when($like, fn ($query) => $query->where(function ($q2) use ($like) {
+                $q2->where('users.name', 'like', $like)
+                   ->orWhere('users.username', 'like', $like);
             }))
             ->when($filter === 'staff', fn ($query) => $query->wherePivotIn('role', ['admin', 'moderator']))
             ->when($filter === 'banned', fn ($query) => $query->wherePivot('status', 'banned'))
