@@ -31,7 +31,11 @@ class ProfileController extends Controller
             ->withCount('likes')
             ->with([
                 'likes' => fn ($q) => $q->where('user_id', $userId ?? 0),
-                'comments' => fn ($q) => $q->with('user')->orderBy('created_at')->limit(5),
+                'comments' => fn ($q) => $q
+                    ->with(['user', 'likes', 'replies' => fn ($rq) => $rq->with(['user', 'likes'])])
+                    ->whereNull('parent_comment_id')
+                    ->orderBy('created_at')
+                    ->limit(5),
             ])
             ->latest()
             ->cursorPaginate(12);
@@ -45,19 +49,7 @@ class ProfileController extends Controller
             'likes_count' => $p->likes_count,
             'is_liked' => $p->likes->isNotEmpty(),
             'user_reaction' => $p->likes->first()?->type ?? null,
-            'comments' => $p->comments->map(fn ($c) => [
-                'id' => $c->id,
-                'content' => $c->content,
-                'created_at' => $c->created_at->diffForHumans(),
-                'is_own' => $userId && $c->user_id === $userId,
-                'author' => [
-                    'id' => $c->user->id,
-                    'name' => $c->user->name,
-                    'username' => $c->user->username,
-                    'avatar' => $c->user->avatar,
-                    'avatar_color' => $c->user->avatar_color ?? '#009ac7',
-                ],
-            ])->values(),
+            'comments' => $p->comments->map(fn ($c) => $this->mapComment($c, $userId ?? 0))->values(),
         ])->values();
 
         $friendStatus = null;
@@ -266,5 +258,28 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+    private function mapComment($c, int $authId, bool $includeReplies = true): array
+    {
+        return [
+            'id'            => $c->id,
+            'content'       => $c->content,
+            'created_at'    => $c->created_at->diffForHumans(),
+            'is_own'        => $c->user_id === $authId,
+            'likes_count'   => $c->likes->count(),
+            'user_reaction' => $c->likes->where('user_id', $authId)->first()?->type ?? null,
+            'like_route'    => route('comments.like', $c->id),
+            'reply_route'   => route('comments.replies.store', $c->id),
+            'author'        => [
+                'name'         => $c->user->name,
+                'username'     => $c->user->username,
+                'avatar'       => $c->user->avatar,
+                'avatar_color' => $c->user->avatar_color ?? '#009ac7',
+            ],
+            'replies' => $includeReplies
+                ? $c->replies->map(fn ($r) => $this->mapComment($r, $authId, false))->values()->all()
+                : [],
+        ];
     }
 }

@@ -100,6 +100,8 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::get('/community-posts/{post}/reactors', [LikeController::class, 'reactorsCommunityPost'])->name('community-posts.reactors');
     Route::post('/community-posts/{post}/comments', [CommentController::class, 'storeCommunityPost'])->middleware('throttle:reactions')->name('community-posts.comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+    Route::post('/comments/{comment}/like', [LikeController::class, 'toggleComment'])->middleware('throttle:reactions')->name('comments.like');
+    Route::post('/comments/{comment}/replies', [CommentController::class, 'storeReply'])->middleware('throttle:reactions')->name('comments.replies.store');
 
     // Community settings + delete (criador apenas)
     Route::put('/c/{id}/settings', [CommunitySettingsController::class, 'update'])->name('community.update');

@@ -57,7 +57,15 @@ class FeedController extends Controller
 
         $withLikes = fn ($q) => $q->where('user_id', $authId);
 
-        $withComments = fn ($q) => $q->with('user')->orderBy('created_at')->limit(5);
+        $withComments = fn ($q) => $q
+            ->with([
+                'user',
+                'likes',
+                'replies' => fn ($rq) => $rq->with(['user', 'likes']),
+            ])
+            ->whereNull('parent_comment_id')
+            ->orderBy('created_at')
+            ->limit(5);
 
         $friendPosts = Post::with(['user', 'likes' => $withLikes, 'comments' => $withComments])
             ->withCount('likes')
@@ -168,14 +176,21 @@ class FeedController extends Controller
         ];
     }
 
-    private function mapComment($c, int $authId): array
+    private function mapComment($c, int $authId, bool $includeReplies = true): array
     {
         return [
-            'id' => $c->id,
-            'content' => $c->content,
-            'created_at' => $c->created_at->diffForHumans(),
-            'is_own' => $c->user_id === $authId,
-            'author' => $this->mapAuthor($c->user, false),
+            'id'            => $c->id,
+            'content'       => $c->content,
+            'created_at'    => $c->created_at->diffForHumans(),
+            'is_own'        => $c->user_id === $authId,
+            'likes_count'   => $c->likes->count(),
+            'user_reaction' => $c->likes->where('user_id', $authId)->first()?->type ?? null,
+            'like_route'    => route('comments.like', $c->id),
+            'reply_route'   => route('comments.replies.store', $c->id),
+            'author'        => $this->mapAuthor($c->user, false),
+            'replies'       => $includeReplies
+                ? $c->replies->map(fn ($r) => $this->mapComment($r, $authId, false))->values()->all()
+                : [],
         ];
     }
 

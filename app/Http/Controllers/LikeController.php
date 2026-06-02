@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\BadgeCountUpdated;
 use App\Events\NotificationCreated;
+use App\Models\Comment;
 use App\Models\CommunityPost;
 use App\Models\Post;
 use App\Notifications\PostLiked;
@@ -58,6 +59,18 @@ class LikeController extends Controller
                 'url'        => $notifData['url'] ?? null,
             ]));
         }
+
+        return $this->postResponse();
+    }
+
+    public function toggleComment(Comment $comment): RedirectResponse|JsonResponse
+    {
+        $user = auth()->user();
+        abort_if($user->isBanned(), 403);
+        abort_if($user->isSuspended(), 403);
+        abort_if($user->isGloballyMuted(), 403);
+
+        $this->toggle($comment);
 
         return $this->postResponse();
     }

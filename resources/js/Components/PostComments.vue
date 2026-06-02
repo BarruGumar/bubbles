@@ -4,208 +4,325 @@ import { Link, router } from '@inertiajs/vue3';
 import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
-    comments: { type: Array, required: true },
-    authUser: { type: Object, default: null },
+    comments:     { type: Array,  required: true },
+    authUser:     { type: Object, default: null },
     commentRoute: { type: String, required: true },
-    accentColor: { type: String, default: '#009ac7' },
+    accentColor:  { type: String, default: '#009ac7' },
 });
 
 const commentText = ref('');
+const replyTexts  = ref({});
+const activeReply = ref(null);
+const pickerOpen  = ref({});
+const pickerTimers = ref({});
 const { playSfx } = useAudio();
 
-function submitComment() {
-    const text = commentText.value.trim();
-    if (!text) return;
-    playSfx('send');
-    router.post(
-        props.commentRoute,
-        { content: text },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                commentText.value = '';
-            },
-        },
-    );
+const REACTIONS = [
+    { type: 'like',  emoji: '👍' },
+    { type: 'love',  emoji: '❤️' },
+    { type: 'laugh', emoji: '😂' },
+    { type: 'wow',   emoji: '😮' },
+    { type: 'sad',   emoji: '😢' },
+];
+
+function reactionEmoji(type) {
+    return REACTIONS.find(r => r.type === type)?.emoji ?? '👍';
 }
 
-function deleteComment(commentId) {
-    playSfx('off');
-    router.delete(route('comments.destroy', commentId), {
+function reactComment(id, type) {
+    pickerOpen.value[id] = false;
+    router.post(route('comments.like', id), { type }, {
         preserveScroll: true,
         preserveState: true,
     });
 }
 
-function formatInitial(name) {
-    return (name ?? '?')[0].toUpperCase();
+function startPickerTimer(id) {
+    pickerTimers.value[id] = setTimeout(() => { pickerOpen.value[id] = true; }, 400);
 }
+
+function cancelPickerTimer(id) {
+    clearTimeout(pickerTimers.value[id]);
+    setTimeout(() => { pickerOpen.value[id] = false; }, 180);
+}
+
+function toggleReplyInput(id) {
+    activeReply.value = activeReply.value === id ? null : id;
+}
+
+function submitReply(id, replyRoute) {
+    const text = (replyTexts.value[id] ?? '').trim();
+    if (!text) return;
+    playSfx('send');
+    router.post(replyRoute, { content: text }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            replyTexts.value[id] = '';
+            activeReply.value = null;
+        },
+    });
+}
+
+function submitComment() {
+    const text = commentText.value.trim();
+    if (!text) return;
+    playSfx('send');
+    router.post(props.commentRoute, { content: text }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => { commentText.value = ''; },
+    });
+}
+
+function deleteComment(id) {
+    playSfx('off');
+    router.delete(route('comments.destroy', id), { preserveScroll: true, preserveState: true });
+}
+
+function initial(name) { return (name ?? '?')[0].toUpperCase(); }
 </script>
 
 <template>
-    <div style="margin-top: 12px; border-top: 1px solid rgba(0, 154, 199, 0.06); padding-top: 12px">
-        <div
-            v-for="c in comments"
-            :key="c.id"
-            style="display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-start"
-        >
-            <img
-                v-if="c.author.avatar"
-                :src="c.author.avatar"
-                :style="{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: `1.5px solid ${c.author.avatar_color}`,
-                    flexShrink: 0,
-                }"
-            />
-            <div
-                v-else
-                :style="{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    flexShrink: 0,
-                    background: c.author.avatar_color ?? '#009ac7',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    color: 'white',
-                }"
-            >
-                {{ formatInitial(c.author.name) }}
+    <div style="margin-top: 12px; border-top: 1px solid rgba(0,154,199,0.06); padding-top: 12px">
+
+        <!-- Top-level comments -->
+        <div v-for="c in comments" :key="c.id" style="margin-bottom: 10px">
+
+            <!-- Comment row -->
+            <div style="display:flex; gap:8px; align-items:flex-start">
+                <!-- Avatar -->
+                <img v-if="c.author.avatar" :src="c.author.avatar"
+                    :style="{ width:'28px', height:'28px', borderRadius:'50%', objectFit:'cover',
+                              border:`1.5px solid ${c.author.avatar_color}`, flexShrink:0 }" />
+                <div v-else :style="{ width:'28px', height:'28px', borderRadius:'50%', flexShrink:0,
+                    background: c.author.avatar_color ?? '#009ac7', display:'flex',
+                    alignItems:'center', justifyContent:'center', fontSize:'11px',
+                    fontWeight:'800', color:'white' }">
+                    {{ initial(c.author.name) }}
+                </div>
+
+                <!-- Bubble + meta -->
+                <div style="flex:1; min-width:0">
+                    <div style="background:rgba(240,248,255,0.8); border-radius:12px; padding:8px 12px">
+                        <Link v-if="c.author.username" :href="route('profile.show', c.author.username)"
+                            style="font-size:12px; font-weight:700; color:#3a6478; text-decoration:none">
+                            {{ c.author.name }}
+                        </Link>
+                        <span v-else style="font-size:12px; font-weight:700; color:#3a6478">{{ c.author.name }}</span>
+                        <p style="font-size:13px; color:#2a4a5a; margin:2px 0 0; line-height:1.5; white-space:pre-wrap">
+                            {{ c.content }}
+                        </p>
+                    </div>
+
+                    <!-- Meta: time · like picker · reply · delete -->
+                    <div style="display:flex; gap:10px; align-items:center; margin-top:3px; padding-left:10px; flex-wrap:wrap">
+                        <span style="font-size:11px; color:#b0c0cc">{{ c.created_at }}</span>
+
+                        <!-- Like button with hover picker -->
+                        <div style="position:relative; display:inline-flex; align-items:center">
+                            <!-- Mini picker -->
+                            <div v-if="pickerOpen[c.id]"
+                                style="position:absolute; bottom:calc(100% + 4px); left:0; z-index:50;
+                                       background:var(--card-bg,#fff); border:1px solid rgba(0,154,199,0.18);
+                                       border-radius:20px; padding:4px 8px; display:flex; gap:4px;
+                                       box-shadow:0 4px 16px rgba(0,0,0,0.12); white-space:nowrap"
+                                @mouseenter="clearTimeout(pickerTimers[c.id])"
+                                @mouseleave="cancelPickerTimer(c.id)">
+                                <button v-for="r in REACTIONS" :key="r.type"
+                                    @click="reactComment(c.id, r.type)"
+                                    :title="r.type"
+                                    style="background:none; border:none; cursor:pointer; font-size:16px;
+                                           padding:2px 3px; border-radius:8px; transition:transform 0.12s"
+                                    @mouseenter="$event.target.style.transform='scale(1.35)'"
+                                    @mouseleave="$event.target.style.transform='scale(1)'">
+                                    {{ r.emoji }}
+                                </button>
+                            </div>
+
+                            <button
+                                @click="reactComment(c.id, c.user_reaction ?? 'like')"
+                                @mouseenter="startPickerTimer(c.id)"
+                                @mouseleave="cancelPickerTimer(c.id)"
+                                style="background:none; border:none; cursor:pointer; padding:0;
+                                       font-size:12px; display:flex; align-items:center; gap:3px;
+                                       transition:opacity 0.15s"
+                                :style="c.user_reaction ? { color: accentColor, fontWeight: '700' } : { color: '#b0c0cc' }">
+                                <span style="font-size:14px; line-height:1">
+                                    {{ c.user_reaction ? reactionEmoji(c.user_reaction) : '🤍' }}
+                                </span>
+                                <span v-if="c.likes_count > 0">{{ c.likes_count }}</span>
+                            </button>
+                        </div>
+
+                        <!-- Responder -->
+                        <button v-if="authUser"
+                            @click="toggleReplyInput(c.id)"
+                            style="font-size:11px; font-weight:700; color:#b0c0cc; background:none;
+                                   border:none; cursor:pointer; padding:0; transition:color 0.15s"
+                            :style="activeReply === c.id ? { color: accentColor } : {}"
+                            @mouseenter="$event.target.style.color = accentColor"
+                            @mouseleave="$event.target.style.color = activeReply === c.id ? accentColor : '#b0c0cc'">
+                            Responder
+                        </button>
+
+                        <!-- Apagar -->
+                        <button v-if="c.is_own" @click="deleteComment(c.id)"
+                            style="font-size:11px; color:#c0c8d0; background:none; border:none;
+                                   cursor:pointer; padding:0; transition:color 0.2s"
+                            @mouseenter="$event.target.style.color='#e05555'"
+                            @mouseleave="$event.target.style.color='#c0c8d0'">
+                            Apagar
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <div style="flex: 1; min-width: 0">
-                <div style="background: rgba(240, 248, 255, 0.8); border-radius: 12px; padding: 8px 12px">
-                    <Link
-                        v-if="c.author.username"
-                        :href="route('profile.show', c.author.username)"
-                        style="font-size: 12px; font-weight: 700; color: #3a6478; text-decoration: none"
-                        >{{ c.author.name }}</Link
-                    >
-                    <span v-else style="font-size: 12px; font-weight: 700; color: #3a6478">{{ c.author.name }}</span>
-                    <p
-                        style="
-                            font-size: 13px;
-                            color: #2a4a5a;
-                            margin: 2px 0 0;
-                            line-height: 1.5;
-                            white-space: pre-wrap;
-                        "
-                    >
-                        {{ c.content }}
-                    </p>
+            <!-- Reply input (inline) -->
+            <div v-if="activeReply === c.id && authUser"
+                style="display:flex; gap:6px; align-items:center; margin-top:6px; padding-left:36px">
+                <img v-if="authUser.avatar" :src="authUser.avatar"
+                    :style="{ width:'22px', height:'22px', borderRadius:'50%', objectFit:'cover',
+                              border:`1.5px solid ${authUser.avatar_color ?? '#009ac7'}`, flexShrink:0 }" />
+                <div v-else :style="{ width:'22px', height:'22px', borderRadius:'50%', flexShrink:0,
+                    background: authUser.avatar_color ?? '#009ac7', display:'flex',
+                    alignItems:'center', justifyContent:'center', fontSize:'9px',
+                    fontWeight:'800', color:'white' }">
+                    {{ initial(authUser.name) }}
                 </div>
-                <div style="display: flex; gap: 10px; align-items: center; margin-top: 3px; padding-left: 10px">
-                    <span style="font-size: 11px; color: #b0c0cc">{{ c.created_at }}</span>
-                    <button
-                        v-if="c.is_own"
-                        @click="deleteComment(c.id)"
-                        style="
-                            font-size: 11px;
-                            color: #c0c8d0;
-                            background: none;
-                            border: none;
-                            cursor: pointer;
-                            padding: 0;
-                            transition: color 0.2s;
-                        "
-                        @mouseenter="$event.target.style.color = '#e05555'"
-                        @mouseleave="$event.target.style.color = '#c0c8d0'"
-                    >
-                        Apagar
-                    </button>
+                <input v-model="replyTexts[c.id]"
+                    @keydown.enter.prevent="submitReply(c.id, c.reply_route)"
+                    placeholder="Escreve uma resposta..."
+                    style="flex:1; min-width:0; background:rgba(240,248,255,0.8);
+                           border:1.5px solid rgba(0,154,199,0.15); border-radius:16px;
+                           padding:5px 12px; font-size:12px; color:#3a6478; outline:none;
+                           font-family:inherit; transition:border-color 0.2s"
+                    @focus="$event.target.style.borderColor = accentColor"
+                    @blur="$event.target.style.borderColor = 'rgba(0,154,199,0.15)'" />
+                <button @click="submitReply(c.id, c.reply_route)"
+                    :style="{ padding:'5px 12px', background: accentColor, color:'white',
+                              border:'none', borderRadius:'16px', fontSize:'11px',
+                              fontWeight:'700', cursor:'pointer', flexShrink:0 }">
+                    Enviar
+                </button>
+            </div>
+
+            <!-- Replies -->
+            <div v-if="c.replies && c.replies.length" style="margin-top:6px; padding-left:36px; display:flex; flex-direction:column; gap:6px">
+                <div v-for="r in c.replies" :key="r.id" style="display:flex; gap:6px; align-items:flex-start">
+                    <!-- Small avatar -->
+                    <img v-if="r.author.avatar" :src="r.author.avatar"
+                        :style="{ width:'22px', height:'22px', borderRadius:'50%', objectFit:'cover',
+                                  border:`1.5px solid ${r.author.avatar_color}`, flexShrink:0 }" />
+                    <div v-else :style="{ width:'22px', height:'22px', borderRadius:'50%', flexShrink:0,
+                        background: r.author.avatar_color ?? '#009ac7', display:'flex',
+                        alignItems:'center', justifyContent:'center', fontSize:'9px',
+                        fontWeight:'800', color:'white' }">
+                        {{ initial(r.author.name) }}
+                    </div>
+
+                    <!-- Reply bubble + meta -->
+                    <div style="flex:1; min-width:0">
+                        <div style="background:rgba(240,248,255,0.6); border-radius:10px; padding:6px 10px">
+                            <Link v-if="r.author.username" :href="route('profile.show', r.author.username)"
+                                style="font-size:11px; font-weight:700; color:#3a6478; text-decoration:none">
+                                {{ r.author.name }}
+                            </Link>
+                            <span v-else style="font-size:11px; font-weight:700; color:#3a6478">{{ r.author.name }}</span>
+                            <p style="font-size:12px; color:#2a4a5a; margin:2px 0 0; line-height:1.5; white-space:pre-wrap">
+                                {{ r.content }}
+                            </p>
+                        </div>
+
+                        <!-- Reply meta -->
+                        <div style="display:flex; gap:8px; align-items:center; margin-top:2px; padding-left:8px; flex-wrap:wrap">
+                            <span style="font-size:10px; color:#b0c0cc">{{ r.created_at }}</span>
+
+                            <!-- Like on reply -->
+                            <div style="position:relative; display:inline-flex; align-items:center">
+                                <div v-if="pickerOpen[r.id]"
+                                    style="position:absolute; bottom:calc(100% + 4px); left:0; z-index:50;
+                                           background:var(--card-bg,#fff); border:1px solid rgba(0,154,199,0.18);
+                                           border-radius:20px; padding:4px 8px; display:flex; gap:4px;
+                                           box-shadow:0 4px 16px rgba(0,0,0,0.12); white-space:nowrap"
+                                    @mouseenter="clearTimeout(pickerTimers[r.id])"
+                                    @mouseleave="cancelPickerTimer(r.id)">
+                                    <button v-for="rx in REACTIONS" :key="rx.type"
+                                        @click="reactComment(r.id, rx.type)"
+                                        style="background:none; border:none; cursor:pointer; font-size:14px;
+                                               padding:2px 3px; border-radius:8px; transition:transform 0.12s"
+                                        @mouseenter="$event.target.style.transform='scale(1.35)'"
+                                        @mouseleave="$event.target.style.transform='scale(1)'">
+                                        {{ rx.emoji }}
+                                    </button>
+                                </div>
+
+                                <button
+                                    @click="reactComment(r.id, r.user_reaction ?? 'like')"
+                                    @mouseenter="startPickerTimer(r.id)"
+                                    @mouseleave="cancelPickerTimer(r.id)"
+                                    style="background:none; border:none; cursor:pointer; padding:0;
+                                           font-size:11px; display:flex; align-items:center; gap:2px"
+                                    :style="r.user_reaction ? { color: accentColor, fontWeight:'700' } : { color:'#b0c0cc' }">
+                                    <span style="font-size:12px; line-height:1">
+                                        {{ r.user_reaction ? reactionEmoji(r.user_reaction) : '🤍' }}
+                                    </span>
+                                    <span v-if="r.likes_count > 0">{{ r.likes_count }}</span>
+                                </button>
+                            </div>
+
+                            <button v-if="r.is_own" @click="deleteComment(r.id)"
+                                style="font-size:10px; color:#c0c8d0; background:none; border:none;
+                                       cursor:pointer; padding:0; transition:color 0.2s"
+                                @mouseenter="$event.target.style.color='#e05555'"
+                                @mouseleave="$event.target.style.color='#c0c8d0'">
+                                Apagar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
+
         </div>
 
-        <p
-            v-if="comments.length === 0"
-            style="font-size: 12px; color: #b0c0cc; text-align: center; padding: 2px 0 10px; font-style: italic"
-        >
+        <!-- Empty state -->
+        <p v-if="comments.length === 0"
+            style="font-size:12px; color:#b0c0cc; text-align:center; padding:2px 0 10px; font-style:italic">
             Sê o primeiro a comentar!
         </p>
 
-        <div v-if="authUser" style="display: flex; gap: 8px; align-items: center; margin-top: 4px">
-            <img
-                v-if="authUser.avatar"
-                :src="authUser.avatar"
-                :style="{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: `1.5px solid ${authUser.avatar_color ?? '#009ac7'}`,
-                    flexShrink: 0,
-                }"
-            />
-            <div
-                v-else
-                :style="{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    flexShrink: 0,
-                    background: authUser.avatar_color ?? '#009ac7',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    color: 'white',
-                }"
-            >
-                {{ formatInitial(authUser.name) }}
+        <!-- New comment input -->
+        <div v-if="authUser" style="display:flex; gap:8px; align-items:center; margin-top:4px">
+            <img v-if="authUser.avatar" :src="authUser.avatar"
+                :style="{ width:'28px', height:'28px', borderRadius:'50%', objectFit:'cover',
+                          border:`1.5px solid ${authUser.avatar_color ?? '#009ac7'}`, flexShrink:0 }" />
+            <div v-else :style="{ width:'28px', height:'28px', borderRadius:'50%', flexShrink:0,
+                background: authUser.avatar_color ?? '#009ac7', display:'flex',
+                alignItems:'center', justifyContent:'center', fontSize:'11px',
+                fontWeight:'800', color:'white' }">
+                {{ initial(authUser.name) }}
             </div>
-
-            <div style="flex: 1; display: flex; gap: 6px">
-                <input
-                    v-model="commentText"
+            <div style="flex:1; display:flex; gap:6px">
+                <input v-model="commentText"
                     @keydown.enter.prevent="submitComment"
                     placeholder="Escreve um comentário..."
-                    style="
-                        flex: 1;
-                        min-width: 0;
-                        background: rgba(240, 248, 255, 0.8);
-                        border: 1.5px solid rgba(0, 154, 199, 0.15);
-                        border-radius: 20px;
-                        padding: 7px 14px;
-                        font-size: 13px;
-                        color: #3a6478;
-                        outline: none;
-                        font-family: inherit;
-                        transition: border-color 0.2s;
-                    "
+                    style="flex:1; min-width:0; background:rgba(240,248,255,0.8);
+                           border:1.5px solid rgba(0,154,199,0.15); border-radius:20px;
+                           padding:7px 14px; font-size:13px; color:#3a6478; outline:none;
+                           font-family:inherit; transition:border-color 0.2s"
                     @focus="$event.target.style.borderColor = accentColor"
-                    @blur="$event.target.style.borderColor = 'rgba(0,154,199,0.15)'"
-                />
-                <button
-                    @click="submitComment"
-                    :style="{
-                        padding: '7px 14px',
-                        background: accentColor,
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                        transition: 'opacity .2s',
-                    }"
-                    @mouseenter="$event.target.style.opacity = '.8'"
-                    @mouseleave="$event.target.style.opacity = '1'"
-                >
+                    @blur="$event.target.style.borderColor = 'rgba(0,154,199,0.15)'" />
+                <button @click="submitComment"
+                    :style="{ padding:'7px 14px', background: accentColor, color:'white',
+                              border:'none', borderRadius:'20px', fontSize:'12px',
+                              fontWeight:'700', cursor:'pointer', whiteSpace:'nowrap',
+                              flexShrink:0, transition:'opacity .2s' }"
+                    @mouseenter="$event.target.style.opacity='.8'"
+                    @mouseleave="$event.target.style.opacity='1'">
                     Enviar
                 </button>
             </div>
         </div>
+
     </div>
 </template>
