@@ -55,6 +55,7 @@ class FriendController extends Controller
         $received = Friend::where('friend_id', $userId)
             ->where('status', 'pending')
             ->with('user')
+            ->limit(50)
             ->get()
             ->map(fn ($f) => [
                 'friendId' => $f->id,
@@ -68,6 +69,7 @@ class FriendController extends Controller
         $sent = Friend::where('user_id', $userId)
             ->where('status', 'pending')
             ->with('friend')
+            ->limit(50)
             ->get()
             ->map(fn ($f) => [
                 'friendId' => $f->id,

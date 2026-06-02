@@ -62,6 +62,11 @@ function deleteNotification(id) {
 }
 
 function deleteAll() {
+    if (!confirmDeleteAll.value) {
+        confirmDeleteAll.value = true;
+        return;
+    }
+    confirmDeleteAll.value = false;
     router.delete(route('notifications.destroy-all'), {}, { preserveScroll: true });
 }
 
@@ -80,6 +85,8 @@ function loadMore() {
         }
     );
 }
+
+const confirmDeleteAll = ref(false);
 
 const handleNotificationCreated = (e) => { localNotifications.value.unshift(e.notification); };
 
@@ -155,25 +162,61 @@ onUnmounted(() => {
                     >
                         Marcar todas como lidas
                     </button>
-                    <button
-                        v-if="localNotifications.length > 0"
-                        @click="deleteAll"
-                        style="
-                            font-size: 12px;
-                            font-weight: 700;
-                            color: #e05353;
-                            background: none;
-                            border: 1.5px solid #e0535333;
-                            border-radius: 99px;
-                            padding: 6px 16px;
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        "
-                        @mouseenter="$event.currentTarget.style.background = '#e053530c'"
-                        @mouseleave="$event.currentTarget.style.background = 'transparent'"
-                    >
-                        Apagar todas
-                    </button>
+                    <template v-if="localNotifications.length > 0">
+                        <template v-if="confirmDeleteAll">
+                            <button
+                                @click="deleteAll"
+                                style="
+                                    font-size: 12px;
+                                    font-weight: 700;
+                                    color: white;
+                                    background: #e05353;
+                                    border: none;
+                                    border-radius: 99px;
+                                    padding: 6px 16px;
+                                    cursor: pointer;
+                                    transition: all 0.2s;
+                                "
+                            >
+                                Sim, apagar
+                            </button>
+                            <button
+                                @click="confirmDeleteAll = false"
+                                style="
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    color: #8ba0b0;
+                                    background: none;
+                                    border: 1.5px solid #8ba0b033;
+                                    border-radius: 99px;
+                                    padding: 6px 14px;
+                                    cursor: pointer;
+                                    transition: all 0.2s;
+                                "
+                            >
+                                Cancelar
+                            </button>
+                        </template>
+                        <button
+                            v-else
+                            @click="deleteAll"
+                            style="
+                                font-size: 12px;
+                                font-weight: 700;
+                                color: #e05353;
+                                background: none;
+                                border: 1.5px solid #e0535333;
+                                border-radius: 99px;
+                                padding: 6px 16px;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            "
+                            @mouseenter="$event.currentTarget.style.background = '#e053530c'"
+                            @mouseleave="$event.currentTarget.style.background = 'transparent'"
+                        >
+                            Apagar todas
+                        </button>
+                    </template>
                 </div>
             </div>
 

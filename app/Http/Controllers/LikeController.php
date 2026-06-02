@@ -90,6 +90,7 @@ class LikeController extends Controller
         $likes = $model->likes()
             ->with('user:id,name,username,avatar,avatar_color')
             ->latest()
+            ->limit(100)
             ->get();
 
         return response()->json([
