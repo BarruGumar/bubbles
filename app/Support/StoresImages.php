@@ -23,8 +23,20 @@ trait StoresImages
     protected function storeImageWithMeta(UploadedFile $file, string $folder, array $cloudinaryOptions = []): array
     {
         if ($this->cloudinaryIsConfigured()) {
+            $isGif = $file->getMimeType() === 'image/gif';
+
+            // GIFs: never apply incoming transformations — Cloudinary processes
+            // only the first frame when quality/crop transforms run before storage,
+            // stripping animation. Store the original and let clImg resize at delivery.
+            if ($isGif) {
+                unset($cloudinaryOptions['transformation']);
+                $baseOptions = ['folder' => $folder];
+            } else {
+                $baseOptions = ['folder' => $folder, 'quality' => 'auto:good'];
+            }
+
             $response = Cloudinary::uploadApi()->upload($file->getRealPath(), array_merge(
-                ['folder' => $folder, 'quality' => 'auto:good'],
+                $baseOptions,
                 $cloudinaryOptions
             ));
 
