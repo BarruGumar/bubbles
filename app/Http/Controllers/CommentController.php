@@ -7,6 +7,7 @@ use App\Events\NotificationCreated;
 use App\Models\Comment;
 use App\Models\CommunityPost;
 use App\Models\Post;
+use App\Notifications\CommentReplied;
 use App\Notifications\PostCommented;
 use App\Services\AuditLogger;
 use App\Support\FormatsPostResponse;
@@ -118,12 +119,36 @@ class CommentController extends Controller
             'parent_comment_id' => $parent->id,
         ]);
 
+        $parentAuthor = $parent->user;
+        if ($parentAuthor && $parentAuthor->id !== auth()->id()) {
+            $isCommunityPost = $parent->commentable instanceof CommunityPost;
+            $notif = new CommentReplied(
+                auth()->user(),
+                $parent->commentable_id,
+                $request->input('content'),
+                $isCommunityPost ? 'community_post' : 'post',
+                $isCommunityPost ? $parent->commentable->bubble_id : null,
+            );
+            $parentAuthor->notify($notif);
+            $notifData = $notif->toArray($parentAuthor);
+            broadcast(new BadgeCountUpdated($parentAuthor->id, 'notifications', 1));
+            broadcast(new NotificationCreated($parentAuthor->id, [
+                'id'         => (string) Str::uuid(),
+                'type'       => $notifData['type'],
+                'message'    => $notifData['message'],
+                'data'       => $notifData,
+                'read'       => false,
+                'created_at' => 'agora',
+                'url'        => $notifData['url'] ?? null,
+            ]));
+        }
+
         return $this->postResponse();
     }
 
     public function destroy(Comment $comment): RedirectResponse|JsonResponse
     {
-        abort_unless($comment->user_id === auth()->id(), 403);
+        abort_unless($comment->user_id === auth()->id() || auth()->user()->isModerator(), 403);
 
         AuditLogger::log('comment.deleted', 'content', $comment);
 

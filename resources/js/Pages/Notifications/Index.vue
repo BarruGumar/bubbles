@@ -43,6 +43,7 @@ function typeIcon(type) {
             friend_request_accepted: '✅',
             post_liked: '❤️',
             post_commented: '💬',
+            comment_replied: '↩️',
             message_received: '✉️',
         }[type] ?? '🔔'
     );
