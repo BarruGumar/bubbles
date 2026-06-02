@@ -272,6 +272,9 @@ function removeBanner() {
                     >
                 </Transition>
             </div>
+            <p v-if="bannerForm.errors.banner" style="font-size: 11px; color: #e05555; margin: 6px 0 0">
+                {{ bannerForm.errors.banner }}
+            </p>
         </div>
 
         <!-- ── AVATAR ── -->
@@ -406,6 +409,9 @@ function removeBanner() {
                         >
                     </Transition>
                 </div>
+                <p v-if="avatarForm.errors.avatar" style="font-size: 11px; color: #e05555; margin: 4px 0 0">
+                    {{ avatarForm.errors.avatar }}
+                </p>
 
                 <!-- Color swatches + custom picker -->
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">

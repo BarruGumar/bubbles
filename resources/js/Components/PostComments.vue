@@ -13,6 +13,7 @@ const props = defineProps({
 const commentText = ref('');
 const replyTexts  = ref({});
 const activeReply = ref(null);
+const deletingId  = ref(null);
 const pickerOpen      = ref({});
 const pickerTimers    = ref({});
 const pickerHideTimers = ref({});
@@ -82,8 +83,14 @@ function submitComment() {
 }
 
 function deleteComment(id) {
+    if (deletingId.value) return;
+    deletingId.value = id;
     playSfx('off');
-    router.delete(route('comments.destroy', id), { preserveScroll: true, preserveState: true });
+    router.delete(route('comments.destroy', id), {
+        preserveScroll: true,
+        preserveState: true,
+        onFinish: () => { deletingId.value = null; },
+    });
 }
 
 function initial(name) { return (name ?? '?')[0].toUpperCase(); }
@@ -174,11 +181,13 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
 
                         <!-- Apagar -->
                         <button v-if="c.is_own" @click="deleteComment(c.id)"
-                            style="font-size:11px; color:#c0c8d0; background:none; border:none;
-                                   cursor:pointer; padding:0; transition:color 0.2s"
-                            @mouseenter="$event.target.style.color='#e05555'"
-                            @mouseleave="$event.target.style.color='#c0c8d0'">
-                            Apagar
+                            :disabled="deletingId === c.id"
+                            style="font-size:11px; background:none; border:none;
+                                   cursor:pointer; padding:0; transition:color 0.2s, opacity 0.2s"
+                            :style="{ color: deletingId === c.id ? '#e05555' : '#c0c8d0', opacity: deletingId === c.id ? 0.5 : 1 }"
+                            @mouseenter="if (deletingId !== c.id) $event.target.style.color='#e05555'"
+                            @mouseleave="if (deletingId !== c.id) $event.target.style.color='#c0c8d0'">
+                            {{ deletingId === c.id ? '…' : 'Apagar' }}
                         </button>
                     </div>
                 </div>
@@ -278,11 +287,13 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                             </div>
 
                             <button v-if="r.is_own" @click="deleteComment(r.id)"
-                                style="font-size:10px; color:#c0c8d0; background:none; border:none;
-                                       cursor:pointer; padding:0; transition:color 0.2s"
-                                @mouseenter="$event.target.style.color='#e05555'"
-                                @mouseleave="$event.target.style.color='#c0c8d0'">
-                                Apagar
+                                :disabled="deletingId === r.id"
+                                style="font-size:10px; background:none; border:none;
+                                       cursor:pointer; padding:0; transition:color 0.2s, opacity 0.2s"
+                                :style="{ color: deletingId === r.id ? '#e05555' : '#c0c8d0', opacity: deletingId === r.id ? 0.5 : 1 }"
+                                @mouseenter="if (deletingId !== r.id) $event.target.style.color='#e05555'"
+                                @mouseleave="if (deletingId !== r.id) $event.target.style.color='#c0c8d0'">
+                                {{ deletingId === r.id ? '…' : 'Apagar' }}
                             </button>
                         </div>
                     </div>
