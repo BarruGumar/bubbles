@@ -79,6 +79,7 @@ class ConversationController extends Controller
             'messages'           => $mapped->values(),
             'hasMoreMessages'    => $hasMore,
             'friends'            => [],
+            'myBg'               => $this->getMyBg($conversation),
         ]);
     }
 
@@ -138,11 +139,11 @@ class ConversationController extends Controller
 
         $imageUrl = null;
         if ($request->hasFile('image')) {
-            ['url' => $imageUrl] = $this->storeImageWithMeta(
-                $request->file('image'),
-                'messages',
-                ImageUploadPresets::message()
-            );
+            $file   = $request->file('image');
+            $preset = $file->getMimeType() === 'image/gif'
+                ? ImageUploadPresets::gif()
+                : ImageUploadPresets::message();
+            ['url' => $imageUrl] = $this->storeImageWithMeta($file, 'messages', $preset);
         }
 
         $replyToId = $request->input('reply_to_id');
@@ -402,6 +403,49 @@ class ConversationController extends Controller
             'user_role'          => $userRole,
             'participants_count' => $participants->count(),
             'participants'       => $participants,
+        ];
+    }
+
+    public function updateBackground(Request $request, Conversation $conversation): JsonResponse
+    {
+        abort_unless(
+            $conversation->participants()->where('user_id', auth()->id())->exists(),
+            403
+        );
+
+        if ($request->hasFile('image')) {
+            $request->validate(['image' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096']]);
+            ['url' => $bgImageUrl] = $this->storeImageWithMeta(
+                $request->file('image'),
+                'chat_backgrounds',
+                ImageUploadPresets::conversationBackground()
+            );
+            $conversation->participants()->updateExistingPivot(auth()->id(), [
+                'bg_preset'    => null,
+                'bg_image_url' => $bgImageUrl,
+            ]);
+            return response()->json(['bg_preset' => null, 'bg_image_url' => $bgImageUrl]);
+        }
+
+        $data = $request->validate(['preset' => ['nullable', 'string', 'max:30']]);
+        $conversation->participants()->updateExistingPivot(auth()->id(), [
+            'bg_preset'    => $data['preset'] ?? null,
+            'bg_image_url' => null,
+        ]);
+        return response()->json(['bg_preset' => $data['preset'] ?? null, 'bg_image_url' => null]);
+    }
+
+    private function getMyBg(Conversation $conversation): array
+    {
+        $pivot = DB::table('conversation_user')
+            ->where('conversation_id', $conversation->id)
+            ->where('user_id', auth()->id())
+            ->select('bg_preset', 'bg_image_url')
+            ->first();
+
+        return [
+            'preset'    => $pivot?->bg_preset,
+            'image_url' => $pivot?->bg_image_url,
         ];
     }
 

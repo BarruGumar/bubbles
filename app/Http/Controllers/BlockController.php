@@ -6,7 +6,6 @@ use App\Models\Friend;
 use App\Models\User;
 use App\Models\UserBlock;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Cache;
 
 class BlockController extends Controller
 {
@@ -27,8 +26,7 @@ class BlockController extends Controller
                 $q->where('user_id', $target->id)->where('friend_id', $user->id);
             })->delete();
 
-            Cache::forget("user:{$user->id}:friend_ids");
-            Cache::forget("user:{$target->id}:friend_ids");
+            Friend::clearFriendCaches($user->id, $target->id);
         }
 
         return back();

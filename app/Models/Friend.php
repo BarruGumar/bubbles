@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 
 class Friend extends Model
 {
@@ -20,6 +21,13 @@ class Friend extends Model
     public function friend(): BelongsTo
     {
         return $this->belongsTo(User::class, 'friend_id');
+    }
+
+    public static function clearFriendCaches(int ...$userIds): void
+    {
+        foreach ($userIds as $id) {
+            Cache::forget("user:{$id}:friend_ids");
+        }
     }
 
     public static function friendsOf(int $userId): \Illuminate\Support\Collection

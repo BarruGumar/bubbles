@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserPunishment;
+use Illuminate\Support\Facades\Cache;
 
 class PunishmentService
 {
@@ -30,6 +31,8 @@ class PunishmentService
         } elseif ($data['type'] === 'suspension') {
             $target->update(['role' => 'suspended']);
         }
+
+        Cache::forget("user:{$target->id}:new_punishment");
 
         AuditLogger::log(
             'user.punish',
@@ -59,6 +62,8 @@ class PunishmentService
         if (in_array($punishment->type, ['ban', 'suspension'])) {
             $punishment->user->update(['role' => 'user']);
         }
+
+        Cache::forget("user:{$punishment->user_id}:new_punishment");
 
         AuditLogger::log(
             'user.punish.revoke',

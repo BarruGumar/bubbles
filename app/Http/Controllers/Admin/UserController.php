@@ -23,6 +23,9 @@ class UserController extends Controller
         $users = User::when($like, fn ($query) => $query->where('name', 'like', $like)->orWhere('username', 'like', $like))
             ->withCount([
                 'punishments as active_punishments_count' => fn ($q) => $q->active(),
+                'punishments as ban_count'                => fn ($q) => $q->active()->ofType('ban'),
+                'punishments as suspension_count'         => fn ($q) => $q->active()->ofType('suspension'),
+                'punishments as mute_count'               => fn ($q) => $q->active()->ofType('mute'),
                 'posts as posts_count'                    => fn ($q) => $q->withTrashed(),
             ])
             ->orderBy('created_at', 'desc')
@@ -37,9 +40,9 @@ class UserController extends Controller
                 'avatar_color'             => $u->avatar_color ?? '#009ac7',
                 'posts_count'              => $u->posts_count,
                 'active_punishments_count' => $u->active_punishments_count,
-                'is_banned'                => $u->isBanned(),
-                'is_suspended'             => $u->isSuspended(),
-                'is_muted'                 => $u->isGloballyMuted(),
+                'is_banned'                => $u->role === 'banned'    || $u->ban_count > 0,
+                'is_suspended'             => $u->role === 'suspended' || $u->suspension_count > 0,
+                'is_muted'                 => $u->mute_count > 0,
                 'created_at'               => $u->created_at->format('d/m/Y'),
                 'can_manage'               => $actor->canManageUser($u),
             ]);

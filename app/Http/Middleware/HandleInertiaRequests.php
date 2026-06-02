@@ -32,22 +32,24 @@ class HandleInertiaRequests extends Middleware
                 if (! $user) {
                     return null;
                 }
-                // Show unnotified punishments even if expired — user deserves to know it happened.
-                // Exclude only revoked ones (admin undid it, no need to alarm the user).
-                $p = $user->punishments()
-                    ->whereNull('notified_at')
-                    ->whereNull('revoked_at')
-                    ->latest()
-                    ->first();
-                if (! $p) {
-                    return null;
-                }
-                return [
-                    'id'      => $p->id,
-                    'type'    => $p->type,
-                    'reason'  => $p->reason,
-                    'ends_at' => $p->ends_at?->toIso8601String(),
-                ];
+                return Cache::remember("user:{$user->id}:new_punishment", 30, function () use ($user) {
+                    // Show unnotified punishments even if expired — user deserves to know it happened.
+                    // Exclude only revoked ones (admin undid it, no need to alarm the user).
+                    $p = $user->punishments()
+                        ->whereNull('notified_at')
+                        ->whereNull('revoked_at')
+                        ->latest()
+                        ->first();
+                    if (! $p) {
+                        return null;
+                    }
+                    return [
+                        'id'      => $p->id,
+                        'type'    => $p->type,
+                        'reason'  => $p->reason,
+                        'ends_at' => $p->ends_at?->toIso8601String(),
+                    ];
+                });
             },
             'active_announcements' => function () use ($user) {
                 if (! $user) {

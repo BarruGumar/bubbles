@@ -16,6 +16,7 @@ const props = defineProps({
     messages: { type: Array, default: () => [] },
     hasMoreMessages: { type: Boolean, default: false },
     friends: { type: Array, default: () => [] },
+    myBg: { type: Object, default: () => ({ preset: null, image_url: null }) },
 });
 
 const page = usePage();
@@ -327,17 +328,30 @@ function bgImgKey() {
     return props.activeConversation ? `chat_bg_img_${props.activeConversation.id}` : null;
 }
 function loadChatBg() {
+    if (props.myBg?.image_url) {
+        bgImageUrl.value = props.myBg.image_url;
+        chatBgId.value = 'default';
+        return;
+    }
+    if (props.myBg?.preset) {
+        chatBgId.value = props.myBg.preset;
+        bgImageUrl.value = null;
+        return;
+    }
+    // Fallback: localStorage (retrocompatibilidade)
     const key = bgKey();
     chatBgId.value = key ? (localStorage.getItem(key) ?? 'default') : 'default';
     const imgKey = bgImgKey();
     bgImageUrl.value = imgKey ? (localStorage.getItem(imgKey) ?? null) : null;
 }
-function setChatBg(id) {
+async function setChatBg(id) {
     chatBgId.value = id;
-    const key = bgKey();
-    if (key) localStorage.setItem(key, id);
-    clearBgImage();
+    bgImageUrl.value = null;
     bgPickerOpen.value = false;
+    if (!props.activeConversation) return;
+    try {
+        await axios.post(route('conversations.background', props.activeConversation.id), { preset: id });
+    } catch (_) {}
 }
 function clearBgImage() {
     bgImageUrl.value = null;
@@ -366,15 +380,19 @@ async function onBgImageChange(e) {
     const file = e.target.files[0];
     if (!file) return;
     e.target.value = '';
-    const dataUrl = await compressBgImage(file);
-    if (!dataUrl) return;
-    bgImageUrl.value = dataUrl;
-    const imgKey = bgImgKey();
-    if (imgKey) {
-        try { localStorage.setItem(imgKey, dataUrl); }
-        catch (_) { /* quota esgotada mesmo após compressão — aplicado apenas nesta sessão */ }
-    }
+    const localUrl = URL.createObjectURL(file);
+    bgImageUrl.value = localUrl;
     bgPickerOpen.value = false;
+    if (!props.activeConversation) return;
+    const fd = new FormData();
+    fd.append('image', file);
+    try {
+        const res = await axios.post(route('conversations.background', props.activeConversation.id), fd);
+        URL.revokeObjectURL(localUrl);
+        bgImageUrl.value = res.data.bg_image_url;
+    } catch (_) {
+        // Preview local mantém-se se o upload falhar
+    }
 }
 
 const activeBg = computed(() => BG_PRESETS.find(p => p.id === chatBgId.value) ?? BG_PRESETS[0]);
@@ -671,8 +689,10 @@ async function setImageFile(file) {
     // Show preview immediately with original so there's no visible delay
     imagePreview.value = URL.createObjectURL(file);
     msgImage.value = file;
-    // Compress in background; preview stays unchanged, only the sent file shrinks
-    msgImage.value = await compressImage(file);
+    // GIFs: skip canvas compression — it captures only the first frame
+    if (file.type !== 'image/gif') {
+        msgImage.value = await compressImage(file);
+    }
 }
 function removeImage() {
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);

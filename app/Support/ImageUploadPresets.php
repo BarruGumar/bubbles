@@ -30,6 +30,31 @@ class ImageUploadPresets
         ];
     }
 
+    public static function gif(): array
+    {
+        return [
+            'transformation' => [
+                'width'   => 600,
+                'height'  => 600,
+                'crop'    => 'limit',
+                'quality' => 'auto:good',
+            ],
+        ];
+    }
+
+    public static function conversationBackground(): array
+    {
+        return [
+            'transformation' => [
+                'width'        => 1920,
+                'height'       => 1080,
+                'crop'         => 'limit',
+                'fetch_format' => 'auto',
+                'quality'      => 'auto:good',
+            ],
+        ];
+    }
+
     public static function avatar(int $userId): array
     {
         return [

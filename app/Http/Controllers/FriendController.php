@@ -4,14 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Events\BadgeCountUpdated;
 use App\Events\FriendshipUpdated;
-use App\Events\NotificationCreated;
 use App\Models\Friend;
 use App\Models\User;
 use App\Notifications\FriendRequestAccepted;
 use App\Notifications\FriendRequestReceived;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -107,21 +106,9 @@ class FriendController extends Controller
                 'friend_id' => $target->id,
                 'status'    => 'pending',
             ]);
-            $notif = new FriendRequestReceived(auth()->user());
-            $target->notify($notif);
-            $notifData = $notif->toArray($target);
 
             broadcast(new BadgeCountUpdated($target->id, 'friends', 1));
-            broadcast(new BadgeCountUpdated($target->id, 'notifications', 1));
-            broadcast(new NotificationCreated($target->id, [
-                'id'         => (string) Str::uuid(),
-                'type'       => $notifData['type'],
-                'message'    => $notifData['message'],
-                'data'       => $notifData,
-                'read'       => false,
-                'created_at' => 'agora',
-                'url'        => $notifData['url'] ?? null,
-            ]));
+            NotificationService::send($target, new FriendRequestReceived(auth()->user()));
             broadcast(new FriendshipUpdated($target->id, 'request_received', [
                 'friendId'    => $friendRecord->id,
                 'id'          => auth()->id(),
@@ -142,24 +129,10 @@ class FriendController extends Controller
 
         $friend->update(['status' => 'accepted']);
 
-        Cache::forget("user:{$friend->user_id}:friend_ids");
-        Cache::forget('user:' . auth()->id() . ':friend_ids');
+        Friend::clearFriendCaches($friend->user_id, $friend->friend_id);
         Cache::forget("user:{$friend->friend_id}:badge:friends");
 
-        $notif = new FriendRequestAccepted(auth()->user());
-        $friend->user->notify($notif);
-        $notifData = $notif->toArray($friend->user);
-
-        broadcast(new BadgeCountUpdated($friend->user->id, 'notifications', 1));
-        broadcast(new NotificationCreated($friend->user->id, [
-            'id'         => (string) Str::uuid(),
-            'type'       => $notifData['type'],
-            'message'    => $notifData['message'],
-            'data'       => $notifData,
-            'read'       => false,
-            'created_at' => 'agora',
-            'url'        => $notifData['url'] ?? null,
-        ]));
+        NotificationService::send($friend->user, new FriendRequestAccepted(auth()->user()));
         broadcast(new FriendshipUpdated($friend->user->id, 'request_accepted', [
             'friendId'    => $friend->id,
             'id'          => auth()->id(),
@@ -179,8 +152,7 @@ class FriendController extends Controller
             403
         );
 
-        Cache::forget("user:{$friend->user_id}:friend_ids");
-        Cache::forget("user:{$friend->friend_id}:friend_ids");
+        Friend::clearFriendCaches($friend->user_id, $friend->friend_id);
         Cache::forget("user:{$friend->friend_id}:badge:friends");
 
         $friend->delete();
