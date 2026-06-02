@@ -11,5 +11,3 @@ cmds = [
     "npm run build"
 ]
 
-[start]
-cmd = "php artisan migrate --force && php artisan storage:link && php artisan optimize && SERVER_NAME=http://:${PORT:-8000} php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"
