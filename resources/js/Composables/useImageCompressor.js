@@ -8,11 +8,14 @@
  *
  * Typical result: 4 MB PNG screenshot → 250–500 KB JPEG (80–95 % reduction)
  */
-export async function compressImage(file, { maxWidth = 1200, maxHeight = 1200, quality = 0.82 } = {}) {
+const COMPRESS_THRESHOLD = 1.5 * 1024 * 1024; // 1.5 MB
+
+export async function compressImage(file, { maxWidth = 1200, maxHeight = 1200, quality = 0.92 } = {}) {
     if (
         !file.type.startsWith('image/') ||
         file.type === 'image/gif' ||
-        file.type === 'image/svg+xml'
+        file.type === 'image/svg+xml' ||
+        file.size <= COMPRESS_THRESHOLD
     ) {
         return file;
     }

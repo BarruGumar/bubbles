@@ -8,11 +8,10 @@ class ImageUploadPresets
     {
         return [
             'transformation' => [
-                'width'        => 1280,
-                'height'       => 960,
-                'crop'         => 'limit',
-                'fetch_format' => 'auto',
-                'quality'      => 'auto:good',
+                'width'   => 1280,
+                'height'  => 960,
+                'crop'    => 'limit',
+                'quality' => 'auto:good',
             ],
         ];
     }
@@ -21,11 +20,10 @@ class ImageUploadPresets
     {
         return [
             'transformation' => [
-                'width'        => 1280,
-                'height'       => 960,
-                'crop'         => 'limit',
-                'fetch_format' => 'auto',
-                'quality'      => 'auto:good',
+                'width'   => 1280,
+                'height'  => 960,
+                'crop'    => 'limit',
+                'quality' => 'auto:good',
             ],
         ];
     }
@@ -46,11 +44,10 @@ class ImageUploadPresets
     {
         return [
             'transformation' => [
-                'width'        => 1920,
-                'height'       => 1080,
-                'crop'         => 'limit',
-                'fetch_format' => 'auto',
-                'quality'      => 'auto:good',
+                'width'   => 1920,
+                'height'  => 1080,
+                'crop'    => 'limit',
+                'quality' => 'auto:good',
             ],
         ];
     }
@@ -61,12 +58,11 @@ class ImageUploadPresets
             'public_id'      => 'user_' . $userId,
             'overwrite'      => true,
             'transformation' => [
-                'width'        => 300,
-                'height'       => 300,
-                'crop'         => 'fill',
-                'gravity'      => 'face',
-                'fetch_format' => 'auto',
-                'quality'      => 'auto:good',
+                'width'   => 300,
+                'height'  => 300,
+                'crop'    => 'fill',
+                'gravity' => 'face',
+                'quality' => 'auto:good',
             ],
         ];
     }
@@ -77,11 +73,10 @@ class ImageUploadPresets
             'public_id'      => 'banner_' . $userId,
             'overwrite'      => true,
             'transformation' => [
-                'width'        => 1200,
-                'height'       => 400,
-                'crop'         => 'fill',
-                'fetch_format' => 'auto',
-                'quality'      => 'auto:good',
+                'width'   => 1200,
+                'height'  => 400,
+                'crop'    => 'fill',
+                'quality' => 'auto:good',
             ],
         ];
     }
@@ -92,11 +87,10 @@ class ImageUploadPresets
             'public_id'      => 'community_img_' . $communityId,
             'overwrite'      => true,
             'transformation' => [
-                'width'        => 300,
-                'height'       => 300,
-                'crop'         => 'fill',
-                'fetch_format' => 'auto',
-                'quality'      => 'auto:good',
+                'width'   => 300,
+                'height'  => 300,
+                'crop'    => 'fill',
+                'quality' => 'auto:good',
             ],
         ];
     }
@@ -107,11 +101,10 @@ class ImageUploadPresets
             'public_id'      => 'community_banner_' . $communityId,
             'overwrite'      => true,
             'transformation' => [
-                'width'        => 1400,
-                'height'       => 500,
-                'crop'         => 'fill',
-                'fetch_format' => 'auto',
-                'quality'      => 'auto:good',
+                'width'   => 1400,
+                'height'  => 500,
+                'crop'    => 'fill',
+                'quality' => 'auto:good',
             ],
         ];
     }

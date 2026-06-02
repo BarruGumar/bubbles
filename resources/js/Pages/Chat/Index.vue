@@ -47,6 +47,11 @@ const loadingOlder = ref(false);
 const sendState = ref('idle');
 let sentTimer = null;
 
+// ── Background image pre-upload ───────────────────────────────
+// Starts uploading to Cloudinary as soon as the user picks an image,
+// so by the time they hit send the URL is already ready.
+let pendingUpload = null; // { promise: Promise<{url}|null>, controller: AbortController }
+
 // ── Read receipts ─────────────────────────────────────────────
 const otherLastReadAt = ref(props.activeConversation?.other_last_read_at ?? null);
 
@@ -685,16 +690,23 @@ function onImageChange(e) {
     e.target.value = '';
 }
 async function setImageFile(file) {
+    if (pendingUpload) { pendingUpload.controller.abort(); pendingUpload = null; }
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
-    // Show preview immediately with original so there's no visible delay
     imagePreview.value = URL.createObjectURL(file);
     msgImage.value = file;
-    // GIFs: skip canvas compression — it captures only the first frame
-    if (file.type !== 'image/gif') {
-        msgImage.value = await compressImage(file);
-    }
+    const uploadFile = file.type === 'image/gif' ? file : await compressImage(file);
+    msgImage.value = uploadFile;
+    // Start Cloudinary upload in background — result used in send() to skip re-upload
+    const controller = new AbortController();
+    const fd = new FormData();
+    fd.append('image', uploadFile);
+    const promise = axios.post(route('conversations.upload-image'), fd, { signal: controller.signal })
+        .then(r => r.data)
+        .catch(() => null);
+    pendingUpload = { promise, controller };
 }
 function removeImage() {
+    if (pendingUpload) { pendingUpload.controller.abort(); pendingUpload = null; }
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
     msgImage.value = null;
     imagePreview.value = null;
@@ -725,6 +737,9 @@ async function send() {
     const tempPreviewUrl = imagePreview.value;
     const replyTo = replyingTo.value;
     const replyId = replyTo?.id ?? null;
+    // Capture and clear the background upload so removeImage() can't cancel it mid-send
+    const imgUpload = pendingUpload;
+    pendingUpload = null;
 
     // Optimistic message — shown immediately, replaced once server confirms
     const tempId = `temp-${Date.now()}`;
@@ -771,8 +786,15 @@ async function send() {
     try {
         const fd = new FormData();
         if (content) fd.append('content', content);
-        if (imageFile) fd.append('image', imageFile);
         if (replyId) fd.append('reply_to_id', String(replyId));
+        if (imageFile) {
+            const uploaded = imgUpload ? await imgUpload.promise : null;
+            if (uploaded?.url) {
+                fd.append('image_url', uploaded.url); // pre-uploaded: no file transfer needed
+            } else {
+                fd.append('image', imageFile); // fallback: upload with the message
+            }
+        }
 
         const res = await axios.post(route('messages.store', props.activeConversation.id), fd);
         const confirmed = res.data.message;
@@ -929,6 +951,7 @@ onUnmounted(() => {
     if (props.activeConversation?.id) window.Echo.leave(`conversation.${props.activeConversation.id}`);
     clearTypingState();
     clearTimeout(sentTimer);
+    if (pendingUpload) { pendingUpload.controller.abort(); pendingUpload = null; }
     if (authUser.value) {
         window.Echo.private(`user.${authUser.value.id}`).stopListening('.ConversationCreated');
     }

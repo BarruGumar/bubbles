@@ -144,6 +144,8 @@ class ConversationController extends Controller
                 ? ImageUploadPresets::gif()
                 : ImageUploadPresets::message();
             ['url' => $imageUrl] = $this->storeImageWithMeta($file, 'messages', $preset);
+        } elseif ($request->filled('image_url')) {
+            $imageUrl = $request->input('image_url');
         }
 
         $replyToId = $request->input('reply_to_id');
@@ -404,6 +406,17 @@ class ConversationController extends Controller
             'participants_count' => $participants->count(),
             'participants'       => $participants,
         ];
+    }
+
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate(['image' => ['required', 'image', 'max:5120']]);
+        $file   = $request->file('image');
+        $preset = $file->getMimeType() === 'image/gif'
+            ? ImageUploadPresets::gif()
+            : ImageUploadPresets::message();
+        ['url' => $url] = $this->storeImageWithMeta($file, 'messages', $preset);
+        return response()->json(['url' => $url]);
     }
 
     public function updateBackground(Request $request, Conversation $conversation): JsonResponse

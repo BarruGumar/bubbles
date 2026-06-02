@@ -14,8 +14,9 @@ class StoreMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content'     => ['nullable', 'string', 'max:2000', 'required_without:image'],
+            'content'     => ['nullable', 'string', 'max:2000', 'required_without_all:image,image_url'],
             'image'       => ['nullable', 'image', 'max:5120'],
+            'image_url'   => ['nullable', 'string', 'max:500', 'regex:/^https:\/\/res\.cloudinary\.com\//'],
             'reply_to_id' => ['nullable', 'integer', 'exists:messages,id'],
         ];
     }
