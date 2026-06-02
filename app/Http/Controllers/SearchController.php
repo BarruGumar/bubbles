@@ -49,10 +49,7 @@ class SearchController extends Controller
 
         $blockedIds = [];
         if ($authId = auth()->id()) {
-            $blockedIds = UserBlock::where('blocker_id', $authId)->pluck('blocked_id')
-                ->merge(UserBlock::where('blocked_id', $authId)->pluck('blocker_id'))
-                ->unique()
-                ->all();
+            $blockedIds = UserBlock::mutualIds($authId);
         }
 
         $users = User::when(

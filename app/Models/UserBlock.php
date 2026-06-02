@@ -20,4 +20,12 @@ class UserBlock extends Model
     {
         return $this->belongsTo(User::class, 'blocked_id');
     }
+
+    public static function mutualIds(int $userId): array
+    {
+        return self::where('blocker_id', $userId)->pluck('blocked_id')
+            ->merge(self::where('blocked_id', $userId)->pluck('blocker_id'))
+            ->unique()
+            ->all();
+    }
 }

@@ -142,21 +142,6 @@ class User extends Authenticatable implements MustVerifyEmail
             ->exists();
     }
 
-    public function canPost(): bool
-    {
-        return ! $this->isBanned() && ! $this->isSuspended() && ! $this->isGloballyMuted();
-    }
-
-    public function canComment(): bool
-    {
-        return ! $this->isBanned() && ! $this->isSuspended() && ! $this->isGloballyMuted();
-    }
-
-    public function canMessage(): bool
-    {
-        return ! $this->isBanned() && ! $this->isSuspended() && ! $this->isGloballyMuted();
-    }
-
     // ── Community role helpers ────────────────────────────────────
 
     /**

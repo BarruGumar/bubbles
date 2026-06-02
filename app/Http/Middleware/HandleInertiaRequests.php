@@ -54,17 +54,19 @@ class HandleInertiaRequests extends Middleware
                     return [];
                 }
 
-                return Announcement::active()
-                    ->orderByDesc('created_at')
-                    ->get()
-                    ->map(fn ($a) => [
-                        'id'         => $a->id,
-                        'title'      => $a->title,
-                        'body'       => $a->body,
-                        'type'       => $a->type,
-                        'created_at' => $a->created_at->toIso8601String(),
-                    ])
-                    ->all();
+                return Cache::remember('announcements:active', now()->addMinutes(5), fn () =>
+                    Announcement::active()
+                        ->orderByDesc('created_at')
+                        ->get()
+                        ->map(fn ($a) => [
+                            'id'         => $a->id,
+                            'title'      => $a->title,
+                            'body'       => $a->body,
+                            'type'       => $a->type,
+                            'created_at' => $a->created_at->toIso8601String(),
+                        ])
+                        ->all()
+                );
             },
             'auth' => [
                 'user' => $user ? [

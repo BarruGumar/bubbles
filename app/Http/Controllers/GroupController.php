@@ -6,6 +6,7 @@ use App\Http\Requests\CreateGroupRequest;
 use App\Http\Requests\GroupMemberRequest;
 use App\Http\Requests\UpdateGroupRequest;
 use App\Models\Conversation;
+use App\Models\Friend;
 use App\Models\User;
 use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
@@ -21,9 +22,6 @@ class GroupController extends Controller
     public function store(CreateGroupRequest $request): RedirectResponse
     {
         $user = $request->user();
-        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
-        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
-
         $participantIds = collect($request->input('participant_ids'))
             ->map(fn ($id) => (int) $id)
             ->reject(fn ($id) => $id === $user->id)
@@ -251,28 +249,7 @@ class GroupController extends Controller
 
     public function friends(): JsonResponse
     {
-        $userId = auth()->id();
-
-        $friends = \App\Models\Friend::where('status', 'accepted')
-            ->where(function ($q) use ($userId) {
-                $q->where('user_id', $userId)->orWhere('friend_id', $userId);
-            })
-            ->with(['user', 'friend'])
-            ->get()
-            ->map(function ($f) use ($userId) {
-                $other = $f->user_id === $userId ? $f->friend : $f->user;
-
-                return [
-                    'id'           => $other->id,
-                    'name'         => $other->name,
-                    'username'     => $other->username,
-                    'avatar'       => $other->avatar,
-                    'avatar_color' => $other->avatar_color ?? '#009ac7',
-                ];
-            })
-            ->values();
-
-        return response()->json(['friends' => $friends]);
+        return response()->json(['friends' => Friend::friendsOf(auth()->id())]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────

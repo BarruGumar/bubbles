@@ -26,15 +26,6 @@ createInertiaApp({
             .use(plugin)
             .use(ZiggyVue)
 
-        app.mixin({
-            mounted() {
-                updateBodyBackground(this.$page?.component)
-            },
-            updated() {
-                updateBodyBackground(this.$page?.component)
-            },
-        })
-
         updateBodyBackground(props.initialPage?.component ?? props.page?.component)
 
         // Apply theme: server value takes priority, fallback to localStorage
@@ -43,6 +34,7 @@ createInertiaApp({
 
         // Keep in sync on every Inertia navigation (e.g. after profile update)
         router.on('navigate', (e) => {
+            updateBodyBackground(e.detail.page.component)
             const theme = e.detail.page.props?.auth?.user?.theme
             if (theme) applyTheme(theme)
         })

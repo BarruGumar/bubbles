@@ -28,11 +28,11 @@ class PostLiked extends Notification implements ShouldQueue
         return [
             'type' => 'post_liked',
             'message' => "{$this->liker->name} gostou do teu post.",
-            'liker_id' => $this->liker->id,
-            'liker_name' => $this->liker->name,
-            'liker_username' => $this->liker->username,
-            'liker_avatar' => $this->liker->avatar,
-            'liker_color' => $this->liker->avatar_color ?? '#009ac7',
+            'sender_id' => $this->liker->id,
+            'sender_name' => $this->liker->name,
+            'sender_username' => $this->liker->username,
+            'sender_avatar' => $this->liker->avatar,
+            'sender_color' => $this->liker->avatar_color ?? '#009ac7',
             'post_id' => $this->postId,
             'post_type' => $this->postType,
             'url' => $this->postType === 'community_post' && $this->bubbleId

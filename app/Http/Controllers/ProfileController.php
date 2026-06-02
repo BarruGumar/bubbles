@@ -6,6 +6,7 @@ use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Friend;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Support\FormatsCommentData;
 use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -18,7 +19,7 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    use StoresImages;
+    use StoresImages, FormatsCommentData;
 
     public function show(string $username): Response
     {
@@ -261,26 +262,4 @@ class ProfileController extends Controller
         return Redirect::to('/');
     }
 
-    private function mapComment($c, int $authId, bool $includeReplies = true): array
-    {
-        return [
-            'id'            => $c->id,
-            'content'       => $c->content,
-            'created_at'    => $c->created_at->diffForHumans(),
-            'is_own'        => $c->user_id === $authId,
-            'likes_count'   => $c->likes->count(),
-            'user_reaction' => $c->likes->where('user_id', $authId)->first()?->type ?? null,
-            'like_route'    => route('comments.like', $c->id),
-            'reply_route'   => route('comments.replies.store', $c->id),
-            'author'        => [
-                'name'         => $c->user->name,
-                'username'     => $c->user->username,
-                'avatar'       => $c->user->avatar,
-                'avatar_color' => $c->user->avatar_color ?? '#009ac7',
-            ],
-            'replies' => $includeReplies
-                ? $c->replies->map(fn ($r) => $this->mapComment($r, $authId, false))->values()->all()
-                : [],
-        ];
-    }
 }

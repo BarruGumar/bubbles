@@ -21,4 +21,21 @@ class Friend extends Model
     {
         return $this->belongsTo(User::class, 'friend_id');
     }
+
+    public static function friendsOf(int $userId): \Illuminate\Support\Collection
+    {
+        return self::where('status', 'accepted')
+            ->where(fn ($q) => $q->where('user_id', $userId)->orWhere('friend_id', $userId))
+            ->with(['user', 'friend'])
+            ->get()
+            ->map(fn ($f) => $f->user_id === $userId ? $f->friend : $f->user)
+            ->map(fn ($u) => [
+                'id'           => $u->id,
+                'name'         => $u->name,
+                'username'     => $u->username,
+                'avatar'       => $u->avatar,
+                'avatar_color' => $u->avatar_color ?? '#009ac7',
+            ])
+            ->values();
+    }
 }

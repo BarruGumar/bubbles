@@ -23,9 +23,6 @@ class CommentController extends Controller
     public function storePost(Request $request, Post $post): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
-        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
-        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
 
         $request->validate(['content' => 'required|string|max:500']);
         $comment = $post->comments()->create([
@@ -59,9 +56,6 @@ class CommentController extends Controller
     public function storeCommunityPost(Request $request, CommunityPost $post): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
-        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
-        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
 
         $bubble = $post->bubble;
         if ($bubble) {
@@ -101,9 +95,6 @@ class CommentController extends Controller
     public function storeReply(Request $request, Comment $parent): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
-        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
-        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
         abort_if($parent->parent_comment_id !== null, 422, 'Não podes responder a uma resposta.');
 
         $request->validate(['content' => 'required|string|max:500']);

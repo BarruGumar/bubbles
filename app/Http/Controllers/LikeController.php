@@ -65,11 +65,6 @@ class LikeController extends Controller
 
     public function toggleComment(Comment $comment): RedirectResponse|JsonResponse
     {
-        $user = auth()->user();
-        abort_if($user->isBanned(), 403);
-        abort_if($user->isSuspended(), 403);
-        abort_if($user->isGloballyMuted(), 403);
-
         $this->toggle($comment);
 
         return $this->postResponse();

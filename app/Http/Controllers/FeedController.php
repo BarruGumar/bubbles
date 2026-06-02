@@ -7,6 +7,7 @@ use App\Models\CommunityPost;
 use App\Models\Friend;
 use App\Models\Post;
 use App\Models\UserBlock;
+use App\Support\FormatsCommentData;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -15,6 +16,7 @@ use Inertia\Response;
 
 class FeedController extends Controller
 {
+    use FormatsCommentData;
     public function index(Request $request): Response
     {
         return Inertia::render('Feed/Index', $this->feedData($request));
@@ -50,10 +52,7 @@ class FeedController extends Controller
                 ->toArray();
         });
 
-        $blockedIds = UserBlock::where('blocker_id', $authId)->pluck('blocked_id')
-            ->merge(UserBlock::where('blocked_id', $authId)->pluck('blocker_id'))
-            ->unique()
-            ->all();
+        $blockedIds = UserBlock::mutualIds($authId);
 
         $withLikes = fn ($q) => $q->where('user_id', $authId);
 
@@ -173,24 +172,6 @@ class FeedController extends Controller
             ] : null,
             'author' => $this->mapAuthor($p->user),
             'comments' => $p->comments->map(fn ($c) => $this->mapComment($c, $authId))->values(),
-        ];
-    }
-
-    private function mapComment($c, int $authId, bool $includeReplies = true): array
-    {
-        return [
-            'id'            => $c->id,
-            'content'       => $c->content,
-            'created_at'    => $c->created_at->diffForHumans(),
-            'is_own'        => $c->user_id === $authId,
-            'likes_count'   => $c->likes->count(),
-            'user_reaction' => $c->likes->where('user_id', $authId)->first()?->type ?? null,
-            'like_route'    => route('comments.like', $c->id),
-            'reply_route'   => route('comments.replies.store', $c->id),
-            'author'        => $this->mapAuthor($c->user, false),
-            'replies'       => $includeReplies
-                ? $c->replies->map(fn ($r) => $this->mapComment($r, $authId, false))->values()->all()
-                : [],
         ];
     }
 

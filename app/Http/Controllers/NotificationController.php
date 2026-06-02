@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,43 +33,51 @@ class NotificationController extends Controller
 
     public function markRead(string $id): RedirectResponse
     {
+        $authId = auth()->id();
+
         auth()->user()
             ->notifications()
             ->where('id', $id)
             ->first()
             ?->markAsRead();
 
-        \Illuminate\Support\Facades\Cache::forget('user:' . auth()->id() . ':badge:notifications');
+        Cache::forget("user:{$authId}:badge:notifications");
 
         return back();
     }
 
     public function markAllRead(): RedirectResponse
     {
+        $authId = auth()->id();
+
         auth()->user()->unreadNotifications->markAsRead();
 
-        \Illuminate\Support\Facades\Cache::forget('user:' . auth()->id() . ':badge:notifications');
+        Cache::forget("user:{$authId}:badge:notifications");
 
         return back();
     }
 
     public function destroy(string $id): RedirectResponse
     {
+        $authId = auth()->id();
+
         auth()->user()
             ->notifications()
             ->where('id', $id)
             ->delete();
 
-        \Illuminate\Support\Facades\Cache::forget('user:' . auth()->id() . ':badge:notifications');
+        Cache::forget("user:{$authId}:badge:notifications");
 
         return back();
     }
 
     public function destroyAll(): RedirectResponse
     {
+        $authId = auth()->id();
+
         auth()->user()->notifications()->delete();
 
-        \Illuminate\Support\Facades\Cache::forget('user:' . auth()->id() . ':badge:notifications');
+        Cache::forget("user:{$authId}:badge:notifications");
 
         return back();
     }

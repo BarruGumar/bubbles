@@ -26,8 +26,9 @@ class BubbleController extends Controller
 
     public function index(): JsonResponse
     {
-        $memberIds = auth()->check()
-            ? Cache::remember('user:' . auth()->id() . ':community_ids', now()->addMinutes(5), fn () => auth()->user()->communities()->pluck('bubbles.id')->toArray())
+        $authId = auth()->id();
+        $memberIds = $authId
+            ? Cache::remember("user:{$authId}:community_ids", now()->addMinutes(5), fn () => auth()->user()->communities()->pluck('bubbles.id')->toArray())
             : [];
 
         $bubbles = Bubble::withCount('memberships')->latest('id')->get()->map(fn ($b) => [
@@ -64,9 +65,9 @@ class BubbleController extends Controller
         $data['user_id'] = auth()->id();
 
         $bubble = Bubble::create($data);
-        $bubble->memberships()->attach(auth()->id());
+        $bubble->memberships()->attach($data['user_id']);
 
-        Cache::forget('user:' . auth()->id() . ':community_ids');
+        Cache::forget("user:{$data['user_id']}:community_ids");
 
         AuditLogger::log('community.created', 'community', $bubble, [
             'label' => $bubble->label,
@@ -107,12 +108,14 @@ class BubbleController extends Controller
     {
         Gate::authorize('delete', $bubble);
 
+        $authId = auth()->id();
+
         AuditLogger::log('community.deleted', 'community', null, [
             'community_id' => $bubble->id,
             'label' => $bubble->label,
         ], $bubble->id);
 
-        Cache::forget('user:' . auth()->id() . ':community_ids');
+        Cache::forget("user:{$authId}:community_ids");
 
         $bubble->delete();
 

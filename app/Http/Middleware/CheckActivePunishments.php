@@ -42,6 +42,17 @@ class CheckActivePunishments
             abort(403, 'A tua conta está suspensa.');
         }
 
+        if ($user->isGloballyMuted()
+            && ! in_array($request->method(), ['GET', 'HEAD'])
+            && ! $request->routeIs('punishment.acknowledge')
+        ) {
+            if ($request->inertia()) {
+                return back()->with('error', 'Estás em silêncio global e não podes realizar esta ação.');
+            }
+
+            abort(403, 'Estás em silêncio global.');
+        }
+
         return $next($request);
     }
 }

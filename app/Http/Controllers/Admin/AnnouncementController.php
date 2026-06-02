@@ -8,6 +8,7 @@ use App\Models\Announcement;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -44,6 +45,7 @@ class AnnouncementController extends Controller
 
         Announcement::create([...$data, 'created_by' => auth()->id(), 'is_active' => true]);
 
+        Cache::forget('announcements:active');
         AuditLogger::log('announcement.create', 'admin', null, ['title' => $data['title']]);
 
         return back()->with('status', 'Aviso criado com sucesso.');
@@ -53,6 +55,8 @@ class AnnouncementController extends Controller
     {
         $announcement->update(['is_active' => ! $announcement->is_active]);
 
+        Cache::forget('announcements:active');
+
         return back()->with('status', $announcement->is_active ? 'Aviso ativado.' : 'Aviso desativado.');
     }
 
@@ -60,6 +64,8 @@ class AnnouncementController extends Controller
     {
         AuditLogger::log('announcement.delete', 'admin', null, ['title' => $announcement->title]);
         $announcement->delete();
+
+        Cache::forget('announcements:active');
 
         return back()->with('status', 'Aviso eliminado.');
     }

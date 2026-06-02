@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, onUnmounted } from 'vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useToast } from '@/Composables/useToast';
 
@@ -54,25 +54,35 @@ function zoomAtPoint(e) {
     zoom.value = newZoom;
 }
 
+let _dragMove = null;
+let _dragUp = null;
+
 function startDrag(e) {
     const startX = e.clientX - panX.value;
     const startY = e.clientY - panY.value;
     let moved = false;
-    const onMove = (ev) => {
+    _dragMove = (ev) => {
         if (!moved && (Math.abs(ev.clientX - e.clientX) > 3 || Math.abs(ev.clientY - e.clientY) > 3)) moved = true;
         if (!moved) return;
         isDragging.value = true;
         panX.value = ev.clientX - startX;
         panY.value = ev.clientY - startY;
     };
-    const onUp = () => {
+    _dragUp = () => {
         isDragging.value = false;
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('mousemove', _dragMove);
+        document.removeEventListener('mouseup', _dragUp);
+        _dragMove = null;
+        _dragUp = null;
     };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.addEventListener('mousemove', _dragMove);
+    document.addEventListener('mouseup', _dragUp);
 }
+
+onUnmounted(() => {
+    if (_dragMove) document.removeEventListener('mousemove', _dragMove);
+    if (_dragUp) document.removeEventListener('mouseup', _dragUp);
+});
 
 async function downloadImage() {
     try {

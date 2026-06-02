@@ -131,10 +131,6 @@ class ConversationController extends Controller
     public function storeMessage(StoreMessageRequest $request, Conversation $conversation): JsonResponse
     {
         $user = $request->user();
-        abort_if($user->isBanned(), 403, 'A tua conta foi banida.');
-        abort_if($user->isSuspended(), 403, 'A tua conta está suspensa.');
-        abort_if($user->isGloballyMuted(), 403, 'Estás em silêncio global.');
-
         abort_unless(
             $conversation->participants()->where('user_id', auth()->id())->exists(),
             403
@@ -154,18 +150,22 @@ class ConversationController extends Controller
             abort(422);
         }
 
-        $message = $conversation->messages()->create([
-            'user_id' => auth()->id(),
-            'content' => $request->input('content'),
-            'image_url' => $imageUrl,
-            'reply_to_id' => $replyToId,
-        ]);
+        $message = DB::transaction(function () use ($conversation, $request, $imageUrl, $replyToId) {
+            $msg = $conversation->messages()->create([
+                'user_id' => auth()->id(),
+                'content' => $request->input('content'),
+                'image_url' => $imageUrl,
+                'reply_to_id' => $replyToId,
+            ]);
 
-        $conversation->update(['last_message_id' => $message->id]);
+            $conversation->update(['last_message_id' => $msg->id]);
 
-        $conversation->participants()->updateExistingPivot(auth()->id(), [
-            'last_read_at' => now(),
-        ]);
+            $conversation->participants()->updateExistingPivot(auth()->id(), [
+                'last_read_at' => now(),
+            ]);
+
+            return $msg;
+        });
 
         // Notify all other participants (supports both direct and group)
         $conversation->participants()
@@ -335,10 +335,12 @@ class ConversationController extends Controller
         $conversationId = $conv->id;
         $messageId = $message->id;
         $isLast = $conv->last_message_id === $message->id;
-        $message->delete();
-        if ($isLast) {
-            $conv->update(['last_message_id' => $conv->messages()->latest()->value('id')]);
-        }
+        DB::transaction(function () use ($message, $conv, $isLast) {
+            $message->delete();
+            if ($isLast) {
+                $conv->update(['last_message_id' => $conv->messages()->latest()->value('id')]);
+            }
+        });
 
         broadcast(new MessageDeleted($conversationId, $messageId))->toOthers();
 
@@ -352,6 +354,7 @@ class ConversationController extends Controller
         if ($conversation->isDirect()) {
             $other = $conversation->participants()
                 ->where('users.id', '!=', $userId)
+                ->select('users.id', 'users.name', 'users.username', 'users.avatar', 'users.avatar_color')
                 ->first();
 
             return [
@@ -372,6 +375,7 @@ class ConversationController extends Controller
 
         // Group conversation
         $participants = $conversation->participants()
+            ->select('users.id', 'users.name', 'users.username', 'users.avatar', 'users.avatar_color')
             ->get()
             ->map(fn ($p) => [
                 'id'           => $p->id,
@@ -434,27 +438,7 @@ class ConversationController extends Controller
 
     private function listFriends(): array
     {
-        $userId = auth()->id();
-
-        return Friend::where(function ($q) use ($userId) {
-            $q->where('user_id', $userId)->orWhere('friend_id', $userId);
-        })
-            ->where('status', 'accepted')
-            ->with(['user', 'friend'])
-            ->get()
-            ->map(function ($f) use ($userId) {
-                $other = $f->user_id === $userId ? $f->friend : $f->user;
-
-                return [
-                    'id' => $other->id,
-                    'name' => $other->name,
-                    'username' => $other->username,
-                    'avatar' => $other->avatar,
-                    'avatar_color' => $other->avatar_color ?? '#009ac7',
-                ];
-            })
-            ->values()
-            ->toArray();
+        return Friend::friendsOf(auth()->id())->toArray();
     }
 
     private function listConversations(): array
@@ -463,7 +447,10 @@ class ConversationController extends Controller
 
         $convList = auth()->user()
             ->conversations()
-            ->with(['participants', 'lastMessage'])
+            ->with([
+                'participants' => fn ($q) => $q->select('users.id', 'users.name', 'users.username', 'users.avatar', 'users.avatar_color'),
+                'lastMessage',
+            ])
             ->orderByDesc('conversations.updated_at')
             ->get();
 
