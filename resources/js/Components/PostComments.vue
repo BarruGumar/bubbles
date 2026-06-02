@@ -13,8 +13,9 @@ const props = defineProps({
 const commentText = ref('');
 const replyTexts  = ref({});
 const activeReply = ref(null);
-const pickerOpen  = ref({});
-const pickerTimers = ref({});
+const pickerOpen      = ref({});
+const pickerTimers    = ref({});
+const pickerHideTimers = ref({});
 const { playSfx } = useAudio();
 
 const REACTIONS = [
@@ -38,12 +39,17 @@ function reactComment(id, type) {
 }
 
 function startPickerTimer(id) {
+    clearTimeout(pickerHideTimers.value[id]);
     pickerTimers.value[id] = setTimeout(() => { pickerOpen.value[id] = true; }, 400);
 }
 
 function cancelPickerTimer(id) {
     clearTimeout(pickerTimers.value[id]);
-    setTimeout(() => { pickerOpen.value[id] = false; }, 180);
+    pickerHideTimers.value[id] = setTimeout(() => { pickerOpen.value[id] = false; }, 300);
+}
+
+function keepPickerOpen(id) {
+    clearTimeout(pickerHideTimers.value[id]);
 }
 
 function toggleReplyInput(id) {
@@ -127,7 +133,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                                        background:var(--card-bg,#fff); border:1px solid rgba(0,154,199,0.18);
                                        border-radius:20px; padding:4px 8px; display:flex; gap:4px;
                                        box-shadow:0 4px 16px rgba(0,0,0,0.12); white-space:nowrap"
-                                @mouseenter="clearTimeout(pickerTimers[c.id])"
+                                @mouseenter="keepPickerOpen(c.id)"
                                 @mouseleave="cancelPickerTimer(c.id)">
                                 <button v-for="r in REACTIONS" :key="r.type"
                                     @click="reactComment(c.id, r.type)"
@@ -245,7 +251,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                                            background:var(--card-bg,#fff); border:1px solid rgba(0,154,199,0.18);
                                            border-radius:20px; padding:4px 8px; display:flex; gap:4px;
                                            box-shadow:0 4px 16px rgba(0,0,0,0.12); white-space:nowrap"
-                                    @mouseenter="clearTimeout(pickerTimers[r.id])"
+                                    @mouseenter="keepPickerOpen(r.id)"
                                     @mouseleave="cancelPickerTimer(r.id)">
                                     <button v-for="rx in REACTIONS" :key="rx.type"
                                         @click="reactComment(r.id, rx.type)"
