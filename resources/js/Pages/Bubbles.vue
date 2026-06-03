@@ -317,7 +317,12 @@ function loop(timestamp) {
     lastTime = timestamp;
     // Skip physics after a large gap (tab was hidden or page froze).
     // Normal 60fps ≈ 16ms; anything beyond 100ms means we missed frames.
-    if (dt < 100) step(bubbles.value, dragging.value?.id, badgeObstacles());
+    // try-catch ensures a runtime error in step() never kills the loop permanently.
+    try {
+        if (dt < 100) step(bubbles.value, dragging.value?.id, badgeObstacles());
+    } catch (e) {
+        console.error('[Physics] Erro no step:', e);
+    }
     animId = requestAnimationFrame(loop);
 }
 
@@ -338,9 +343,12 @@ function onVisibilityChange() {
 }
 
 onMounted(async () => {
-    // Refresh CSRF token before any authenticated API calls (Sanctum SPA requirement)
-    try { await axios.get('/sanctum/csrf-cookie'); } catch { /* non-fatal */ }
-    await Promise.all([load(authUser.value?.id), loadConnections(), loadFriendConnections()]);
+    // Fire CSRF refresh without awaiting — not needed until the first POST (bubble create/connect)
+    axios.get('/sanctum/csrf-cookie').catch(() => {});
+
+    // Only block on bubble load — physics starts as soon as bubbles are ready.
+    // Connections load in the background and add SVG lines when they arrive.
+    await load(authUser.value?.id);
     _saveOnUnload = () => savePositions(authUser.value?.id);
     window.addEventListener('beforeunload', _saveOnUnload);
     ready.value = true;
@@ -353,6 +361,8 @@ onMounted(async () => {
     document.addEventListener('visibilitychange', onVisibilityChange);
     document.addEventListener('click', onDocClick);
     startLoop();
+    loadConnections();
+    loadFriendConnections();
     if (authUser.value) {
         window.Echo.private(`user.${authUser.value.id}`)
             .listen('.BadgeCountUpdated', (e) => {
