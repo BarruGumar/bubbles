@@ -690,6 +690,11 @@ function onImageChange(e) {
     e.target.value = '';
 }
 async function setImageFile(file) {
+    if (file.size > 5 * 1024 * 1024) {
+        pasteError.value = `Ficheiro demasiado grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Máximo 5 MB.`;
+        setTimeout(() => { pasteError.value = null; }, 5000);
+        return;
+    }
     if (pendingUpload) { pendingUpload.controller.abort(); pendingUpload = null; }
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
     imagePreview.value = URL.createObjectURL(file);
@@ -816,7 +821,7 @@ async function send() {
                 is_own: true,
             });
         }
-    } catch {
+    } catch (err) {
         // Rollback optimistic message and restore input so user can retry without retyping
         localMessages.value = localMessages.value.filter((m) => m.id !== tempId);
         msgContent.value = content;
@@ -826,7 +831,18 @@ async function send() {
         } else if (tempPreviewUrl) {
             URL.revokeObjectURL(tempPreviewUrl);
         }
-        sendState.value = 'error';
+        const status = err?.response?.status;
+        if (status === 422 && err?.response?.data?.errors?.image) {
+            pasteError.value = 'Imagem inválida ou demasiado grande (máx. 5 MB).';
+            setTimeout(() => { pasteError.value = null; }, 5000);
+            sendState.value = 'idle';
+        } else if (status === 413) {
+            pasteError.value = 'Ficheiro demasiado grande para o servidor.';
+            setTimeout(() => { pasteError.value = null; }, 5000);
+            sendState.value = 'idle';
+        } else {
+            sendState.value = 'error';
+        }
         sentTimer = setTimeout(() => { sendState.value = 'idle'; }, 3000);
     }
 }
