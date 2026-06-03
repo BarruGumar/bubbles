@@ -9,6 +9,7 @@ import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
     status: String,
+    hasPassword: Boolean,
 });
 
 const { playSfx } = useAudio();
@@ -51,9 +52,9 @@ const updatePassword = () => {
 <template>
     <section>
         <header>
-            <h2 class="text-lg font-medium" style="color: var(--text)">Alterar Password</h2>
+            <h2 class="text-lg font-medium" style="color: var(--text)">{{ hasPassword ? 'Alterar Password' : 'Definir Password' }}</h2>
             <p class="mt-1 text-sm" style="color: var(--text-3)">
-                Usa uma password longa e aleatória para manteres a conta segura.
+                {{ hasPassword ? 'Usa uma password longa e aleatória para manteres a conta segura.' : 'A tua conta foi criada via Google. Define uma password para poderes entrar por email também.' }}
             </p>
         </header>
 
@@ -109,7 +110,7 @@ const updatePassword = () => {
         </div>
 
         <form @submit.prevent="updatePassword" class="mt-6 space-y-6">
-            <div>
+            <div v-if="hasPassword">
                 <InputLabel for="current_password" value="Password Atual" />
                 <TextInput
                     id="current_password"

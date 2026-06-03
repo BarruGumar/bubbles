@@ -35,7 +35,10 @@ class GoogleAuthController extends Controller
         $user = User::where('email', $googleUser->getEmail())->first();
 
         if ($user) {
-            $user->update(['google_id' => $googleUser->getId()]);
+            $user->update([
+                'google_id'         => $googleUser->getId(),
+                'email_verified_at' => $user->email_verified_at ?? now(),
+            ]);
             return $this->loginAndRedirect($user);
         }
 
@@ -47,7 +50,7 @@ class GoogleAuthController extends Controller
             'email'             => $googleUser->getEmail(),
             'google_id'         => $googleUser->getId(),
             'username'          => User::generateUsername($googleUser->getName()),
-            'avatar'            => $googleUser->getAvatar(),
+            'avatar'            => $googleUser->getAvatar() ?: null,
             'avatar_color'      => $colors[array_rand($colors)],
             'password'          => null,
             // Google já verificou o email

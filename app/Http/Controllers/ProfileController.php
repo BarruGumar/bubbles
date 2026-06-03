@@ -141,7 +141,8 @@ class ProfileController extends Controller
     {
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => session('status'),
+            'hasPassword'     => $request->user()->password !== null,
+            'status'          => session('status'),
         ]);
     }
 
@@ -249,9 +250,11 @@ class ProfileController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
+        if ($request->user()->password !== null) {
+            $request->validate([
+                'password' => ['required', 'current_password'],
+            ]);
+        }
 
         $user = $request->user();
 

@@ -8,6 +8,10 @@ import TextInput from '@/Components/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
 import { nextTick, ref } from 'vue';
 
+const props = defineProps({
+    hasPassword: Boolean,
+});
+
 const confirmingUserDeletion = ref(false);
 const passwordInput = ref(null);
 
@@ -18,7 +22,9 @@ const form = useForm({
 const confirmUserDeletion = () => {
     confirmingUserDeletion.value = true;
 
-    nextTick(() => passwordInput.value.focus());
+    if (props.hasPassword) {
+        nextTick(() => passwordInput.value?.focus());
+    }
 };
 
 const deleteUser = () => {
@@ -60,7 +66,7 @@ const closeModal = () => {
                     enter your password to confirm you would like to permanently delete your account.
                 </p>
 
-                <div class="mt-6">
+                <div v-if="hasPassword" class="mt-6">
                     <InputLabel for="password" value="Password" class="sr-only" />
 
                     <TextInput

@@ -8,6 +8,7 @@ import { useTheme } from '@/Composables/useTheme';
 
 defineProps({
     mustVerifyEmail: Boolean,
+    hasPassword: Boolean,
     status: String,
 });
 
@@ -57,12 +58,12 @@ const { isDark, toggle: toggleTheme } = useTheme();
 
             <!-- Password card -->
             <div class="settings-card">
-                <UpdatePasswordForm :status="status" />
+                <UpdatePasswordForm :status="status" :has-password="hasPassword" />
             </div>
 
             <!-- Danger zone card -->
             <div class="settings-card settings-card-danger">
-                <DeleteUserForm />
+                <DeleteUserForm :has-password="hasPassword" />
             </div>
         </div>
     </AuthenticatedLayout>
