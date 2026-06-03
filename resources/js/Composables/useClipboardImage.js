@@ -19,6 +19,11 @@ export function useClipboardImage({ onImage, maxKB = 4096, onError } = {}) {
 
         e.preventDefault();
 
+        // Must call getAsFile() synchronously while the paste event is still active.
+        // DataTransferItem clipboard data is cleared once the event handler returns,
+        // so calling getAsFile() inside an async callback (e.g. getAsString) returns null.
+        const fallbackFile = imgItem.getAsFile();
+
         const htmlItem = items.find(i => i.kind === 'string' && i.type === 'text/html');
         if (htmlItem) {
             htmlItem.getAsString(async (html) => {
@@ -44,15 +49,14 @@ export function useClipboardImage({ onImage, maxKB = 4096, onError } = {}) {
                         // CORS or network error — fall through to PNG fallback
                     }
                 }
-                applyFallback(imgItem);
+                applyFallback(fallbackFile);
             });
         } else {
-            applyFallback(imgItem);
+            applyFallback(fallbackFile);
         }
     }
 
-    function applyFallback(item) {
-        const file = item.getAsFile();
+    function applyFallback(file) {
         if (!file) return;
         if (file.size > maxKB * 1024) {
             const label = maxKB >= 1024 ? `${Math.round(maxKB / 1024)} MB` : `${maxKB} KB`;
