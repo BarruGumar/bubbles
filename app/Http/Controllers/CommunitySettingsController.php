@@ -35,7 +35,7 @@ class CommunitySettingsController extends Controller
     public function destroy(int $id): RedirectResponse
     {
         $bubble = Bubble::findOrFail($id);
-        Gate::authorize('manage', $bubble);
+        Gate::authorize('delete', $bubble);
 
         AuditLogger::log('community.deleted', 'community', null, [
             'community_id' => $bubble->id,

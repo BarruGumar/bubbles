@@ -142,6 +142,7 @@ class GroupController extends Controller
         $targetRole = $this->getRole($conversation, $user->id);
 
         abort_if($actorRole === null, 403);
+        abort_if($targetRole === null, 404, 'Utilizador não é membro do grupo.');
 
         // Cannot remove the owner
         abort_if($targetRole === 'owner', 403, 'Não é possível remover o owner do grupo.');

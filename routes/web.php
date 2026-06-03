@@ -72,9 +72,9 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/theme', [ProfileController::class, 'updateTheme'])->name('profile.theme');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
+    Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->middleware('throttle:uploads')->name('profile.avatar');
     Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.remove');
-    Route::post('/profile/banner', [ProfileController::class, 'uploadBanner'])->name('profile.banner');
+    Route::post('/profile/banner', [ProfileController::class, 'uploadBanner'])->middleware('throttle:uploads')->name('profile.banner');
     Route::delete('/profile/banner', [ProfileController::class, 'removeBanner'])->name('profile.banner.remove');
 
     // Feed
@@ -89,9 +89,9 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::post('/c/{id}/posts', [CommunityPostController::class, 'store'])->middleware('throttle:posts')->name('community.posts.store');
     Route::patch('/c/{id}/posts/{post}', [CommunityPostController::class, 'update'])->name('community.posts.update');
     Route::delete('/c/{id}/posts/{post}', [CommunityPostController::class, 'destroy'])->name('community.posts.destroy');
-    Route::post('/c/{id}/image', [CommunityMediaController::class, 'uploadImage'])->name('community.image');
+    Route::post('/c/{id}/image', [CommunityMediaController::class, 'uploadImage'])->middleware('throttle:uploads')->name('community.image');
     Route::delete('/c/{id}/image', [CommunityMediaController::class, 'removeImage'])->name('community.image.remove');
-    Route::post('/c/{id}/banner', [CommunityMediaController::class, 'uploadBanner'])->name('community.banner');
+    Route::post('/c/{id}/banner', [CommunityMediaController::class, 'uploadBanner'])->middleware('throttle:uploads')->name('community.banner');
     Route::delete('/c/{id}/banner', [CommunityMediaController::class, 'removeBanner'])->name('community.banner.remove');
 
     // Likes e comentários

@@ -74,5 +74,9 @@ class AppServiceProvider extends ServiceProvider
         // Reset de password: 5 pedidos por hora por IP
         RateLimiter::for('password-reset', fn (Request $req) => Limit::perHour(5)->by($req->ip())
         );
+
+        // Uploads de imagem (avatar, banner, community image): 10 por hora por utilizador
+        RateLimiter::for('uploads', fn (Request $req) => Limit::perHour(10)->by($req->user()?->id ?: $req->ip())
+        );
     }
 }
