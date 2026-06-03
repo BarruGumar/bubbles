@@ -64,6 +64,10 @@ class GoogleAuthController extends Controller
 
     private function loginAndRedirect(User $user): RedirectResponse
     {
+        if ($user->email_verified_at === null) {
+            $user->update(['email_verified_at' => now()]);
+        }
+
         AuditLogger::log('auth.login', 'auth', $user, ['provider' => 'google']);
 
         Auth::login($user, remember: true);
