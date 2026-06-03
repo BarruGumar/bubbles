@@ -28,7 +28,12 @@ export function clImg(url, w = 0, h = 0, crop = 'fill', g = '') {
     if (h) parts.push(`h_${h}`)
     parts.push(`c_${crop}`)
     if (g) parts.push(`g_${g}`)
-    parts.push(isGif ? 'f_gif' : 'f_auto', 'q_auto')
+    // GIFs: omit q_auto — quality optimisation can strip animation frames on some Cloudinary plans
+    if (isGif) {
+        parts.push('f_gif')
+    } else {
+        parts.push('f_auto', 'q_auto')
+    }
     const transform = parts.join(',')
 
     // Detect and skip existing transform segment (starts with letter(s) + underscore,
