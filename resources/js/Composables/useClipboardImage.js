@@ -2,9 +2,9 @@
  * Detects an image in a paste event and forwards it to the caller.
  * Text-only pastes are not interrupted.
  *
- * When the clipboard HTML contains a .gif src, fetches the original animated
- * GIF via a server-side proxy (bypasses CORS). Falls back to the static PNG
- * the browser puts in the clipboard if the proxy fetch fails.
+ * When the clipboard HTML contains a .gif src, attempts to fetch the
+ * original animated GIF (best-effort — requires CORS headers on the host).
+ * Falls back to the PNG the browser puts in the clipboard if the fetch fails.
  *
  * @param {Object} opts
  * @param {(file: File) => void} opts.onImage  - called when a valid image is found
@@ -21,7 +21,7 @@ export function useClipboardImage({ onImage, maxKB = 4096, onError } = {}) {
 
         // Must call getAsFile() synchronously while the paste event is still active.
         // DataTransferItem clipboard data is cleared once the event handler returns,
-        // so calling getAsFile() inside an async callback returns null.
+        // so calling getAsFile() inside an async callback (e.g. getAsString) returns null.
         const fallbackFile = imgItem.getAsFile();
 
         const htmlItem = items.find(i => i.kind === 'string' && i.type === 'text/html');
@@ -31,29 +31,22 @@ export function useClipboardImage({ onImage, maxKB = 4096, onError } = {}) {
                 const match = html.match(/src=["']([^"']+\.gif(?:[?#][^"']*)?)["']/i);
                 if (match) {
                     try {
-                        // Proxy through our server to bypass CORS restrictions
-                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-                        const resp = await fetch('/conversations/fetch-gif', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken,
-                                'Accept': 'image/gif',
-                            },
-                            body: JSON.stringify({ url: match[1] }),
-                        });
+                        const resp = await fetch(match[1]);
                         if (resp.ok) {
                             const blob = await resp.blob();
-                            const file = new File([blob], 'animation.gif', { type: 'image/gif' });
-                            if (file.size > maxKB * 1024) {
-                                onError?.(`GIF demasiado grande. Máximo ${Math.round(maxKB / 1024)} MB.`);
-                            } else {
-                                onImage?.(file);
+                            const type = blob.type || 'image/gif';
+                            if (type.includes('gif') || match[1].match(/\.gif/i)) {
+                                const file = new File([blob], 'animation.gif', { type: 'image/gif' });
+                                if (file.size > maxKB * 1024) {
+                                    onError?.(`GIF demasiado grande. Máximo ${Math.round(maxKB / 1024)} MB.`);
+                                } else {
+                                    onImage?.(file);
+                                }
+                                return;
                             }
-                            return;
                         }
                     } catch {
-                        // Network error — fall through to static PNG fallback
+                        // CORS or network error — fall through to PNG fallback
                     }
                 }
                 applyFallback(fallbackFile);
