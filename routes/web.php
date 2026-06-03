@@ -126,6 +126,7 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::post('/conversations', [ConversationController::class, 'store'])->name('conversations.store');
     Route::post('/conversations/upload-image', [ConversationController::class, 'uploadImage'])->middleware('throttle:messages')->name('conversations.upload-image');
+    Route::post('/conversations/fetch-gif', [ConversationController::class, 'fetchGif'])->middleware('throttle:messages')->name('conversations.fetch-gif');
     Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'storeMessage'])->middleware('throttle:messages')->name('messages.store');
     Route::patch('/messages/{message}', [ConversationController::class, 'updateMessage'])->name('messages.update');
     Route::delete('/messages/{message}', [ConversationController::class, 'destroyMessage'])->name('messages.destroy');

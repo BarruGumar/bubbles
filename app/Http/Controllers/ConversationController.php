@@ -21,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -417,6 +418,68 @@ class ConversationController extends Controller
             : ImageUploadPresets::message();
         ['url' => $url] = $this->storeImageWithMeta($file, 'messages', $preset);
         return response()->json(['url' => $url]);
+    }
+
+    public function fetchGif(Request $request): \Illuminate\Http\Response
+    {
+        $validated = $request->validate([
+            'url' => ['required', 'string', 'url', 'max:2000'],
+        ]);
+
+        $url = $validated['url'];
+
+        if (! $this->isSafeGifUrl($url)) {
+            abort(422, 'URL inválido.');
+        }
+
+        try {
+            $remote = Http::timeout(8)
+                ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; Bubbles/1.0)'])
+                ->get($url);
+        } catch (\Exception) {
+            abort(422, 'Não foi possível obter o GIF.');
+        }
+
+        if (! $remote->successful()) {
+            abort(422, 'Não foi possível obter o GIF.');
+        }
+
+        $contentType = $remote->header('Content-Type') ?? '';
+        if (! str_contains($contentType, 'image/gif')) {
+            abort(422, 'O URL não aponta para um GIF.');
+        }
+
+        $body = $remote->body();
+        if (strlen($body) > 5 * 1024 * 1024) {
+            abort(422, 'GIF demasiado grande (máx. 5 MB).');
+        }
+
+        return response($body, 200, [
+            'Content-Type'  => 'image/gif',
+            'Cache-Control' => 'private, max-age=300',
+        ]);
+    }
+
+    private function isSafeGifUrl(string $url): bool
+    {
+        $parsed = parse_url($url);
+        if (! in_array($parsed['scheme'] ?? '', ['http', 'https'])) {
+            return false;
+        }
+        $host = $parsed['host'] ?? '';
+        if (! $host || strtolower($host) === 'localhost') {
+            return false;
+        }
+        $ip = gethostbyname($host);
+        // Block loopback (127.x.x.x, ::1)
+        if (str_starts_with($ip, '127.') || $ip === '::1') {
+            return false;
+        }
+        return (bool) filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        );
     }
 
     public function updateBackground(Request $request, Conversation $conversation): JsonResponse
