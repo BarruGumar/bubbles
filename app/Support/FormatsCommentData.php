@@ -11,7 +11,7 @@ trait FormatsCommentData
             'content'       => $c->content,
             'created_at'    => $c->created_at->diffForHumans(),
             'is_own'        => $c->user_id === $authId,
-            'likes_count'   => $c->likes->count(),
+            'likes_count'   => $c->likes_count ?? $c->likes->count(),
             'user_reaction' => $c->likes->where('user_id', $authId)->first()?->type ?? null,
             'like_route'    => route('comments.like', $c->id),
             'reply_route'   => route('comments.replies.store', $c->id),

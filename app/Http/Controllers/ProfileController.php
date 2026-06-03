@@ -28,12 +28,19 @@ class ProfileController extends Controller
 
         $userId = auth()->id();
 
+        $withLikes = fn ($q) => $q->where('user_id', $userId ?? 0);
+
         $paginated = $profileUser->posts()
             ->withCount('likes')
             ->with([
-                'likes' => fn ($q) => $q->where('user_id', $userId ?? 0),
+                'likes' => $withLikes,
                 'comments' => fn ($q) => $q
-                    ->with(['user', 'likes', 'replies' => fn ($rq) => $rq->with(['user', 'likes'])])
+                    ->withCount('likes')
+                    ->with([
+                        'user',
+                        'likes' => $withLikes,
+                        'replies' => fn ($rq) => $rq->withCount('likes')->with(['user', 'likes' => $withLikes]),
+                    ])
                     ->whereNull('parent_comment_id')
                     ->orderBy('created_at')
                     ->limit(5),

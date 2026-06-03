@@ -33,6 +33,7 @@ class PunishmentService
         }
 
         Cache::forget("user:{$target->id}:new_punishment");
+        Cache::forget("user:{$target->id}:active_punishments");
 
         AuditLogger::log(
             'user.punish',
@@ -64,6 +65,7 @@ class PunishmentService
         }
 
         Cache::forget("user:{$punishment->user_id}:new_punishment");
+        Cache::forget("user:{$punishment->user_id}:active_punishments");
 
         AuditLogger::log(
             'user.punish.revoke',

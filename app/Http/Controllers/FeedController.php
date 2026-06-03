@@ -57,10 +57,11 @@ class FeedController extends Controller
         $withLikes = fn ($q) => $q->where('user_id', $authId);
 
         $withComments = fn ($q) => $q
+            ->withCount('likes')
             ->with([
                 'user',
                 'likes' => $withLikes,
-                'replies' => fn ($rq) => $rq->with(['user', 'likes' => $withLikes]),
+                'replies' => fn ($rq) => $rq->withCount('likes')->with(['user', 'likes' => $withLikes]),
             ])
             ->whereNull('parent_comment_id')
             ->orderBy('created_at')
