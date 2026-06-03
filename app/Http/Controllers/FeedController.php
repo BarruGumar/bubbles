@@ -59,8 +59,8 @@ class FeedController extends Controller
         $withComments = fn ($q) => $q
             ->with([
                 'user',
-                'likes',
-                'replies' => fn ($rq) => $rq->with(['user', 'likes']),
+                'likes' => $withLikes,
+                'replies' => fn ($rq) => $rq->with(['user', 'likes' => $withLikes]),
             ])
             ->whereNull('parent_comment_id')
             ->orderBy('created_at')

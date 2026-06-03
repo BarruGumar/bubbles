@@ -31,17 +31,23 @@ class BubbleController extends Controller
             ? Cache::remember("user:{$authId}:community_ids", now()->addMinutes(5), fn () => auth()->user()->communities()->pluck('bubbles.id')->toArray())
             : [];
 
-        $bubbles = Bubble::withCount('memberships')->latest('id')->get()->map(fn ($b) => [
-            'id' => $b->id,
-            'label' => $b->label,
-            'color' => $b->color,
-            'x' => $b->x,
-            'y' => $b->y,
-            'size' => $b->size,
-            'members' => $b->memberships_count,
-            'is_member' => in_array($b->id, $memberIds),
-            'community_image' => $b->community_image,
-        ]);
+        // Cache global bubble data for 1 minute — metadata changes infrequently.
+        // is_member is user-specific and merged separately from the cached memberIds.
+        $rawBubbles = Cache::remember('bubbles:all', now()->addMinutes(1), function () {
+            return Bubble::withCount('memberships')->latest('id')->get()->map(fn ($b) => [
+                'id'              => $b->id,
+                'label'           => $b->label,
+                'color'           => $b->color,
+                'x'               => $b->x,
+                'y'               => $b->y,
+                'size'            => $b->size,
+                'members'         => $b->memberships_count,
+                'community_image' => $b->community_image,
+            ])->all();
+        });
+
+        $memberSet = array_flip($memberIds);
+        $bubbles = array_map(fn ($b) => $b + ['is_member' => isset($memberSet[$b['id']])], $rawBubbles);
 
         return response()->json($bubbles);
     }
@@ -68,6 +74,7 @@ class BubbleController extends Controller
         $bubble->memberships()->attach($data['user_id']);
 
         Cache::forget("user:{$data['user_id']}:community_ids");
+        Cache::forget('bubbles:all');
 
         AuditLogger::log('community.created', 'community', $bubble, [
             'label' => $bubble->label,
@@ -101,6 +108,11 @@ class BubbleController extends Controller
             event(new BubbleMoved($bubble->fresh()));
         }
 
+        // Invalidate global bubble cache on any metadata change
+        if (array_intersect(array_keys($data), ['label', 'color', 'size', 'community_image'])) {
+            Cache::forget('bubbles:all');
+        }
+
         return response()->json($bubble->fresh());
     }
 
@@ -116,6 +128,7 @@ class BubbleController extends Controller
         ], $bubble->id);
 
         Cache::forget("user:{$authId}:community_ids");
+        Cache::forget('bubbles:all');
 
         $bubble->delete();
 

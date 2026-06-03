@@ -314,12 +314,14 @@ function badgeObstacles() {
 
 function loop(timestamp) {
     const dt = timestamp - lastTime;
+    // On mobile, cap at 30fps — skip frames arriving faster than ~33ms
+    if (isMobile.value && dt < 33) {
+        animId = requestAnimationFrame(loop);
+        return;
+    }
     lastTime = timestamp;
-    // Skip physics after a large gap (tab was hidden or page froze).
-    // Normal 60fps ≈ 16ms; anything beyond 100ms means we missed frames.
-    // try-catch ensures a runtime error in step() never kills the loop permanently.
     try {
-        if (dt < 100) step(bubbles.value, dragging.value?.id, badgeObstacles());
+        if (dt < 150) step(bubbles.value, dragging.value?.id, badgeObstacles());
     } catch (e) {
         console.error('[Physics] Erro no step:', e);
     }
@@ -518,7 +520,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
             class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between"
             :style="{
                 background: 'var(--nav-bg)',
-                backdropFilter: 'blur(16px)',
+                backdropFilter: isMobile ? 'none' : 'blur(16px)',
                 borderBottom: '1px solid var(--nav-border)',
                 height: '58px',
                 padding: isMobile ? '0 10px' : '0 24px',
@@ -1044,7 +1046,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                                 border: none;
                                 border-radius: 16px;
                                 padding: 16px 50px 16px 50px;
-                                font-size: 15px;
+                                font-size: 16px;
                                 color: var(--text);
                                 outline: none;
                                 font-family: inherit;
@@ -1729,7 +1731,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
         <div
             style="
                 position: absolute;
-                bottom: 12px;
+                bottom: calc(12px + env(safe-area-inset-bottom, 0px));
                 left: 50%;
                 transform: translateX(-50%);
                 z-index: 10;

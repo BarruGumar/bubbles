@@ -100,6 +100,8 @@ export function usePhysics() {
 
             b1.activity = Math.max(0.08, Math.min(1, b1.activity + (Math.random() - 0.5) * 0.006))
             if (b1.spawnScale < 0.999) b1.spawnScale += (1 - b1.spawnScale) * 0.14
+            // Precompute for renderer — avoids Math.sin() in the Vue render path
+            b1.breathScale = 1 + Math.sin(b1.phase) * 0.008 * (0.4 + b1.activity)
         }
     }
 

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Bubble;
 use App\Models\CommunityPost;
-use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
@@ -15,19 +14,26 @@ class CommunityController extends Controller
 {
     public function show(int $id): Response
     {
-        $bubble = Bubble::withCount([
-            'memberships',
-            'communityPosts',
-            'communityPosts as recent_posts_count' => fn ($q) => $q->where('created_at', '>=', now()->subDays(7)),
-        ])->findOrFail($id);
-        $creator = User::find($bubble->user_id);
+        $bubble = Bubble::with('user:id,name,username,avatar,avatar_color')
+            ->withCount([
+                'memberships',
+                'communityPosts',
+                'communityPosts as recent_posts_count' => fn ($q) => $q->where('created_at', '>=', now()->subDays(7)),
+            ])->findOrFail($id);
 
+        $creator = $bubble->user;
         $authUser = auth()->user();
-        if ($authUser && $authUser->isBannedFromCommunity($bubble)) {
+        $userId = $authUser?->id;
+
+        // Single pivot query replaces isBannedFromCommunity + canModerateCommunity +
+        // canManageCommunity + isMember exists — saves 3-4 extra queries per page load.
+        $communityRole = $authUser ? $authUser->communityRole($bubble) : null;
+
+        if ($communityRole === 'banned') {
             abort(403, 'Estás banido desta comunidade.');
         }
 
-        $userId = auth()->id();
+        $isOwn = $authUser && $authUser->id === $bubble->user_id;
 
         $paginated = $bubble->communityPosts()
             ->withCount('likes')
@@ -85,16 +91,15 @@ class CommunityController extends Controller
             ->values()
             ->toArray();
 
-        $isOwn      = auth()->check() && auth()->id() === $bubble->user_id;
-        $authUser   = auth()->user();
-        $canModerate = $authUser && $authUser->canModerateCommunity($bubble);
-        $canManage   = $authUser && $authUser->canManageCommunity($bubble);
+        $canManage   = $authUser && ($authUser->hasAdminAccess() || in_array($communityRole, ['owner', 'admin']));
+        $canModerate = $authUser && ($authUser->hasModerationAccess() || in_array($communityRole, ['owner', 'admin', 'moderator']));
+        $isMember    = $isOwn || $canManage || $canModerate || $communityRole === 'member';
 
         return Inertia::render('Community/Show', [
             'isOwn'       => $isOwn,
             'canModerate' => $canModerate,
             'canManage'   => $canManage,
-            'isMember' => $isOwn || (auth()->check() && $bubble->memberships()->where('user_id', auth()->id())->exists()),
+            'isMember'    => $isMember,
             'community' => [
                 'id' => $bubble->id,
                 'label' => $bubble->label,
@@ -134,6 +139,7 @@ class CommunityController extends Controller
         $bubble->memberships()->syncWithoutDetaching([auth()->id()]);
 
         Cache::forget('user:' . auth()->id() . ':community_ids');
+        Cache::forget('bubbles:all');
 
         AuditLogger::log('community.joined', 'community', $bubble, [], $bubble->id);
 
@@ -151,6 +157,7 @@ class CommunityController extends Controller
         $bubble->memberships()->detach(auth()->id());
 
         Cache::forget('user:' . auth()->id() . ':community_ids');
+        Cache::forget('bubbles:all');
 
         AuditLogger::log('community.left', 'community', $bubble, [], $bubble->id);
 

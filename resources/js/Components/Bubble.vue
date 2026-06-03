@@ -23,10 +23,31 @@ const activityDash = computed(() => {
     return `${filled} ${ARC_C - filled}`;
 });
 
-const containerStyle = computed(() => {
-    const { x, y, size, color, spawnScale, selected, activity, phase } = props.bubble;
-    const breathScale = 1 + Math.sin(phase || 0) * 0.008 * (0.4 + activity);
-    const finalScale = spawnScale * (props.isHovered && !selected ? 1.07 : 1) * breathScale;
+// Position wrapper — translate() for GPU-composited movement, no layout recalculation
+const posStyle = computed(() => {
+    const { x, y, size, selected } = props.bubble;
+    return {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: `${size}px`,
+        height: `${size}px`,
+        zIndex: props.isHovered && !selected ? 32 : 20,
+        willChange: 'transform',
+        transform: `translate(${x}px, ${y}px)`,
+        pointerEvents: selected ? 'none' : 'auto',
+        touchAction: 'none',
+        cursor: selected ? 'default' : props.isDragging ? 'grabbing' : 'grab',
+        opacity: selected ? 0 : props.anyHovered && !props.isHovered ? 0.52 : 1,
+        transition: 'opacity .3s ease',
+    };
+});
+
+// Visual bubble — scale transition for hover/spawn; position changes are on the wrapper
+const visualStyle = computed(() => {
+    const { color, spawnScale, selected, activity, breathScale } = props.bubble;
+    // breathScale is precomputed in usePhysics.js — no trig in the render path
+    const finalScale = spawnScale * (props.isHovered && !selected ? 1.07 : 1) * (breathScale ?? 1);
 
     let shadow;
     if (props.isConnectSource) {
@@ -38,110 +59,106 @@ const containerStyle = computed(() => {
     }
 
     return {
-        position: 'absolute',
-        zIndex: props.isHovered && !selected ? 32 : 20,
-        left: `${x}px`,
-        top: `${y}px`,
-        width: `${size}px`,
-        height: `${size}px`,
+        width: '100%',
+        height: '100%',
         borderRadius: '50%',
         backgroundImage: optimizedImage.value
             ? `radial-gradient(circle at 38% 32%, ${color}55 0%, ${color}99 100%), url(${optimizedImage.value})`
             : `radial-gradient(circle at 38% 32%, ${color}ee 0%, ${color} 60%)`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        cursor: selected ? 'default' : props.isDragging ? 'grabbing' : 'grab',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         gap: '3px',
-        opacity: selected ? 0 : props.anyHovered && !props.isHovered ? 0.52 : 1,
-        pointerEvents: selected ? 'none' : 'auto',
-        touchAction: 'none',
+        overflow: 'hidden',
         boxShadow: shadow,
         transform: `scale(${finalScale.toFixed(4)})`,
         transition: props.isDragging
             ? 'none'
-            : 'box-shadow .35s ease, transform .45s cubic-bezier(.22,.78,.26,1), opacity .3s ease',
-        overflow: 'hidden',
+            : 'box-shadow .35s ease, transform .45s cubic-bezier(.22,.78,.26,1)',
     };
 });
 </script>
 
 <template>
+    <!-- Position wrapper: GPU-composited via translate(), no transition (physics drives it) -->
     <div
-        :style="containerStyle"
+        :style="posStyle"
         @mousedown="$emit('mousedown', $event)"
         @mouseenter="$emit('mouseenter')"
         @mouseleave="$emit('mouseleave')"
         @contextmenu="$emit('contextmenu', $event)"
         @touchstart="$emit('touchstart', $event)"
     >
-        <!-- Glass highlight -->
-        <div
-            :style="{
-                position: 'absolute',
-                top: '7px',
-                left: '14%',
-                width: '72%',
-                height: '36%',
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.24)',
-                pointerEvents: 'none',
-                transform: 'rotate(-10deg)',
-            }"
-        />
-
-        <!-- Activity ring -->
-        <svg
-            viewBox="0 0 100 100"
-            :style="{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }"
-        >
-            <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="3.5" />
-            <circle
-                cx="50"
-                cy="50"
-                r="44"
-                fill="none"
-                stroke="rgba(255,255,255,0.5)"
-                stroke-width="3.5"
-                stroke-linecap="round"
-                :stroke-dasharray="activityDash"
-                stroke-dashoffset="69"
-                transform="rotate(-90 50 50)"
+        <!-- Visual bubble: scale transition for hover/spawn only -->
+        <div :style="visualStyle">
+            <!-- Glass highlight -->
+            <div
+                :style="{
+                    position: 'absolute',
+                    top: '7px',
+                    left: '14%',
+                    width: '72%',
+                    height: '36%',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.24)',
+                    pointerEvents: 'none',
+                    transform: 'rotate(-10deg)',
+                }"
             />
-        </svg>
 
-        <!-- Label -->
-        <span
-            :style="{
-                fontSize: `${Math.max(9, Math.min(12, bubble.size / 9))}px`,
-                fontWeight: '800',
-                color: 'white',
-                letterSpacing: '.02em',
-                textShadow: '0 1px 4px rgba(0,0,0,.28)',
-                textAlign: 'center',
-                padding: '0 10px',
-                lineHeight: 1.2,
-                position: 'relative',
-                zIndex: 1,
-            }"
-            >{{ bubble.label }}</span
-        >
+            <!-- Activity ring -->
+            <svg
+                viewBox="0 0 100 100"
+                :style="{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }"
+            >
+                <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="3.5" />
+                <circle
+                    cx="50"
+                    cy="50"
+                    r="44"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.5)"
+                    stroke-width="3.5"
+                    stroke-linecap="round"
+                    :stroke-dasharray="activityDash"
+                    stroke-dashoffset="69"
+                    transform="rotate(-90 50 50)"
+                />
+            </svg>
 
-        <span
-            :style="{
-                fontSize: '9px',
-                color: 'rgba(255,255,255,.72)',
-                fontWeight: '600',
-                position: 'relative',
-                zIndex: 1,
-            }"
-            >{{ bubble.members }} membros</span
-        >
+            <!-- Label -->
+            <span
+                :style="{
+                    fontSize: `${Math.max(9, Math.min(12, bubble.size / 9))}px`,
+                    fontWeight: '800',
+                    color: 'white',
+                    letterSpacing: '.02em',
+                    textShadow: '0 1px 4px rgba(0,0,0,.28)',
+                    textAlign: 'center',
+                    padding: '0 10px',
+                    lineHeight: 1.2,
+                    position: 'relative',
+                    zIndex: 1,
+                }"
+                >{{ bubble.label }}</span
+            >
 
-        <!-- Connect source badge -->
+            <span
+                :style="{
+                    fontSize: '9px',
+                    color: 'rgba(255,255,255,.72)',
+                    fontWeight: '600',
+                    position: 'relative',
+                    zIndex: 1,
+                }"
+                >{{ bubble.members }} membros</span
+            >
+        </div>
+
+        <!-- Connect source badge — outside inner div to avoid overflow:hidden clipping -->
         <div
             v-if="isConnectSource"
             :style="{

@@ -6,6 +6,7 @@ use App\Http\Requests\UpdateCommunitySettingsRequest;
 use App\Models\Bubble;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
 class CommunitySettingsController extends Controller
@@ -22,6 +23,7 @@ class CommunitySettingsController extends Controller
         }
 
         $bubble->update($data);
+        Cache::forget('bubbles:all');
 
         AuditLogger::log('community.settings_updated', 'community', $bubble, [
             'fields_changed' => array_keys($data),
@@ -41,6 +43,7 @@ class CommunitySettingsController extends Controller
         ], $bubble->id);
 
         $bubble->delete();
+        Cache::forget('bubbles:all');
 
         return redirect()->route('bubbles');
     }
