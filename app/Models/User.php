@@ -18,8 +18,23 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'name', 'email', 'password', 'username', 'bio',
         'avatar_color', 'avatar', 'avatar_public_id',
-        'banner', 'banner_public_id', 'theme',
+        'banner', 'banner_public_id', 'theme', 'google_id',
     ];
+
+    public static function generateUsername(string $name): string
+    {
+        $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
+        $base = $base ?: 'user';
+        $base = substr($base, 0, 18);
+        $candidate = $base;
+        $i = 1;
+
+        while (static::where('username', $candidate)->exists()) {
+            $candidate = $base . $i++;
+        }
+
+        return $candidate;
+    }
 
     protected $hidden = ['password', 'remember_token'];
 

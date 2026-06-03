@@ -30,13 +30,11 @@ class RegisteredUserController extends Controller
 
         $colors = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b'];
         $color = $colors[array_rand($colors)];
-        $username = $this->generateUsername($request->name);
-
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'username' => $username,
+            'username' => User::generateUsername($request->name),
             'avatar_color' => $color,
         ]);
 
@@ -47,20 +45,5 @@ class RegisteredUserController extends Controller
         AuditLogger::log('auth.registered', 'auth', $user);
 
         return redirect(route('verification.notice'));
-    }
-
-    private function generateUsername(string $name): string
-    {
-        $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
-        $base = $base ?: 'user';
-        $base = substr($base, 0, 18);
-        $candidate = $base;
-        $i = 1;
-
-        while (User::where('username', $candidate)->exists()) {
-            $candidate = $base.$i++;
-        }
-
-        return $candidate;
     }
 }
