@@ -13,14 +13,15 @@ A community-driven social platform where users create and join **bubbles** (comm
 5. [Environment Configuration](#environment-configuration)
 6. [Email Setup (Mailtrap)](#email-setup-mailtrap)
 7. [Cloudinary Setup](#cloudinary-setup)
-8. [Running the Application](#running-the-application)
-9. [First Use](#first-use)
-10. [Admin Panel](#admin-panel)
-11. [Development Workflow](#development-workflow)
-12. [Testing](#testing)
-13. [Troubleshooting](#troubleshooting)
-14. [Production Build](#production-build)
-15. [Roadmap](#roadmap)
+8. [Google OAuth Setup](#google-oauth-setup)
+9. [Running the Application](#running-the-application)
+10. [First Use](#first-use)
+11. [Admin Panel](#admin-panel)
+12. [Development Workflow](#development-workflow)
+13. [Testing](#testing)
+14. [Troubleshooting](#troubleshooting)
+15. [Production Build](#production-build)
+16. [Roadmap](#roadmap)
 
 ---
 
@@ -31,15 +32,25 @@ A community-driven social platform where users create and join **bubbles** (comm
 | **Feed** | Chronological post feed from joined communities and friends |
 | **Bubbles (Communities)** | Create and join topic-based communities with custom images and banners |
 | **Posts** | Text + image/video posts on profiles or inside communities; edit and delete your own |
-| **Likes & Comments** | React to posts with likes or hearts; leave comments |
+| **Reactions** | Like or react to posts and comments; view who reacted |
+| **Comments & Replies** | Threaded comments with nested replies on posts |
 | **Notifications** | In-app notification badge with real-time polling |
-| **Private Messaging** | One-to-one conversations; send, edit, and delete messages |
+| **Private Messaging** | One-to-one and group conversations; send, edit, and delete messages; custom chat backgrounds |
+| **Group Chats** | Create group conversations, manage members and roles, transfer ownership |
 | **Friends** | Send, accept, and reject friend requests |
+| **Block Users** | Block any user to prevent contact |
 | **Search** | Search users and communities in real time |
 | **Profiles** | Public user profiles with avatar, banner, bio, and post history |
-| **Reports** | Report posts for admin review |
-| **Admin Panel** | Manage users, posts, communities, and reports |
-| **Email Verification** | Hard-enforced email verification before accessing the platform |
+| **Reports** | Report posts, community posts, and users for admin review |
+| **Community Moderation** | Community owners can ban/mute members and manage moderator roles |
+| **Punishments** | Admins can issue warnings, mutes, or bans with acknowledgement flow |
+| **Announcements** | Admins can post platform-wide announcements |
+| **Admin Panel** | Manage users, posts, communities, reports, and audit logs |
+| **Audit Logs** | Full log of sensitive actions (logins, profile changes, moderation events) |
+| **Google OAuth** | Register and log in with a Google account (no password required) |
+| **Theme** | Light and dark mode; preference saved per account |
+| **Email Verification** | Enforced email verification for standard accounts; Google accounts are pre-verified |
+| **Security Headers** | CSP, HSTS, X-Frame-Options, and other security headers on all responses |
 
 ---
 
@@ -54,7 +65,7 @@ A community-driven social platform where users create and join **bubbles** (comm
 | Styling | Tailwind CSS | v3 |
 | Build Tool | Vite | 7 |
 | Database | MySQL / MariaDB | 8+ / 10.6+ |
-| Auth | Laravel Breeze (session) | 2.4+ |
+| Auth | Laravel Breeze (session) + Socialite | — |
 | Media CDN | Cloudinary | v3 |
 | Email (dev) | Mailtrap | — |
 
@@ -109,6 +120,7 @@ You will need free accounts on:
 
 - **[Cloudinary](https://cloudinary.com)** — for image and video storage
 - **[Mailtrap](https://mailtrap.io)** — for email testing in development
+- **[Google Cloud Console](https://console.cloud.google.com)** — for Google OAuth (optional; only needed if you want Google login)
 
 ---
 
@@ -270,6 +282,18 @@ CLOUDINARY_API_KEY=<api_key>
 CLOUDINARY_API_SECRET=<api_secret>
 ```
 
+### Google OAuth
+
+See [Google OAuth Setup](#google-oauth-setup) for the full setup. The relevant variables are:
+
+```env
+GOOGLE_CLIENT_ID=<your_client_id>
+GOOGLE_CLIENT_SECRET=<your_client_secret>
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+```
+
+Google OAuth is optional — the platform works fully without it.
+
 ### After changing `.env`
 
 Always clear the config cache after editing `.env`:
@@ -282,7 +306,9 @@ php artisan config:clear
 
 ## Email Setup (Mailtrap)
 
-Bubbles uses email verification — every new user must verify their email before accessing the platform. In development, emails are intercepted by Mailtrap instead of actually being delivered.
+Bubbles uses email verification — every new standard account must verify their email before accessing the platform. In development, emails are intercepted by Mailtrap instead of actually being delivered.
+
+> **Note:** Google OAuth accounts are automatically verified — no email step is required for them.
 
 ### Step 1 — Create a Mailtrap account
 
@@ -382,6 +408,52 @@ php artisan config:clear
 
 ---
 
+## Google OAuth Setup
+
+Bubbles supports login and registration via Google. Google accounts are automatically verified — no email confirmation step is required.
+
+### Step 1 — Create a Google Cloud project
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Create a new project (or select an existing one)
+3. In the left menu, go to **APIs & Services** → **OAuth consent screen**
+4. Choose **External**, fill in the app name and email, and save
+
+### Step 2 — Create OAuth credentials
+
+1. Go to **APIs & Services** → **Credentials**
+2. Click **Create Credentials** → **OAuth client ID**
+3. Choose **Web application**
+4. Under **Authorised redirect URIs**, add:
+   - `http://localhost:8000/auth/google/callback` (development)
+   - `https://yourdomain.com/auth/google/callback` (production)
+5. Click **Create** — you will receive a **Client ID** and **Client Secret**
+
+### Step 3 — Add credentials to `.env`
+
+```env
+GOOGLE_CLIENT_ID=<your_client_id>
+GOOGLE_CLIENT_SECRET=<your_client_secret>
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+```
+
+For production, change `GOOGLE_REDIRECT_URI` to your live domain.
+
+### Step 4 — Clear cache
+
+```bash
+php artisan config:clear
+```
+
+### How Google OAuth works
+
+- If the Google email matches an existing account, that account is linked to Google and the user is logged in
+- If no account exists, a new one is created automatically (with a generated username and random avatar colour)
+- If the Google account provides a profile photo, it is used as the avatar
+- Google-only accounts have no password — they can set one later from the **Settings** page
+
+---
+
 ## Running the Application
 
 ### Development (recommended)
@@ -426,11 +498,18 @@ Once the app is running at [http://localhost:8000](http://localhost:8000):
 
 ### Registering an account
 
+**Via email:**
 1. Go to `/register`
 2. Fill in your name, username, email, and password
 3. Submit the form — a verification email is sent to your Mailtrap inbox
 4. Open Mailtrap, find the email, and click **Verify Email Address**
 5. You are now logged in and have full access to the platform
+
+**Via Google:**
+1. Go to `/login` or `/register`
+2. Click **Continue with Google**
+3. Authorise the app in the Google popup
+4. Your account is created and verified automatically — no email step required
 
 ### Navigating the platform
 
@@ -440,8 +519,8 @@ Once the app is running at [http://localhost:8000](http://localhost:8000):
 | Communities | `/bubbles` | Browse, create, and join bubbles |
 | Community | `/c/{id}` | View community posts, join/leave, create posts |
 | Profile | `/u/{username}` | View any user's public profile |
-| Settings | `/profile` | Edit name, bio, avatar, banner, and password |
-| Conversations | `/conversations` | Send and read private messages |
+| Settings | `/profile` | Edit name, bio, avatar, banner, theme, and password |
+| Conversations | `/conversations` | Send and read private messages and group chats |
 | Friends | `/friends` | Manage friend requests and friendships |
 | Notifications | `/notifications` | View all notifications |
 | Search | `/search?q=...` | Find users and communities |
@@ -492,10 +571,15 @@ Exit tinker with `exit` or `Ctrl+D`.
 
 | Section | URL | Actions |
 |---|---|---|
+| Dashboard | `/admin` | Overview and stats |
 | Users | `/admin/users` | View all users, change roles, delete accounts |
 | Posts | `/admin/posts` | View, restore, and force-delete posts |
+| Community Posts | `/admin/community-posts` | View, restore, and force-delete community posts |
 | Communities | `/admin/communities` | View and delete communities |
 | Reports | `/admin/reports` | Review, resolve, or dismiss reported content |
+| Punishments | `/admin/punishments` | Issue warnings, mutes, or bans; revoke punishments |
+| Announcements | `/admin/announcements` | Post and manage platform-wide announcements |
+| Audit Logs | `/admin/audit-logs` | View all sensitive actions across the platform |
 
 ### User roles
 
@@ -618,6 +702,17 @@ php artisan config:clear
 
 ---
 
+### Google login shows an error or redirects to login with an error message
+
+**Cause:** Missing or incorrect Google OAuth credentials, or the redirect URI is not registered in Google Cloud Console.
+
+**Fix:**
+1. Check `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` in `.env`
+2. Confirm the redirect URI matches exactly what is listed in your Google Cloud Console credentials
+3. Run `php artisan config:clear`
+
+---
+
 ### Existing accounts can't access the platform after enabling email verification
 
 **Cause:** Accounts created before email verification was enabled have `email_verified_at = null`.
@@ -678,6 +773,7 @@ APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://yourdomain.com
 QUEUE_CONNECTION=database
+GOOGLE_REDIRECT_URI=https://yourdomain.com/auth/google/callback
 ```
 
 ### 2. Build frontend assets
@@ -695,7 +791,13 @@ php artisan view:cache
 php artisan optimize
 ```
 
-### 4. Run the queue worker
+### 4. Run migrations
+
+```bash
+php artisan migrate --force
+```
+
+### 5. Run the queue worker
 
 In production, `QUEUE_CONNECTION=database` requires a persistent queue worker. Run it as a system service (e.g. via Supervisor):
 
