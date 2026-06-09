@@ -5,10 +5,6 @@ export function useConnections() {
     const connections = ref([])
     const friendConnections = ref([])
 
-    function has(a, b) {
-        return connections.value.some((c) => (c.from === a && c.to === b) || (c.from === b && c.to === a))
-    }
-
     async function load() {
         try {
             const res = await axios.get('/api/connections')
@@ -27,17 +23,8 @@ export function useConnections() {
         }
     }
 
-    async function connect(fromId, toId) {
-        if (fromId === toId || has(fromId, toId)) return
-        const entry = { from: fromId, to: toId }
-        connections.value.push(entry)
-        try {
-            await axios.post('/api/connections', { from_bubble_id: fromId, to_bubble_id: toId })
-        } catch (err) {
-            connections.value = connections.value.filter((c) => c !== entry)
-            console.warn('[Connections] Não foi possível persistir a conexão.', err)
-        }
-    }
+    // TODO: Implementar aqui a recomendação automática de comunidades por interesses,
+    // baseada nas comunidades onde o utilizador é membro (análise de gostos em comum).
 
-    return { connections, friendConnections, load, loadFriendConnections, connect }
+    return { connections, friendConnections, load, loadFriendConnections }
 }

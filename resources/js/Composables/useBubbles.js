@@ -82,7 +82,6 @@ function rawToLocal(b, i, total, storedPos) {
 export function useBubbles() {
     const bubbles      = ref([])
     const hoveredId    = ref(null)
-    const connectSource = ref(null)
 
     function savePositions(userId) {
         if (!userId) return
@@ -217,5 +216,5 @@ export function useBubbles() {
         })
     }
 
-    return { bubbles, hoveredId, connectSource, load, add, toggleSelect, savePositions }
+    return { bubbles, hoveredId, load, add, toggleSelect, savePositions }
 }

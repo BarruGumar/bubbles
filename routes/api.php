@@ -16,7 +16,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/bubbles/{bubble}', [BubbleController::class, 'update']);
     Route::patch('/bubbles/{bubble}', [BubbleController::class, 'update']);
     Route::delete('/bubbles/{bubble}', [BubbleController::class, 'destroy']);
-
-    Route::post('/connections', [ConnectionController::class, 'store']);
-    Route::delete('/connections/{connection}', [ConnectionController::class, 'destroy']);
 });

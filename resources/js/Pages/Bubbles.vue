@@ -32,9 +32,9 @@ const props = defineProps({
     nextCursor: { type: Number, default: null },
 });
 
-const { bubbles, hoveredId, connectSource, load, add, toggleSelect, savePositions } = useBubbles();
+const { bubbles, hoveredId, load, add, toggleSelect, savePositions } = useBubbles();
 const ready = ref(false);
-const { connections, friendConnections, load: loadConnections, loadFriendConnections, connect } = useConnections();
+const { connections, friendConnections, load: loadConnections, loadFriendConnections } = useConnections();
 const { step } = usePhysics();
 const { show: toast } = useToast();
 const { isDark, toggle: toggleTheme } = useTheme();
@@ -229,21 +229,6 @@ function onWindowTouchEnd(e) {
     stopDrag();
 }
 
-function handleContextMenu(bubble, e) {
-    e.preventDefault();
-    if (!e.shiftKey) return;
-    if (!connectSource.value) {
-        connectSource.value = bubble;
-        return;
-    }
-    if (connectSource.value.id === bubble.id) {
-        connectSource.value = null;
-        return;
-    }
-    connect(connectSource.value.id, bubble.id);
-    connectSource.value = null;
-}
-
 function onBubbleLeave(id) {
     if (hoveredId.value === id) hoveredId.value = null;
 }
@@ -253,7 +238,6 @@ function clearSelectionForced() {
     bubbles.value.forEach((b) => {
         b.selected = false;
     });
-    connectSource.value = null;
 }
 
 // Guarded close — blocks spurious calls (synthetic clicks, touchend.self)
@@ -1456,12 +1440,10 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
             :isDragging="dragging?.id === b.id"
             :isHovered="hoveredId === b.id"
             :anyHovered="hoveredId !== null"
-            :isConnectSource="connectSource?.id === b.id"
             @mousedown="startDrag(b, $event)"
             @touchstart="startTouch(b, $event)"
             @mouseenter="onBubbleEnter(b.id)"
             @mouseleave="onBubbleLeave(b.id)"
-            @contextmenu="handleContextMenu(b, $event)"
         />
 
         <!-- EXPANDED BUBBLE PANEL -->
@@ -1751,35 +1733,6 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                 {{ isMobile ? 'Toca para expandir · Arrasta para mover' : 'Segura para arrastar · Clica para expandir · Esc para fechar' }}
             </span>
         </div>
-
-        <!-- Connect source hint -->
-        <Transition name="fade">
-            <div
-                v-if="connectSource"
-                style="
-                    position: absolute;
-                    top: 68px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    z-index: 40;
-                    pointer-events: none;
-                "
-            >
-                <span
-                    style="
-                        font-size: 11px;
-                        color: #009ac7;
-                        background: #4ebcff18;
-                        padding: 5px 14px;
-                        border-radius: 99px;
-                        border: 1px solid #4ebcff44;
-                        backdrop-filter: blur(8px);
-                    "
-                >
-                    {{ connectSource.label }} → Shift+RMB em outra
-                </span>
-            </div>
-        </Transition>
 
         <!-- ── Punishment notification modal ─────────────────────── -->
         <PunishmentModal />

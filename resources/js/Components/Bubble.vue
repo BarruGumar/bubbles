@@ -7,10 +7,9 @@ const props = defineProps({
     isDragging: { type: Boolean, default: false },
     isHovered: { type: Boolean, default: false },
     anyHovered: { type: Boolean, default: false },
-    isConnectSource: { type: Boolean, default: false },
 });
 
-defineEmits(['mousedown', 'mouseenter', 'mouseleave', 'contextmenu', 'touchstart']);
+defineEmits(['mousedown', 'mouseenter', 'mouseleave', 'touchstart']);
 
 const ARC_C = 276.46;
 
@@ -50,9 +49,7 @@ const visualStyle = computed(() => {
     const finalScale = spawnScale * (props.isHovered && !selected ? 1.07 : 1) * (breathScale ?? 1);
 
     let shadow;
-    if (props.isConnectSource) {
-        shadow = `0 0 0 4px white, 0 0 0 7px #009ac7, 0 0 24px #009ac744`;
-    } else if (props.isHovered && !selected) {
+    if (props.isHovered && !selected) {
         shadow = `0 14px 40px ${color}99, 0 4px 14px ${color}44, 0 0 ${18 + activity * 12}px ${color}44`;
     } else {
         shadow = `0 8px 26px ${color}44, 0 2px 8px ${color}22, 0 0 ${10 + activity * 8}px ${color}22`;
@@ -89,7 +86,6 @@ const visualStyle = computed(() => {
         @mousedown="$emit('mousedown', $event)"
         @mouseenter="$emit('mouseenter')"
         @mouseleave="$emit('mouseleave')"
-        @contextmenu="$emit('contextmenu', $event)"
         @touchstart="$emit('touchstart', $event)"
     >
         <!-- Visual bubble: scale transition for hover/spawn only -->
@@ -158,24 +154,5 @@ const visualStyle = computed(() => {
             >
         </div>
 
-        <!-- Connect source badge — outside inner div to avoid overflow:hidden clipping -->
-        <div
-            v-if="isConnectSource"
-            :style="{
-                position: 'absolute',
-                top: '-8px',
-                right: '-8px',
-                background: '#009ac7',
-                color: 'white',
-                borderRadius: '99px',
-                fontSize: '8px',
-                padding: '2px 7px',
-                border: '2px solid white',
-                fontWeight: '700',
-                zIndex: 31,
-            }"
-        >
-            origem
-        </div>
     </div>
 </template>
