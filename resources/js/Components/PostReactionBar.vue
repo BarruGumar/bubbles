@@ -179,23 +179,28 @@ function toggleLike() {
                     justifyContent: 'center',
                     gap: '6px',
                     padding: '7px 12px',
+                    minHeight: '32px',
                     background: localIsLiked ? 'rgba(199,74,107,.18)' : 'var(--surface, rgba(255,255,255,.06))',
                     border: localIsLiked ? '1px solid rgba(199,74,107,.35)' : '1px solid var(--card-border, rgba(255,255,255,.12))',
                     cursor: authUser ? 'pointer' : 'default',
                     fontSize: '13px',
                     fontWeight: '600',
+                    lineHeight: '1.2',
                     borderRadius: '99px',
                     transition: 'all .2s',
                     color: localIsLiked ? '#e87fa0' : 'var(--text-3, #8ba0b0)',
                     boxShadow: localIsLiked ? 'inset 0 1px 0 rgba(255,255,255,.12), 0 0 12px rgba(199,74,107,.2)' : 'inset 0 1px 0 rgba(255,255,255,.08)',
                     boxSizing: 'border-box',
+                    overflow: 'visible',
+                    whiteSpace: 'nowrap',
                 }"
                 @mouseenter.stop="authUser && ($event.currentTarget.style.opacity = '.82')"
                 @mouseleave.stop="$event.currentTarget.style.opacity = '1'"
             >
-                <span v-if="localIsLiked && currentEmoji()" style="font-size: 16px; line-height: 1">{{
-                    currentEmoji()
-                }}</span>
+                <span
+                    v-if="localIsLiked && currentEmoji()"
+                    style="font-size: 16px; line-height: 1; display: inline-flex; align-items: center;"
+                >{{ currentEmoji() }}</span>
                 <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" style="opacity:.65;flex-shrink:0">
                     <path
                         :fill="localIsLiked ? '#e05f7a' : 'none'"
@@ -213,10 +218,13 @@ function toggleLike() {
                         textDecoration: 'underline',
                         textUnderlineOffset: '2px',
                         cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        lineHeight: '1.2',
                     }"
                     >{{ localLikeCount }} {{ localLikeCount === 1 ? 'Reação' : 'Reações' }}</span
                 >
-                <span v-else>{{ localLikeCount }} {{ localLikeCount === 1 ? 'Reação' : 'Reações' }}</span>
+                <span v-else style="display: inline-flex; align-items: center; line-height: 1.2">{{ localLikeCount }} {{ localLikeCount === 1 ? 'Reação' : 'Reações' }}</span>
             </button>
 
             <ReactorsModal v-if="reactorsRoute" ref="reactorsModal" :reactors-route="reactorsRoute" />
