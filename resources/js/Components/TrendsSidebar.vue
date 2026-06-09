@@ -17,11 +17,12 @@ const emit = defineEmits(['toggle', 'select']);
             bottom: isMobile ? '120px' : 'auto',
             zIndex: 38,
             width: isMobile ? '158px' : '192px',
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.82), rgba(238,243,248,0.42))',
-            backdropFilter: 'blur(18px)',
+            background: 'rgba(255,255,255,0.72)',
+            backgroundColor: 'rgba(255,255,255,0.72)',
+            backdropFilter: 'blur(18px) saturate(130%)',
             borderRadius: '18px',
-            border: '1px solid rgba(255,255,255,0.72)',
-            boxShadow: '0 10px 30px rgba(8,15,28,0.14)',
+            border: '1px solid rgba(255,255,255,0.55)',
+            boxShadow: '0 10px 30px rgba(15,23,42,0.14)',
             padding: isMobile ? '10px 10px' : '14px 12px',
             display: 'flex',
             flexDirection: 'column',
@@ -47,7 +48,7 @@ const emit = defineEmits(['toggle', 'select']);
                 style="
                     font-size: 10px;
                     font-weight: 800;
-                    color: rgba(72,88,108,0.96);
+                    color: rgba(33, 46, 60, 0.96);
                     text-transform: uppercase;
                     letter-spacing: 0.1em;
                     margin: 0;
@@ -68,7 +69,7 @@ const emit = defineEmits(['toggle', 'select']);
             >
                 <path
                     d="M2 8L6 4l4 4"
-                    stroke="rgba(72,88,108,0.92)"
+                    stroke="rgba(33,46,60,0.92)"
                     stroke-width="1.6"
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -100,7 +101,7 @@ const emit = defineEmits(['toggle', 'select']);
                     cursor: pointer;
                     transition: background 0.15s;
                 "
-                @mouseenter="$event.currentTarget.style.background = 'rgba(255,255,255,0.16)'"
+                @mouseenter="$event.currentTarget.style.background = 'rgba(255,255,255,0.45)'"
                 @mouseleave="$event.currentTarget.style.background = 'transparent'"
             >
                 <span

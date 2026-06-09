@@ -14,11 +14,11 @@ function formatInitial(name) {
 <template>
     <div
         style="
-            background: rgba(255, 255, 255, 0.88);
+            background: var(--card-bg, rgba(17, 24, 39, 0.88));
             backdrop-filter: blur(20px);
             border-radius: 16px;
-            border: 1px solid #4ebcff1a;
-            box-shadow: 0 2px 12px #009ac708;
+            border: 1px solid var(--card-border, rgba(148, 163, 184, 0.18));
+            box-shadow: 0 2px 12px var(--shadow-color, rgba(15, 23, 42, 0.28));
             padding: 16px 22px;
             margin-bottom: 16px;
         "
@@ -27,7 +27,7 @@ function formatInitial(name) {
             style="
                 font-size: 10px;
                 font-weight: 800;
-                color: #8ba0b0;
+                color: var(--text-3, #a8b8c5);
                 text-transform: uppercase;
                 letter-spacing: 0.1em;
                 margin: 0 0 12px;
@@ -90,7 +90,7 @@ function formatInitial(name) {
                 <span
                     style="
                         font-size: 10px;
-                        color: #8ba0b0;
+                        color: var(--text-3, #a8b8c5);
                         font-weight: 600;
                         max-width: 48px;
                         overflow: hidden;

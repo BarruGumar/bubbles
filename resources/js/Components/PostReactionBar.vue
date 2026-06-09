@@ -135,9 +135,9 @@ function toggleLike() {
                         bottom: calc(100% + 8px);
                         left: 50%;
                         transform: translateX(-50%);
-                        background: white;
+                        background: var(--card-bg, rgba(255,255,255,0.96));
                         border-radius: 99px;
-                        border: 1px solid #eef2f8;
+                        border: 1px solid var(--card-border, rgba(78,188,255,0.18));
                         box-shadow: 0 4px 24px rgba(0, 0, 0, 0.13);
                         display: flex;
                         gap: 2px;
@@ -179,14 +179,14 @@ function toggleLike() {
                     justifyContent: 'center',
                     gap: '6px',
                     padding: '7px 12px',
-                    background: localIsLiked ? 'rgba(199,74,107,.18)' : 'rgba(255,255,255,.06)',
-                    border: localIsLiked ? '1px solid rgba(199,74,107,.35)' : '1px solid rgba(255,255,255,.12)',
+                    background: localIsLiked ? 'rgba(199,74,107,.18)' : 'var(--surface, rgba(255,255,255,.06))',
+                    border: localIsLiked ? '1px solid rgba(199,74,107,.35)' : '1px solid var(--card-border, rgba(255,255,255,.12))',
                     cursor: authUser ? 'pointer' : 'default',
                     fontSize: '13px',
                     fontWeight: '600',
                     borderRadius: '99px',
                     transition: 'all .2s',
-                    color: localIsLiked ? '#e87fa0' : '#8ba0b0',
+                    color: localIsLiked ? '#e87fa0' : 'var(--text-3, #8ba0b0)',
                     boxShadow: localIsLiked ? 'inset 0 1px 0 rgba(255,255,255,.12), 0 0 12px rgba(199,74,107,.2)' : 'inset 0 1px 0 rgba(255,255,255,.08)',
                     boxSizing: 'border-box',
                 }"
@@ -232,14 +232,14 @@ function toggleLike() {
                 justifyContent: 'center',
                 gap: '6px',
                 padding: '7px 12px',
-                background: commentsExpanded ? `${accentColor}22` : 'rgba(255,255,255,.06)',
-                border: commentsExpanded ? `1px solid ${accentColor}55` : '1px solid rgba(255,255,255,.12)',
+                background: commentsExpanded ? `${accentColor}22` : 'var(--surface, rgba(255,255,255,.06))',
+                border: commentsExpanded ? `1px solid ${accentColor}55` : '1px solid var(--card-border, rgba(255,255,255,.12))',
                 cursor: 'pointer',
                 fontSize: '13px',
                 fontWeight: '600',
                 borderRadius: '99px',
                 transition: 'all .2s',
-                color: commentsExpanded ? accentColor : '#8ba0b0',
+                color: commentsExpanded ? accentColor : 'var(--text-3, #8ba0b0)',
                 boxShadow: commentsExpanded ? `inset 0 1px 0 rgba(255,255,255,.1), 0 0 10px ${accentColor}25` : 'inset 0 1px 0 rgba(255,255,255,.08)',
             }"
             @mouseenter="$event.currentTarget.style.opacity = '.82'"

@@ -123,18 +123,18 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                 <div style="flex:1; min-width:0">
                     <div class="comment-bubble" style="padding:8px 12px">
                         <Link v-if="c.author.username" :href="route('profile.show', c.author.username)"
-                            style="font-size:12px; font-weight:700; color:#3a6478; text-decoration:none">
+                            style="font-size:12px; font-weight:700; color:var(--text, #1a3a4a); text-decoration:none">
                             {{ c.author.name }}
                         </Link>
-                        <span v-else style="font-size:12px; font-weight:700; color:#3a6478">{{ c.author.name }}</span>
-                        <p style="font-size:13px; color:#2a4a5a; margin:2px 0 0; line-height:1.5; white-space:pre-wrap">
+                        <span v-else style="font-size:12px; font-weight:700; color:var(--text, #1a3a4a)">{{ c.author.name }}</span>
+                        <p style="font-size:13px; color:var(--text, #1a3a4a); margin:2px 0 0; line-height:1.5; white-space:pre-wrap">
                             {{ c.content }}
                         </p>
                     </div>
 
                     <!-- Meta: time · like picker · reply · delete -->
                     <div style="display:flex; gap:10px; align-items:center; margin-top:3px; padding-left:10px; flex-wrap:wrap">
-                        <span style="font-size:11px; color:#b0c0cc">{{ c.created_at }}</span>
+                        <span style="font-size:11px; color:var(--text-4, #b0c0cc)">{{ c.created_at }}</span>
 
                         <!-- Like button with hover picker -->
                         <div style="position:relative; display:inline-flex; align-items:center">
@@ -164,7 +164,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                                 style="background:none; border:none; cursor:pointer; padding:0;
                                        font-size:12px; display:flex; align-items:center; gap:3px;
                                        transition:opacity 0.15s"
-                                :style="c.user_reaction ? { color: accentColor, fontWeight: '700' } : { color: '#b0c0cc' }">
+                                :style="c.user_reaction ? { color: accentColor, fontWeight: '700' } : { color: 'var(--text-4, #b0c0cc)' }">
                                 <span style="font-size:14px; line-height:1">
                                     {{ c.user_reaction ? reactionEmoji(c.user_reaction) : '🤍' }}
                                 </span>
@@ -175,11 +175,11 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                         <!-- Responder -->
                         <button v-if="authUser"
                             @click="toggleReplyInput(c.id)"
-                            style="font-size:11px; font-weight:700; color:#b0c0cc; background:none;
+                            style="font-size:11px; font-weight:700; color:var(--text-4, #b0c0cc); background:none;
                                    border:none; cursor:pointer; padding:0; transition:color 0.15s"
                             :style="activeReply === c.id ? { color: accentColor } : {}"
                             @mouseenter="$event.target.style.color = accentColor"
-                            @mouseleave="$event.target.style.color = activeReply === c.id ? accentColor : '#b0c0cc'">
+                            @mouseleave="$event.target.style.color = activeReply === c.id ? accentColor : 'var(--text-4, #b0c0cc)'">
                             Responder
                         </button>
 
@@ -215,9 +215,9 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                 <input v-model="replyTexts[c.id]"
                     @keydown.enter.prevent="submitReply(c.id, c.reply_route)"
                     placeholder="Escreve uma resposta..."
-                    style="flex:1; min-width:0; background:rgba(240,248,255,0.8);
-                           border:1.5px solid rgba(0,154,199,0.15); border-radius:16px;
-                           padding:5px 12px; font-size:12px; color:#3a6478; outline:none;
+                    style="flex:1; min-width:0; background:var(--input-bg, rgba(240,248,255,0.8));
+                           border:1.5px solid var(--input-border, rgba(0,154,199,0.15)); border-radius:16px;
+                           padding:5px 12px; font-size:12px; color:var(--input-text, #1a3a4a); outline:none;
                            font-family:inherit; transition:border-color 0.2s"
                     @focus="$event.target.style.borderColor = accentColor"
                     @blur="$event.target.style.borderColor = 'rgba(0,154,199,0.15)'" />
@@ -249,20 +249,20 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
 
                     <!-- Reply bubble + meta -->
                     <div style="flex:1; min-width:0">
-                        <div style="background:var(--surface); border:1px solid rgba(78,188,255,.1); border-radius:10px; padding:6px 10px; box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+                        <div style="background:var(--surface, rgba(255,255,255,0.72)); border:1px solid var(--card-border, rgba(78,188,255,.1)); border-radius:10px; padding:6px 10px; box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
                             <Link v-if="r.author.username" :href="route('profile.show', r.author.username)"
-                                style="font-size:11px; font-weight:700; color:#3a6478; text-decoration:none">
+                                style="font-size:11px; font-weight:700; color:var(--text, #1a3a4a); text-decoration:none">
                                 {{ r.author.name }}
                             </Link>
-                            <span v-else style="font-size:11px; font-weight:700; color:#3a6478">{{ r.author.name }}</span>
-                            <p style="font-size:12px; color:#2a4a5a; margin:2px 0 0; line-height:1.5; white-space:pre-wrap">
+                            <span v-else style="font-size:11px; font-weight:700; color:var(--text, #1a3a4a)">{{ r.author.name }}</span>
+                            <p style="font-size:12px; color:var(--text, #1a3a4a); margin:2px 0 0; line-height:1.5; white-space:pre-wrap">
                                 {{ r.content }}
                             </p>
                         </div>
 
                         <!-- Reply meta -->
                         <div style="display:flex; gap:8px; align-items:center; margin-top:2px; padding-left:8px; flex-wrap:wrap">
-                            <span style="font-size:10px; color:#b0c0cc">{{ r.created_at }}</span>
+                            <span style="font-size:10px; color:var(--text-4, #b0c0cc)">{{ r.created_at }}</span>
 
                             <!-- Like on reply -->
                             <div style="position:relative; display:inline-flex; align-items:center">
@@ -289,7 +289,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                                     @mouseleave="cancelPickerTimer(r.id)"
                                     style="background:none; border:none; cursor:pointer; padding:0;
                                            font-size:11px; display:flex; align-items:center; gap:2px"
-                                    :style="r.user_reaction ? { color: accentColor, fontWeight:'700' } : { color:'#b0c0cc' }">
+                                    :style="r.user_reaction ? { color: accentColor, fontWeight:'700' } : { color:'var(--text-4, #b0c0cc)' }">
                                     <span style="font-size:12px; line-height:1">
                                         {{ r.user_reaction ? reactionEmoji(r.user_reaction) : '🤍' }}
                                     </span>
@@ -315,7 +315,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
 
         <!-- Empty state -->
         <p v-if="comments.length === 0"
-            style="font-size:12px; color:#b0c0cc; text-align:center; padding:2px 0 10px; font-style:italic">
+            style="font-size:12px; color:var(--text-4, #b0c0cc); text-align:center; padding:2px 0 10px; font-style:italic">
             Sê o primeiro a comentar!
         </p>
 
@@ -337,9 +337,9 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                 <input v-model="commentText"
                     @keydown.enter.prevent="submitComment"
                     placeholder="Escreve um comentário..."
-                    style="flex:1; min-width:0; background:rgba(240,248,255,0.8);
-                           border:1.5px solid rgba(0,154,199,0.15); border-radius:20px;
-                           padding:7px 14px; font-size:13px; color:#3a6478; outline:none;
+                    style="flex:1; min-width:0; background:var(--input-bg, rgba(240,248,255,0.8));
+                           border:1.5px solid var(--input-border, rgba(0,154,199,0.15)); border-radius:20px;
+                           padding:7px 14px; font-size:13px; color:var(--input-text, #1a3a4a); outline:none;
                            font-family:inherit; transition:border-color 0.2s"
                     @focus="$event.target.style.borderColor = accentColor"
                     @blur="$event.target.style.borderColor = 'rgba(0,154,199,0.15)'" />

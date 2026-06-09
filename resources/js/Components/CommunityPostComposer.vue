@@ -109,11 +109,11 @@ onUnmounted(() => {
 <template>
     <div
         style="
-            background: rgba(255, 255, 255, 0.88);
+            background: var(--card-bg, rgba(255, 255, 255, 0.88));
             backdrop-filter: blur(20px);
             border-radius: 18px;
-            border: 1px solid #4ebcff22;
-            box-shadow: 0 4px 16px #009ac70a;
+            border: 1px solid var(--card-border, rgba(78, 188, 255, 0.22));
+            box-shadow: 0 4px 16px rgba(0, 154, 199, 0.08);
             padding: 20px;
             margin-bottom: 16px;
         "
@@ -158,12 +158,12 @@ onUnmounted(() => {
                     rows="3"
                     style="
                         width: 100%;
-                        background: #f0f8ff;
-                        border: 1.5px solid #4ebcff33;
+                        background: var(--input-bg, #f0f8ff);
+                        border: 1.5px solid var(--input-border, rgba(78, 188, 255, 0.20));
                         border-radius: 12px;
                         padding: 12px 14px;
                         font-size: 14px;
-                        color: #3a6478;
+                        color: var(--input-text, #1a3a4a);
                         outline: none;
                         font-family: inherit;
                         resize: vertical;
@@ -171,7 +171,7 @@ onUnmounted(() => {
                         box-sizing: border-box;
                     "
                     @focus="$event.target.style.borderColor = community.color"
-                    @blur="$event.target.style.borderColor = '#4ebcff33'"
+                    @blur="$event.target.style.borderColor = 'var(--input-border, rgba(78, 188, 255, 0.20))'"
                     @keydown.ctrl.enter="submitPost"
                     @paste="handlePostPaste"
                 />
@@ -228,7 +228,7 @@ onUnmounted(() => {
 
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px">
                     <div style="display: flex; align-items: center; gap: 8px">
-                        <span style="font-size: 11px; color: #b0c0cc">{{ charCount }}/1000 · Ctrl+Enter</span>
+                        <span style="font-size: 11px; color: var(--text-3, #b0c0cc)">{{ charCount }}/1000 · Ctrl+Enter</span>
                         <button
                             type="button"
                             @click="mediaInput.click()"
@@ -236,7 +236,7 @@ onUnmounted(() => {
                                 background: 'none',
                                 border: 'none',
                                 cursor: 'pointer',
-                                color: postForm.image || postForm.video ? community.color : '#b0c0cc',
+                                color: postForm.image || postForm.video ? community.color : 'var(--text-3, #b0c0cc)',
                                 padding: '3px',
                                 borderRadius: '6px',
                                 transition: 'color .2s',
@@ -301,7 +301,7 @@ onUnmounted(() => {
 
                 <!-- Video upload progress bar -->
                 <div v-if="postForm.processing && postForm.video" style="margin-top: 8px">
-                    <div style="height: 4px; background: #e8f4fb; border-radius: 99px; overflow: hidden">
+                    <div style="height: 4px; background: var(--surface, #e8f4fb); border-radius: 99px; overflow: hidden">
                         <div
                             :style="{
                                 width: uploadingServer ? '100%' : uploadProgress + '%',
@@ -312,7 +312,7 @@ onUnmounted(() => {
                             }"
                         />
                     </div>
-                    <p style="font-size: 10px; color: #8ba0b0; margin: 4px 0 0">
+                    <p style="font-size: 10px; color: var(--text-3, #8ba0b0); margin: 4px 0 0">
                         {{
                             uploadingServer
                                 ? 'A guardar no servidor... pode demorar alguns segundos.'
@@ -331,6 +331,6 @@ onUnmounted(() => {
 
 <style scoped>
 textarea::placeholder {
-    color: #b0c8d8;
+    color: var(--input-placeholder, #b0c8d8);
 }
 </style>

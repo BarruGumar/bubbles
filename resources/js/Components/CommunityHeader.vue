@@ -126,9 +126,9 @@ function leaveCommunity() {
         <!-- Card body -->
         <div
             style="
-                background: rgba(255, 255, 255, 0.92);
+                background: var(--card-bg, rgba(255, 255, 255, 0.92));
                 backdrop-filter: blur(20px);
-                border: 1px solid #4ebcff22;
+                border: 1px solid var(--card-border, rgba(78, 188, 255, 0.22));
                 border-top: none;
                 border-radius: 0 0 22px 22px;
                 padding: 58px 32px 28px;
@@ -150,14 +150,14 @@ function leaveCommunity() {
                         style="
                             font-size: 22px;
                             font-weight: 900;
-                            color: #3a6478;
+                            color: var(--text, #1a3a4a);
                             margin: 0 0 3px;
                             letter-spacing: -0.02em;
                         "
                     >
                         {{ community.title }}
                     </h1>
-                    <p style="font-size: 12px; color: #5a7a8a; margin: 0 0 10px; font-style: italic">
+                    <p style="font-size: 12px; color: var(--text-2, #5a7a8a); margin: 0 0 10px; font-style: italic">
                         {{ community.tagline }}
                     </p>
                     <p style="font-size: 13px; font-weight: 700; margin: 0" :style="{ color: community.color }">
@@ -165,7 +165,7 @@ function leaveCommunity() {
                     </p>
 
                     <div v-if="community.creator" style="display: flex; align-items: center; gap: 6px; margin-top: 8px">
-                        <span style="font-size: 11px; color: #8ba0b0; font-weight: 600">Criado por</span>
+                        <span style="font-size: 11px; color: var(--text-3, #8ba0b0); font-weight: 600">Criado por</span>
                         <component
                             :is="community.creator.username ? Link : 'span'"
                             :href="
@@ -236,8 +236,8 @@ function leaveCommunity() {
                             padding: 9px 16px;
                             border-radius: 99px;
                             border: none;
-                            background: #f0f8ff;
-                            color: #5a7a8a;
+                            background: var(--item-hover, #f0f8ff);
+                            color: var(--text-2, #5a7a8a);
                             font-size: 12px;
                             font-weight: 700;
                             cursor: pointer;
@@ -262,8 +262,8 @@ function leaveCommunity() {
                             padding: 9px 16px;
                             border-radius: 99px;
                             border: none;
-                            background: #f0f8ff;
-                            color: #5a7a8a;
+                            background: var(--item-hover, #f0f8ff);
+                            color: var(--text-2, #5a7a8a);
                             font-size: 12px;
                             font-weight: 700;
                             cursor: pointer;
@@ -293,8 +293,8 @@ function leaveCommunity() {
                             padding: 9px 16px;
                             border-radius: 99px;
                             border: none;
-                            background: #f0f8ff;
-                            color: #5a7a8a;
+                            background: var(--item-hover, #f0f8ff);
+                            color: var(--text-2, #5a7a8a);
                             font-size: 12px;
                             font-weight: 700;
                             cursor: pointer;
@@ -389,7 +389,7 @@ function leaveCommunity() {
                 >
             </div>
 
-            <p v-if="community.description" style="font-size: 13px; color: #4a6a7a; margin: 16px 0 0; line-height: 1.6">
+            <p v-if="community.description" style="font-size: 13px; color: var(--text-2, #4a6a7a); margin: 16px 0 0; line-height: 1.6">
                 {{ community.description }}
             </p>
 
@@ -399,7 +399,7 @@ function leaveCommunity() {
                     <span
                         style="
                             font-size: 10px;
-                            color: #8ba0b0;
+                            color: var(--text-3, #8ba0b0);
                             font-weight: 700;
                             text-transform: uppercase;
                             letter-spacing: 0.08em;
@@ -415,7 +415,7 @@ function leaveCommunity() {
                         >{{ activityLevel.label }}</span
                     >
                 </div>
-                <div style="height: 4px; background: #e8f4fb; border-radius: 99px; overflow: hidden">
+                <div style="height: 4px; background: var(--surface, #e8f4fb); border-radius: 99px; overflow: hidden">
                     <div
                         :style="{
                             height: '100%',
@@ -435,7 +435,7 @@ function leaveCommunity() {
                     @click="showCommunityReport = true"
                     style="
                         font-size: 11px;
-                        color: #b0c0cc;
+                        color: var(--text-4, #b0c0cc);
                         background: none;
                         border: none;
                         cursor: pointer;

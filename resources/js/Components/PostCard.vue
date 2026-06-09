@@ -230,7 +230,7 @@ function formatInitial(name) {
                                 fontSize: '13px',
                                 fontWeight: '800',
                                 textDecoration: 'none',
-                                color: isCreator ? accentColor : '#3a6478',
+                                color: isCreator ? accentColor : 'var(--text, #1a3a4a)',
                             }"
                         >
                             <span v-if="isCreator" style="margin-right: 2px">✦</span>{{ author.name }}
@@ -255,13 +255,13 @@ function formatInitial(name) {
                         >
                         <span
                             v-if="author.username"
-                            :style="{ fontSize: '11px', color: isCreator ? accentColor + 'bb' : '#009ac7' }"
+                            :style="{ fontSize: '11px', color: isCreator ? accentColor + 'bb' : 'var(--text-2, #5a7a8a)' }"
                             >@{{ author.username }}</span
                         >
-                        <span style="font-size: 11px; color: #8ba0b0">{{ post.created_at }}</span>
+                        <span style="font-size: 11px; color: var(--text-3, #8ba0b0)">{{ post.created_at }}</span>
                         <span
                             v-if="localContent !== post.content"
-                            style="font-size: 10px; color: #b0c0cc; font-style: italic"
+                            style="font-size: 10px; color: var(--text-4, #b0c0cc); font-style: italic"
                             >(editado)</span
                         >
                     </div>
@@ -275,7 +275,7 @@ function formatInitial(name) {
                                 background: none;
                                 border: none;
                                 cursor: pointer;
-                                color: #b0c0cc;
+                                color: var(--text-4, #b0c0cc);
                                 font-size: 12px;
                                 padding: 3px 7px;
                                 border-radius: 6px;
@@ -287,7 +287,7 @@ function formatInitial(name) {
                                 $event.currentTarget.style.background = '#f0f8ff';
                             "
                             @mouseleave="
-                                $event.currentTarget.style.color = '#b0c0cc';
+                                $event.currentTarget.style.color = 'var(--text-4, #b0c0cc)';
                                 $event.currentTarget.style.background = 'transparent';
                             "
                             title="Editar post"
@@ -331,8 +331,8 @@ function formatInitial(name) {
                                     padding: 3px 9px;
                                     border-radius: 6px;
                                     border: 1px solid #dde8f0;
-                                    background: #f0f8ff;
-                                    color: #5a7a8a;
+                                    background: var(--item-hover, #f0f8ff);
+                                    color: var(--text-2, #5a7a8a);
                                     font-size: 11px;
                                     font-weight: 600;
                                     cursor: pointer;
@@ -390,7 +390,7 @@ function formatInitial(name) {
                 />
 
                 <!-- Post content -->
-                <p v-else style="font-size: 14px; color: #2a4a5a; line-height: 1.65; margin: 0; white-space: pre-wrap">
+                <p v-else style="font-size: 14px; color: var(--text, #1a3a4a); line-height: 1.65; margin: 0; white-space: pre-wrap">
                     {{ localContent }}
                 </p>
 
