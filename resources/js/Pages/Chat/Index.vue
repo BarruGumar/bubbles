@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { VList } from 'virtua/vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PostImageLightbox from '@/Components/PostImageLightbox.vue';
 import { clImg } from '@/Composables/useCloudinary';
@@ -498,8 +499,10 @@ const lastSeenMessageId = computed(() => {
 // ── Scroll ────────────────────────────────────────────────────
 function checkNearBottom() {
     if (!messagesEl.value) return;
-    const el = messagesEl.value;
-    isNearBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_THRESHOLD;
+    const size = messagesEl.value.scrollSize;
+    const offset = messagesEl.value.scrollOffset;
+    const viewport = messagesEl.value.viewportSize;
+    isNearBottom.value = size - offset - viewport < NEAR_BOTTOM_THRESHOLD;
     if (isNearBottom.value) unreadBelowCount.value = 0;
 }
 
@@ -508,11 +511,11 @@ function scrollToBottom() {
     nextTick(() => {
         requestAnimationFrame(() => {
             if (messagesEl.value) {
-                messagesEl.value.scrollTop = messagesEl.value.scrollHeight;
+                messagesEl.value.scrollTo(messagesEl.value.scrollSize);
                 isNearBottom.value = true;
                 // Count lazy images that haven't finished loading yet.
                 // Keep content hidden until they settle so the scroll position is stable.
-                const pending = [...messagesEl.value.querySelectorAll('img.msg-img')]
+                const pending = [...(messagesEl.value.$el?.querySelectorAll('img.msg-img') ?? [])]
                     .filter(img => !img.complete);
                 pendingImageCount = pending.length;
                 if (pendingImageCount === 0) {
@@ -533,7 +536,7 @@ function scrollToBottom() {
 // Synchronous so the correction happens before the browser paints.
 function onMsgImageSettle() {
     if (isNearBottom.value && messagesEl.value) {
-        messagesEl.value.scrollTop = messagesEl.value.scrollHeight;
+        messagesEl.value.scrollTo(messagesEl.value.scrollSize);
     }
     if (!messagesReady.value && pendingImageCount > 0) {
         pendingImageCount--;
@@ -549,7 +552,6 @@ async function loadOlderMessages() {
     if (!props.activeConversation || !hasMore.value || loadingOlder.value) return;
     loadingOlder.value = true;
     const oldestId = localMessages.value[0]?.id ?? 0;
-    const scrollBefore = messagesEl.value?.scrollHeight ?? 0;
     router.visit(route('conversations.show', props.activeConversation.id) + `?before=${oldestId}`, {
         preserveScroll: true,
         preserveState: true,
@@ -558,9 +560,7 @@ async function loadOlderMessages() {
             localMessages.value = [...(p.props.messages ?? []), ...localMessages.value];
             hasMore.value = p.props.hasMoreMessages;
             loadingOlder.value = false;
-            nextTick(() => {
-                if (messagesEl.value) messagesEl.value.scrollTop = messagesEl.value.scrollHeight - scrollBefore;
-            });
+            // VList shift:true preserves scroll position automatically when items are prepended
         },
         onError: () => { loadingOlder.value = false; },
     });
@@ -932,7 +932,6 @@ onMounted(() => {
     if (props.activeConversation && isMobile.value) showSidebar.value = false;
     window.addEventListener('resize', checkMobile);
     document.addEventListener('click', onDocClick);
-    if (messagesEl.value) messagesEl.value.addEventListener('scroll', checkNearBottom);
     scrollToBottom();
     if (props.activeConversation) {
         subscribeToConversation(props.activeConversation.id);
@@ -962,7 +961,6 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('resize', checkMobile);
     document.removeEventListener('click', onDocClick);
-    if (messagesEl.value) messagesEl.value.removeEventListener('scroll', checkNearBottom);
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
     if (props.activeConversation?.id) window.Echo.leave(`conversation.${props.activeConversation.id}`);
     clearTypingState();
@@ -1348,7 +1346,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                     </Transition>
 
                     <!-- Messages area -->
-                    <div ref="messagesEl" class="messages-area" :class="{ 'chat-dark': isDarkBg }" :style="[chatBgStyle, messagesReady ? {} : { visibility: 'hidden' }]">
+                    <div class="messages-area" :class="{ 'chat-dark': isDarkBg }" :style="[chatBgStyle, messagesReady ? {} : { visibility: 'hidden' }]">
                         <!-- Load older -->
                         <div v-if="hasMore" style="text-align:center;margin-bottom:12px;flex-shrink:0">
                             <button @click="loadOlderMessages" :disabled="loadingOlder" class="load-older-btn">
@@ -1362,8 +1360,9 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                             <p style="font-size:13px;color:#8ba0b0;margin:0">Sem mensagens ainda. Diz olá!</p>
                         </div>
 
-                        <!-- Messages -->
-                        <template v-for="(item, idx) in groupedMessages" :key="idx">
+                        <!-- Virtualized messages list -->
+                        <VList v-else ref="messagesEl" class="messages-vlist" :data="groupedMessages" :shift="true" @scroll="checkNearBottom">
+                            <template #default="{ item }">
                             <!-- Date chip -->
                             <div v-if="item.type === 'date'" class="date-chip">
                                 <span>{{ item.label }}</span>
@@ -1478,7 +1477,8 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                                     </span>
                                 </div>
                             </div>
-                        </template>
+                            </template>
+                        </VList>
                     </div>
 
                     <!-- Scroll to bottom -->
@@ -1848,8 +1848,11 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 
 /* ── Messages area ────────────────────────────────────────────── */
 .messages-area {
-    flex: 1; overflow-y: auto; padding: 12px 16px 8px;
-    display: flex; flex-direction: column; gap: 2px;
+    flex: 1; overflow: hidden; padding: 12px 0 0;
+    display: flex; flex-direction: column; gap: 4px;
+}
+.messages-vlist {
+    flex: 1; min-height: 0; padding: 0 16px 8px;
 }
 
 /* ── Date chip (WhatsApp pill style) ──────────────────────────── */
@@ -2077,11 +2080,11 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 
 /* ── Scrollbar ────────────────────────────────────────────────── */
 .sidebar-list::-webkit-scrollbar,
-.messages-area::-webkit-scrollbar { width: 4px; }
+.messages-vlist::-webkit-scrollbar { width: 4px; }
 .sidebar-list::-webkit-scrollbar-track,
-.messages-area::-webkit-scrollbar-track { background: transparent; }
+.messages-vlist::-webkit-scrollbar-track { background: transparent; }
 .sidebar-list::-webkit-scrollbar-thumb,
-.messages-area::-webkit-scrollbar-thumb { background: #009ac722; border-radius: 99px; }
+.messages-vlist::-webkit-scrollbar-thumb { background: #009ac722; border-radius: 99px; }
 
 /* ── Transitions ──────────────────────────────────────────────── */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }

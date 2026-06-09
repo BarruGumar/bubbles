@@ -40,7 +40,11 @@ class CommunityController extends Controller
             ->with([
                 'user',
                 'likes' => fn ($q) => $q->where('user_id', $userId ?? 0),
-                'comments' => fn ($q) => $q->with('user')->orderBy('created_at')->limit(5),
+                'comments' => fn ($q) => $q
+                    ->withCount('likes')
+                    ->with(['user', 'likes' => fn ($lq) => $lq->where('user_id', $userId ?? 0)])
+                    ->orderBy('created_at')
+                    ->limit(5),
             ])
             ->latest()
             ->cursorPaginate(12);
@@ -68,6 +72,8 @@ class CommunityController extends Controller
                 'content' => $c->content,
                 'created_at' => $c->created_at->diffForHumans(),
                 'is_own' => $userId && $c->user_id === $userId,
+                'likes_count' => $c->likes_count,
+                'user_reaction' => $c->likes->first()?->type ?? null,
                 'author' => [
                     'id' => $c->user->id,
                     'name' => $c->user->name,
