@@ -41,4 +41,5 @@ export const SFX = {
     buttonAdmin3:      '/music/ButtonAdmin3.mp3',
     pageChange:        '/music/PageChange.mp3',
     created:           '/music/Created.mp3',
+    conversation:      '/music/Conversation.mp3',
 };

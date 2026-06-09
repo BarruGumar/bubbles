@@ -906,6 +906,7 @@ function startWith(recipientId) { router.post(route('conversations.store'), { re
 function switchConversation(convId) {
     if (isMobile.value) showSidebar.value = false;
     if (convId === props.activeConversation?.id) return;
+    playSfx('conversation');
     const ci = localConversations.value.findIndex(c => c.id === convId);
     if (ci !== -1) {
         const unread = localConversations.value[ci].unread_count ?? 0;
