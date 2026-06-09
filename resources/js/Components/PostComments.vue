@@ -105,7 +105,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
             <!-- Comment row -->
             <div style="display:flex; gap:8px; align-items:flex-start">
                 <!-- Avatar -->
-                <img v-if="c.author.avatar" :src="c.author.avatar"
+                <img v-if="c.author.avatar" :src="c.author.avatar" loading="lazy"
                     :style="{ width:'28px', height:'28px', borderRadius:'50%', objectFit:'cover',
                               border:`1.5px solid ${c.author.avatar_color}`, flexShrink:0 }" />
                 <div v-else :style="{ width:'28px', height:'28px', borderRadius:'50%', flexShrink:0,
@@ -196,7 +196,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
             <!-- Reply input (inline) -->
             <div v-if="activeReply === c.id && authUser"
                 style="display:flex; gap:6px; align-items:center; margin-top:6px; padding-left:36px">
-                <img v-if="authUser.avatar" :src="authUser.avatar"
+                <img v-if="authUser.avatar" :src="authUser.avatar" loading="lazy"
                     :style="{ width:'22px', height:'22px', borderRadius:'50%', objectFit:'cover',
                               border:`1.5px solid ${authUser.avatar_color ?? '#009ac7'}`, flexShrink:0 }" />
                 <div v-else :style="{ width:'22px', height:'22px', borderRadius:'50%', flexShrink:0,
@@ -226,7 +226,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
             <div v-if="c.replies && c.replies.length" style="margin-top:6px; padding-left:36px; display:flex; flex-direction:column; gap:6px">
                 <div v-for="r in c.replies" :key="r.id" style="display:flex; gap:6px; align-items:flex-start">
                     <!-- Small avatar -->
-                    <img v-if="r.author.avatar" :src="r.author.avatar"
+                    <img v-if="r.author.avatar" :src="r.author.avatar" loading="lazy"
                         :style="{ width:'22px', height:'22px', borderRadius:'50%', objectFit:'cover',
                                   border:`1.5px solid ${r.author.avatar_color}`, flexShrink:0 }" />
                     <div v-else :style="{ width:'22px', height:'22px', borderRadius:'50%', flexShrink:0,
@@ -310,7 +310,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
 
         <!-- New comment input -->
         <div v-if="authUser" style="display:flex; gap:8px; align-items:center; margin-top:4px">
-            <img v-if="authUser.avatar" :src="authUser.avatar"
+            <img v-if="authUser.avatar" :src="authUser.avatar" loading="lazy"
                 :style="{ width:'28px', height:'28px', borderRadius:'50%', objectFit:'cover',
                           border:`1.5px solid ${authUser.avatar_color ?? '#009ac7'}`, flexShrink:0 }" />
             <div v-else :style="{ width:'28px', height:'28px', borderRadius:'50%', flexShrink:0,

@@ -20,6 +20,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\PunishmentController;
 use App\Http\Controllers\BlockController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -58,13 +59,7 @@ Route::middleware('throttle:search')->group(function () {
 });
 
 // Acknowledge punishment notification — allowed even while suspended
-Route::middleware(['auth'])->post('/punishment/{punishment}/acknowledge', function (\App\Models\UserPunishment $punishment) {
-    abort_if($punishment->user_id !== auth()->id(), 403);
-    if ($punishment->notified_at === null) {
-        $punishment->updateQuietly(['notified_at' => now()]);
-    }
-    return back();
-})->name('punishment.acknowledge');
+Route::middleware(['auth'])->post('/punishment/{punishment}/acknowledge', [PunishmentController::class, 'acknowledge'])->name('punishment.acknowledge');
 
 Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

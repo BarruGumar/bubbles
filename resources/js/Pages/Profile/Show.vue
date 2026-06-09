@@ -732,6 +732,7 @@ async function submitUserReport() {
                         <img
                             v-if="f.avatar"
                             :src="f.avatar"
+                            loading="lazy"
                             :style="{
                                 width: '62px',
                                 height: '62px',
