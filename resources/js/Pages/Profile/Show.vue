@@ -669,7 +669,7 @@ async function submitUserReport() {
                     <!-- Ver mais -->
                     <Link
                         v-if="communities.length > 4"
-                        :href="route('communities.index')"
+                        :href="isOwn ? route('communities.index') : route('profile.communities', profileUser.username)"
                         style="flex: 1; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0;"
                     >
                         <div
@@ -787,7 +787,7 @@ async function submitUserReport() {
                     <!-- Ver mais amigos -->
                     <Link
                         v-if="profileFriends.length > 4"
-                        :href="route('friends.index')"
+                        :href="isOwn ? route('friends.index') : route('profile.friends', profileUser.username)"
                         style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; min-width: 0;"
                     >
                         <div

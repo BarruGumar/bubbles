@@ -272,4 +272,63 @@ class ProfileController extends Controller
         return Redirect::to('/');
     }
 
+    public function publicCommunities(string $username): Response
+    {
+        $profileUser = User::where('username', $username)->firstOrFail();
+
+        $communities = $profileUser->communities()
+            ->withCount('memberships')
+            ->get()
+            ->map(fn ($b) => [
+                'id'      => $b->id,
+                'label'   => $b->label,
+                'title'   => $b->community_title ?: $b->label,
+                'color'   => $b->color ?? '#009ac7',
+                'image'   => $b->community_image,
+                'members' => $b->memberships_count,
+            ])
+            ->values();
+
+        return Inertia::render('Profile/Communities', [
+            'profileUser' => [
+                'name'     => $profileUser->name,
+                'username' => $profileUser->username,
+            ],
+            'communities' => $communities,
+        ]);
+    }
+
+    public function publicFriends(string $username): Response
+    {
+        $profileUser = User::where('username', $username)->firstOrFail();
+
+        $friendRecords = Friend::where('status', 'accepted')
+            ->where(function ($q) use ($profileUser) {
+                $q->where('user_id', $profileUser->id)
+                  ->orWhere('friend_id', $profileUser->id);
+            })
+            ->with(['user', 'friend'])
+            ->get();
+
+        $friends = $friendRecords->map(function ($f) use ($profileUser) {
+            $u = $f->user_id === $profileUser->id ? $f->friend : $f->user;
+
+            return [
+                'id'           => $u->id,
+                'name'         => $u->name,
+                'username'     => $u->username,
+                'avatar'       => $u->avatar,
+                'avatar_color' => $u->avatar_color ?? '#009ac7',
+            ];
+        })->values();
+
+        return Inertia::render('Profile/Friends', [
+            'profileUser' => [
+                'name'     => $profileUser->name,
+                'username' => $profileUser->username,
+            ],
+            'friends' => $friends,
+        ]);
+    }
+
 }

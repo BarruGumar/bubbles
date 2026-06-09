@@ -27,14 +27,23 @@ class CommunityModerationController extends Controller
         $filter = $request->get('filter', 'all'); // all | staff | banned | muted
         $like   = $q ? ('%' . addcslashes($q, '%_\\') . '%') : null;
 
-        $query = $bubble->memberships()
-            ->when($like, fn ($query) => $query->where(function ($q2) use ($like) {
-                $q2->where('users.name', 'like', $like)
+        $query = User::query()
+            ->join('community_user as cu', 'cu.user_id', '=', 'users.id')
+            ->where('cu.community_id', $bubble->id)
+            ->when($like, fn ($q2) => $q2->where(function ($q3) use ($like) {
+                $q3->where('users.name', 'like', $like)
                    ->orWhere('users.username', 'like', $like);
             }))
-            ->when($filter === 'staff', fn ($query) => $query->wherePivotIn('role', ['admin', 'moderator']))
-            ->when($filter === 'banned', fn ($query) => $query->wherePivot('status', 'banned'))
-            ->when($filter === 'muted', fn ($query) => $query->wherePivot('status', 'muted'));
+            ->when($filter === 'staff', fn ($q2) => $q2->whereIn('cu.role', ['admin', 'moderator']))
+            ->when($filter === 'banned', fn ($q2) => $q2->where('cu.status', 'banned'))
+            ->when($filter === 'muted', fn ($q2) => $q2->where('cu.status', 'muted'))
+            ->select(
+                'users.id', 'users.name', 'users.username', 'users.avatar', 'users.avatar_color',
+                'cu.role as cu_role', 'cu.status as cu_status',
+                'cu.joined_at as cu_joined_at', 'cu.created_at as cu_created_at',
+                'cu.banned_until as cu_banned_until', 'cu.ban_reason as cu_ban_reason',
+                'cu.muted_until as cu_muted_until', 'cu.mute_reason as cu_mute_reason'
+            );
 
         $members = $query->paginate(30)->through(fn ($u) => [
             'id'           => $u->id,
@@ -43,13 +52,13 @@ class CommunityModerationController extends Controller
             'avatar'       => $u->avatar,
             'avatar_color' => $u->avatar_color ?? '#009ac7',
             'is_owner'     => $u->id === $bubble->user_id,
-            'role'         => $u->id === $bubble->user_id ? 'owner' : ($u->pivot->role ?? 'member'),
-            'status'       => $u->pivot->status ?? 'active',
-            'banned_until' => $u->pivot->banned_until,
-            'ban_reason'   => $u->pivot->ban_reason,
-            'muted_until'  => $u->pivot->muted_until,
-            'mute_reason'  => $u->pivot->mute_reason,
-            'joined_at'    => $u->pivot->joined_at ?? $u->pivot->created_at,
+            'role'         => $u->id === $bubble->user_id ? 'owner' : ($u->cu_role ?? 'member'),
+            'status'       => $u->cu_status ?? 'active',
+            'banned_until' => $u->cu_banned_until,
+            'ban_reason'   => $u->cu_ban_reason,
+            'muted_until'  => $u->cu_muted_until,
+            'mute_reason'  => $u->cu_mute_reason,
+            'joined_at'    => $u->cu_joined_at ?? $u->cu_created_at,
         ]);
 
         return Inertia::render('Community/Members', [

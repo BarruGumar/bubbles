@@ -48,6 +48,8 @@ Route::get('/dashboard', function () {
 
 // Public profile — accessible without login
 Route::get('/u/{username}', [ProfileController::class, 'show'])->name('profile.show');
+Route::get('/u/{username}/communities', [ProfileController::class, 'publicCommunities'])->name('profile.communities');
+Route::get('/u/{username}/friends', [ProfileController::class, 'publicFriends'])->name('profile.friends');
 
 // Communities — public view, posts require auth
 Route::get('/c/{id}', [CommunityController::class, 'show'])->name('community.show');

@@ -1,56 +1,41 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { useAudio } from '@/Composables/useAudio';
-
-const { playBgm, playSfx } = useAudio();
 
 defineProps({
+    profileUser: Object,
     communities: Array,
 });
-
-onMounted(() => playBgm('communities'));
-onUnmounted(() => {});
-
-function leave(id) {
-    playSfx('leave');
-    router.delete(route('community.leave', id), { preserveScroll: true });
-}
 </script>
 
 <template>
-    <Head title="Comunidades · bubbles" />
+    <Head :title="`Comunidades de ${profileUser.name} · bubbles`" />
 
     <AuthenticatedLayout>
         <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px 80px">
-            <h1 style="font-size: 22px; font-weight: 900; color: #3a6478; margin: 0 0 24px; letter-spacing: -0.02em">
-                Comunidades
-            </h1>
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+                <Link :href="route('profile.show', profileUser.username)"
+                    style="font-size:12px; color:#8ba0b0; text-decoration:none;">&larr; Voltar ao perfil</Link>
+                <h1 style="font-size: 22px; font-weight: 900; color: #3a6478; margin: 0; letter-spacing: -0.02em">
+                    Comunidades de {{ profileUser.name }}
+                </h1>
+            </div>
 
             <div style="background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 18px; border: 1px solid #4ebcff22; box-shadow: 0 4px 16px #009ac70a; padding: 20px;">
 
                 <p style="font-size: 10px; font-weight: 800; color: #8ba0b0; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 16px;">
-                    As tuas comunidades · {{ communities.length }}
+                    Comunidades · {{ communities.length }}
                 </p>
 
-                <!-- Estado vazio -->
                 <div v-if="communities.length === 0" style="text-align: center; padding: 40px 20px">
                     <p style="font-size: 32px; margin: 0 0 12px">🫧</p>
-                    <p style="font-size: 14px; color: #8ba0b0">Ainda não fazes parte de nenhuma comunidade.</p>
-                    <p style="font-size: 12px; color: #b0c0cc; margin-top: 6px">Explora as bolhas e junta-te a uma comunidade!</p>
-                    <Link :href="route('bubbles')"
-                        style="display: inline-block; margin-top: 16px; padding: 9px 22px; border-radius: 99px; background: #009ac7; color: white; font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 3px 12px #009ac730; transition: opacity 0.2s;"
-                        @mouseenter="$event.currentTarget.style.opacity = '.85'"
-                        @mouseleave="$event.currentTarget.style.opacity = '1'">
-                        Explorar bolhas
-                    </Link>
+                    <p style="font-size: 14px; color: #8ba0b0">Ainda não faz parte de nenhuma comunidade.</p>
                 </div>
 
                 <div v-else style="display: flex; flex-direction: column; gap: 14px">
                     <div v-for="c in communities" :key="c.id" style="display: flex; align-items: center; gap: 14px">
 
-                        <!-- Avatar da comunidade -->
+                        <!-- Imagem da comunidade -->
                         <Link :href="route('community.show', c.id)" style="text-decoration: none; flex-shrink: 0">
                             <img v-if="c.image" :src="c.image"
                                 :style="{ width:'46px', height:'46px', borderRadius:'50%', objectFit:'cover', border:`2px solid ${c.color}`, boxShadow:`0 2px 8px ${c.color}44`, display:'block' }" />
@@ -60,7 +45,7 @@ function leave(id) {
                             </div>
                         </Link>
 
-                        <!-- Info + Ações -->
+                        <!-- Info + Ação -->
                         <div class="list-content">
                             <Link :href="route('community.show', c.id)" style="text-decoration: none; min-width: 0; flex: 1">
                                 <p style="font-size: 13px; font-weight: 700; color: #3a6478; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
@@ -78,12 +63,6 @@ function leave(id) {
                                     @mouseleave="$event.currentTarget.style.opacity = '1'">
                                     Ver
                                 </Link>
-                                <button @click="leave(c.id)"
-                                    style="padding: 7px 14px; border-radius: 99px; border: 1.5px solid #c8d8e0; background: transparent; color: #8ba0b0; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;"
-                                    @mouseenter="$event.currentTarget.style.borderColor = '#e05555'; $event.currentTarget.style.color = '#e05555';"
-                                    @mouseleave="$event.currentTarget.style.borderColor = '#c8d8e0'; $event.currentTarget.style.color = '#8ba0b0';">
-                                    Sair
-                                </button>
                             </div>
                         </div>
                     </div>
