@@ -122,7 +122,7 @@ function toggleLike() {
 </script>
 
 <template>
-    <div style="display: flex; margin-top: 12px; border-top: 1px solid rgba(0, 154, 199, 0.08); padding-top: 2px">
+    <div style="display: flex; gap: 8px; margin-top: 12px; border-top: 1px solid rgba(0, 154, 199, 0.08); padding-top: 10px">
         <!-- Like / Reaction button -->
         <div style="flex: 1; position: relative" @mouseleave="scheduleHide">
             <Transition name="picker">
@@ -178,23 +178,25 @@ function toggleLike() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
-                    padding: '8px 0',
-                    background: 'none',
-                    border: 'none',
+                    padding: '7px 12px',
+                    background: localIsLiked ? 'rgba(199,74,107,.18)' : 'rgba(255,255,255,.06)',
+                    border: localIsLiked ? '1px solid rgba(199,74,107,.35)' : '1px solid rgba(255,255,255,.12)',
                     cursor: authUser ? 'pointer' : 'default',
                     fontSize: '13px',
                     fontWeight: '600',
-                    borderRadius: '8px',
+                    borderRadius: '99px',
                     transition: 'all .2s',
-                    color: localIsLiked ? '#e05f7a' : '#8ba0b0',
+                    color: localIsLiked ? '#e87fa0' : '#8ba0b0',
+                    boxShadow: localIsLiked ? 'inset 0 1px 0 rgba(255,255,255,.12), 0 0 12px rgba(199,74,107,.2)' : 'inset 0 1px 0 rgba(255,255,255,.08)',
+                    boxSizing: 'border-box',
                 }"
-                @mouseenter.stop="authUser && ($event.currentTarget.style.background = 'rgba(224,95,122,0.07)')"
-                @mouseleave.stop="$event.currentTarget.style.background = 'transparent'"
+                @mouseenter.stop="authUser && ($event.currentTarget.style.opacity = '.82')"
+                @mouseleave.stop="$event.currentTarget.style.opacity = '1'"
             >
                 <span v-if="localIsLiked && currentEmoji()" style="font-size: 16px; line-height: 1">{{
                     currentEmoji()
                 }}</span>
-                <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" style="opacity:.65;flex-shrink:0">
                     <path
                         :fill="localIsLiked ? '#e05f7a' : 'none'"
                         :stroke="localIsLiked ? '#e05f7a' : 'currentColor'"
@@ -220,8 +222,6 @@ function toggleLike() {
             <ReactorsModal v-if="reactorsRoute" ref="reactorsModal" :reactors-route="reactorsRoute" />
         </div>
 
-        <div style="width: 1px; background: rgba(0, 154, 199, 0.08); margin: 6px 0" />
-
         <!-- Comment toggle button -->
         <button
             @click="emit('toggle-comments')"
@@ -231,18 +231,19 @@ function toggleLike() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
-                padding: '8px 0',
-                background: 'none',
-                border: 'none',
+                padding: '7px 12px',
+                background: commentsExpanded ? `${accentColor}22` : 'rgba(255,255,255,.06)',
+                border: commentsExpanded ? `1px solid ${accentColor}55` : '1px solid rgba(255,255,255,.12)',
                 cursor: 'pointer',
                 fontSize: '13px',
                 fontWeight: '600',
-                borderRadius: '8px',
+                borderRadius: '99px',
                 transition: 'all .2s',
                 color: commentsExpanded ? accentColor : '#8ba0b0',
+                boxShadow: commentsExpanded ? `inset 0 1px 0 rgba(255,255,255,.1), 0 0 10px ${accentColor}25` : 'inset 0 1px 0 rgba(255,255,255,.08)',
             }"
-            @mouseenter="$event.currentTarget.style.background = 'rgba(0,154,199,0.07)'"
-            @mouseleave="$event.currentTarget.style.background = 'transparent'"
+            @mouseenter="$event.currentTarget.style.opacity = '.82'"
+            @mouseleave="$event.currentTarget.style.opacity = '1'"
         >
             <svg
                 width="15"
@@ -253,6 +254,7 @@ function toggleLike() {
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                style="opacity:.65;flex-shrink:0"
             >
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>

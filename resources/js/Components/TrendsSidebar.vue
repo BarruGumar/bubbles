@@ -17,11 +17,11 @@ const emit = defineEmits(['toggle', 'select']);
             bottom: isMobile ? '120px' : 'auto',
             zIndex: 38,
             width: isMobile ? '158px' : '192px',
-            background: 'rgba(255,255,255,0.88)',
-            backdropFilter: 'blur(16px)',
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.82), rgba(238,243,248,0.42))',
+            backdropFilter: 'blur(18px)',
             borderRadius: '18px',
-            border: '1px solid #4ebcff22',
-            boxShadow: '0 4px 20px #009ac70c',
+            border: '1px solid rgba(255,255,255,0.72)',
+            boxShadow: '0 10px 30px rgba(8,15,28,0.14)',
             padding: isMobile ? '10px 10px' : '14px 12px',
             display: 'flex',
             flexDirection: 'column',
@@ -47,7 +47,7 @@ const emit = defineEmits(['toggle', 'select']);
                 style="
                     font-size: 10px;
                     font-weight: 800;
-                    color: #8ba0b0;
+                    color: rgba(72,88,108,0.96);
                     text-transform: uppercase;
                     letter-spacing: 0.1em;
                     margin: 0;
@@ -68,7 +68,7 @@ const emit = defineEmits(['toggle', 'select']);
             >
                 <path
                     d="M2 8L6 4l4 4"
-                    stroke="#8ba0b0"
+                    stroke="rgba(72,88,108,0.92)"
                     stroke-width="1.6"
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -100,14 +100,14 @@ const emit = defineEmits(['toggle', 'select']);
                     cursor: pointer;
                     transition: background 0.15s;
                 "
-                @mouseenter="$event.currentTarget.style.background = '#f0f8ff'"
+                @mouseenter="$event.currentTarget.style.background = 'rgba(255,255,255,0.16)'"
                 @mouseleave="$event.currentTarget.style.background = 'transparent'"
             >
                 <span
                     style="
                         font-size: 10px;
                         font-weight: 700;
-                        color: #c0ccd4;
+                        color: rgba(78,95,114,0.92);
                         width: 12px;
                         flex-shrink: 0;
                         text-align: right;
@@ -129,7 +129,7 @@ const emit = defineEmits(['toggle', 'select']);
                         style="
                             font-size: 12px;
                             font-weight: 700;
-                            color: #3a6478;
+                            color: rgba(33,46,60,0.98);
                             margin: 0;
                             white-space: nowrap;
                             overflow: hidden;
@@ -138,7 +138,7 @@ const emit = defineEmits(['toggle', 'select']);
                     >
                         {{ b.label }}
                     </p>
-                    <p style="font-size: 9px; color: #8ba0b0; margin: 0">{{ b.members }} membros</p>
+                    <p style="font-size: 9px; color: rgba(88,104,124,0.92); margin: 0">{{ b.members }} membros</p>
                 </div>
             </div>
         </div>

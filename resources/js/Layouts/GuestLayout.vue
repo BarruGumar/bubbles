@@ -1,5 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import BackgroundAmbient from '@/Components/BackgroundAmbient.vue';
 </script>
 
 <template>
@@ -67,6 +68,8 @@ import { Link } from '@inertiajs/vue3';
                 "
             />
         </div>
+
+        <BackgroundAmbient />
 
         <!-- Logo -->
         <div style="margin-bottom: 28px; position: relative; z-index: 1">

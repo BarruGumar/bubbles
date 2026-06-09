@@ -127,7 +127,7 @@ function loadMoreFriends() {
             <div
                 v-if="localReceived.length"
                 style="
-                    background: rgba(255, 255, 255, 0.88);
+                    background: var(--card-bg);
                     backdrop-filter: blur(20px);
                     border-radius: 18px;
                     border: 1px solid #c74a6b22;
@@ -156,35 +156,18 @@ function loadMoreFriends() {
                     >
                         <!-- Avatar clicável -->
                         <Link :href="route('profile.show', req.username)" style="text-decoration: none; flex-shrink: 0">
-                            <img
-                                v-if="req.avatar"
-                                :src="clImg(req.avatar, 96, 96, 'fill', 'face')"
-                                :style="{
-                                    width: '46px',
-                                    height: '46px',
-                                    borderRadius: '50%',
-                                    objectFit: 'cover',
-                                    border: `2px solid ${req.avatar_color}`,
-                                    boxShadow: `0 2px 8px ${req.avatar_color}44`,
-                                    display: 'block',
-                                }"
-                            />
+                            <span v-if="req.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;">
+                                <img
+                                    :src="clImg(req.avatar, 96, 96, 'fill', 'face')"
+                                    :style="{ width:'46px', height:'46px', borderRadius:'50%', objectFit:'cover', display:'block', border:`2px solid ${req.avatar_color}`, boxShadow:`0 2px 10px ${req.avatar_color}44` }"
+                                />
+                                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                            </span>
                             <div
                                 v-else
-                                :style="{
-                                    width: '46px',
-                                    height: '46px',
-                                    borderRadius: '50%',
-                                    background: req.avatar_color,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '17px',
-                                    fontWeight: '800',
-                                    color: 'white',
-                                    boxShadow: `0 2px 8px ${req.avatar_color}44`,
-                                }"
+                                :style="{ width:'46px', height:'46px', borderRadius:'50%', position:'relative', background:`radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${req.avatar_color}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'17px', fontWeight:'800', color:'white', boxShadow:`0 2px 10px ${req.avatar_color}44` }"
                             >
+                                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                                 {{ formatInitial(req.name) }}
                             </div>
                         </Link>
@@ -220,13 +203,13 @@ function loadMoreFriends() {
                                 style="
                                     padding: 7px 16px;
                                     border-radius: 99px;
-                                    border: none;
-                                    background: #009ac7;
+                                    border: 1px solid rgba(255,255,255,.25);
+                                    background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
                                     color: white;
                                     font-size: 12px;
                                     font-weight: 700;
                                     cursor: pointer;
-                                    box-shadow: 0 3px 10px #009ac730;
+                                    box-shadow: 0 3px 12px #009ac740;
                                     transition: opacity 0.2s;
                                 "
                                 @mouseenter="$event.target.style.opacity = '.8'"
@@ -268,7 +251,7 @@ function loadMoreFriends() {
             <div
                 v-if="localSent.length"
                 style="
-                    background: rgba(255, 255, 255, 0.88);
+                    background: var(--card-bg);
                     backdrop-filter: blur(20px);
                     border-radius: 18px;
                     border: 1px solid #4ebcff22;
@@ -292,35 +275,18 @@ function loadMoreFriends() {
                 <div style="display: flex; flex-direction: column; gap: 14px">
                     <div v-for="req in localSent" :key="req.friendId" style="display: flex; align-items: center; gap: 14px">
                         <Link :href="route('profile.show', req.username)" style="text-decoration: none; flex-shrink: 0">
-                            <img
-                                v-if="req.avatar"
-                                :src="clImg(req.avatar, 96, 96, 'fill', 'face')"
-                                :style="{
-                                    width: '46px',
-                                    height: '46px',
-                                    borderRadius: '50%',
-                                    objectFit: 'cover',
-                                    border: `2px solid ${req.avatar_color}`,
-                                    boxShadow: `0 2px 8px ${req.avatar_color}44`,
-                                    display: 'block',
-                                }"
-                            />
+                            <span v-if="req.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;">
+                                <img
+                                    :src="clImg(req.avatar, 96, 96, 'fill', 'face')"
+                                    :style="{ width:'46px', height:'46px', borderRadius:'50%', objectFit:'cover', display:'block', border:`2px solid ${req.avatar_color}`, boxShadow:`0 2px 10px ${req.avatar_color}44` }"
+                                />
+                                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                            </span>
                             <div
                                 v-else
-                                :style="{
-                                    width: '46px',
-                                    height: '46px',
-                                    borderRadius: '50%',
-                                    background: req.avatar_color,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '17px',
-                                    fontWeight: '800',
-                                    color: 'white',
-                                    boxShadow: `0 2px 8px ${req.avatar_color}44`,
-                                }"
+                                :style="{ width:'46px', height:'46px', borderRadius:'50%', position:'relative', background:`radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${req.avatar_color}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'17px', fontWeight:'800', color:'white', boxShadow:`0 2px 10px ${req.avatar_color}44` }"
                             >
+                                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                                 {{ formatInitial(req.name) }}
                             </div>
                         </Link>
@@ -382,7 +348,7 @@ function loadMoreFriends() {
             <!-- Lista de amigos aceites -->
             <div
                 style="
-                    background: rgba(255, 255, 255, 0.88);
+                    background: var(--card-bg);
                     backdrop-filter: blur(20px);
                     border-radius: 18px;
                     border: 1px solid #4ebcff22;
@@ -459,35 +425,18 @@ function loadMoreFriends() {
                                 :href="route('profile.show', friend.username)"
                                 style="text-decoration: none; display: block"
                             >
-                                <img
-                                    v-if="friend.avatar"
-                                    :src="clImg(friend.avatar, 96, 96, 'fill', 'face')"
-                                    :style="{
-                                        width: '46px',
-                                        height: '46px',
-                                        borderRadius: '50%',
-                                        objectFit: 'cover',
-                                        border: `2px solid ${friend.avatar_color}`,
-                                        boxShadow: `0 2px 8px ${friend.avatar_color}44`,
-                                        display: 'block',
-                                    }"
-                                />
+                                <span v-if="friend.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;">
+                                    <img
+                                        :src="clImg(friend.avatar, 96, 96, 'fill', 'face')"
+                                        :style="{ width:'46px', height:'46px', borderRadius:'50%', objectFit:'cover', display:'block', border:`2px solid ${friend.avatar_color}`, boxShadow:`0 2px 10px ${friend.avatar_color}44` }"
+                                    />
+                                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                                </span>
                                 <div
                                     v-else
-                                    :style="{
-                                        width: '46px',
-                                        height: '46px',
-                                        borderRadius: '50%',
-                                        background: friend.avatar_color,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '17px',
-                                        fontWeight: '800',
-                                        color: 'white',
-                                        boxShadow: `0 2px 8px ${friend.avatar_color}44`,
-                                    }"
+                                    :style="{ width:'46px', height:'46px', borderRadius:'50%', position:'relative', background:`radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${friend.avatar_color}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'17px', fontWeight:'800', color:'white', boxShadow:`0 2px 10px ${friend.avatar_color}44` }"
                                 >
+                                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                                     {{ formatInitial(friend.name) }}
                                 </div>
                             </Link>
@@ -526,11 +475,11 @@ function loadMoreFriends() {
                                 color: white;
                                 padding: 7px 18px;
                                 border-radius: 99px;
-                                border: none;
-                                background: linear-gradient(135deg, #009ac7, #4ebcff);
+                                border: 1px solid rgba(255,255,255,.25);
+                                background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
                                 cursor: pointer;
                                 white-space: nowrap;
-                                box-shadow: 0 3px 12px #009ac730;
+                                box-shadow: 0 3px 12px #009ac740;
                                 transition: opacity 0.2s;
                             "
                             @mouseenter="$event.target.style.opacity = '.85'"

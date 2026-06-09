@@ -7,6 +7,7 @@ import AudioControls from '@/Components/AudioControls.vue';
 import AnnouncementBanner from '@/Components/AnnouncementBanner.vue';
 import AnnouncementModal from '@/Components/AnnouncementModal.vue';
 import BubbleSearchOverlay from '@/Components/BubbleSearchOverlay.vue';
+import BackgroundAmbient from '@/Components/BackgroundAmbient.vue';
 import { clImg } from '@/Composables/useCloudinary';
 import { useOnlineUsers } from '@/Composables/useOnlineUsers';
 import { useToast } from '@/Composables/useToast';
@@ -261,6 +262,8 @@ onUnmounted(() => {
             <div style="position:absolute;bottom:-40px;right:-40px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle, #4ebcff0e 0%, transparent 70%)"/>
         </div>
 
+        <BackgroundAmbient />
+
         <!-- Page content -->
         <main style="position:relative;z-index:1">
             <slot />
@@ -303,7 +306,12 @@ onUnmounted(() => {
 
 <style scoped>
 /* ── Shell ─────────────────────────────────────────────────────── */
-.layout-shell { min-height: 100dvh; background: var(--layout-bg); }
+.layout-shell {
+    position: relative;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    background: var(--layout-bg);
+}
 .has-bottom-nav { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
 
 /* ── Topbar ────────────────────────────────────────────────────── */
@@ -337,7 +345,7 @@ onUnmounted(() => {
 
 /* ── Icon buttons (search, bell) ───────────────────────────────── */
 .icon-btn-nav {
-    width: 44px; height: 44px; border-radius: 50%;
+    width: 32px; height: 32px; border-radius: 50%;
     border: 1.5px solid var(--nav-border);
     background: transparent; color: var(--text-3);
     cursor: pointer; display: flex; align-items: center; justify-content: center;

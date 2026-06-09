@@ -48,6 +48,36 @@ const unreadMessages = ref(page.props.auth?.unread_messages_count ?? 0);
 const unreadNotifications = ref(page.props.auth?.unread_notifications_count ?? 0);
 const isAdmin = computed(() => ['admin', 'site_owner'].includes(authUser.value?.role));
 
+function avatarChipStyle(size = 32, color = '#009ac7') {
+    return {
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: '50%',
+        objectFit: 'cover',
+        display: 'block',
+        border: `2px solid ${color ?? '#009ac7'}`,
+        boxShadow: `0 2px 10px ${color ?? '#009ac7'}44`,
+        flexShrink: 0,
+    };
+}
+
+function avatarFallbackStyle(size = 32, color = '#009ac7') {
+    return {
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: '50%',
+        background: color ?? '#009ac7',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: `${Math.max(10, size * 0.42)}px`,
+        fontWeight: '800',
+        color: 'white',
+        boxShadow: `0 2px 10px ${color ?? '#009ac7'}44`,
+        flexShrink: 0,
+    };
+}
+
 const feedOpen = ref(false);
 const menuOpen = ref(false);
 
@@ -329,6 +359,8 @@ function onVisibilityChange() {
 }
 
 onMounted(async () => {
+    ambientBubbles.value = generateAmbientBubbles();
+
     // Fire CSRF refresh without awaiting — not needed until the first POST (bubble create/connect)
     axios.get('/sanctum/csrf-cookie').catch(() => {});
 
@@ -442,6 +474,27 @@ function toggleTrends() {
 const isMobile = ref(window.innerWidth < 640);
 const mobilePanelLeft = computed(() => `${Math.max(10, Math.min(window.innerWidth - 270, window.innerWidth / 2 - 130))}px`);
 const mobilePanelTop = computed(() => `${window.innerHeight / 2 - 140}px`);
+const ambientBubbles = ref([]);
+
+function generateAmbientBubbles() {
+    return Array.from({ length: 14 }, (_, index) => {
+        const size = 14 + Math.round(Math.random() * 28 + (index % 4 === 0 ? 8 : 0));
+        const left = `${(3 + Math.random() * 92).toFixed(1)}%`;
+        const opacity = Number((0.18 + Math.random() * 0.45).toFixed(2));
+        const duration = 11 + Math.round(Math.random() * 14);
+        const delay = -Math.random() * 16;
+
+        return {
+            id: index + 1,
+            size: `${size}px`,
+            left,
+            opacity,
+            duration: `${duration}s`,
+            delay: `${delay.toFixed(1)}s`,
+        };
+    });
+}
+
 function onMobileResize() { isMobile.value = window.innerWidth < 640; }
 </script>
 
@@ -499,6 +552,23 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
             />
         </div>
 
+        <!-- FLOATING BACKGROUND BUBBLES -->
+        <div class="absolute inset-0 pointer-events-none overflow-hidden">
+            <div
+                v-for="bubble in ambientBubbles"
+                :key="bubble.id"
+                class="fb"
+                :style="{
+                    left: bubble.left,
+                    width: bubble.size,
+                    height: bubble.size,
+                    opacity: bubble.opacity,
+                    animationDuration: bubble.duration,
+                    animationDelay: bubble.delay,
+                }"
+            />
+        </div>
+
         <!-- TOP BAR -->
         <div
             class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between"
@@ -516,7 +586,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
 
             <div :style="{ display: 'flex', alignItems: 'center', gap: isMobile ? '1px' : '4px' }">
                 <!-- Áudio -->
-                <AudioControls v-if="authUser" />
+                <AudioControls v-if="authUser" sphere />
 
                 <!-- Pesquisa -->
                 <button
@@ -538,18 +608,19 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     @mouseleave="$event.currentTarget.style.background = 'transparent'"
                     title="Pesquisar (Ctrl+K)"
                 >
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2.2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <defs>
+                            <radialGradient id="grad-search" cx="40%" cy="30%" r="65%">
+                                <stop offset="0%" stop-color="#7de8ff"/>
+                                <stop offset="100%" stop-color="#005a85"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="26" cy="26" r="24" fill="url(#grad-search)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                        <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                        <g transform="translate(8,8) scale(1.5)" fill="none" stroke="white" stroke-width="1.47" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </g>
                     </svg>
                 </button>
 
@@ -573,17 +644,18 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     @mouseleave="$event.currentTarget.style.background = feedOpen ? '#009ac714' : 'transparent'"
                     title="Feed"
                 >
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2.2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path d="M4 6h16M4 10h16M4 14h12M4 18h8" />
+                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <defs>
+                            <radialGradient id="grad-feed" cx="40%" cy="30%" r="65%">
+                                <stop offset="0%" stop-color="#7de8ff"/>
+                                <stop offset="100%" stop-color="#005a85"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="26" cy="26" r="24" fill="url(#grad-feed)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                        <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                        <g transform="translate(8,8) scale(1.5)" fill="none" stroke="white" stroke-width="1.47" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 6h16M4 10h16M4 14h12M4 18h8"/>
+                        </g>
                     </svg>
                 </button>
 
@@ -607,9 +679,19 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     @mouseleave="$event.currentTarget.style.background = showAdd ? '#009ac714' : 'transparent'"
                     title="Nova bolha"
                 >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <rect x="8.2" y="2" width="1.6" height="14" rx=".8" fill="currentColor" />
-                        <rect x="2" y="8.2" width="14" height="1.6" rx=".8" fill="currentColor" />
+                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <defs>
+                            <radialGradient id="grad-bubble" cx="40%" cy="30%" r="65%">
+                                <stop offset="0%" stop-color="#7de8ff"/>
+                                <stop offset="100%" stop-color="#005a85"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="26" cy="26" r="24" fill="url(#grad-bubble)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                        <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                        <g transform="translate(8,8) scale(2)">
+                            <rect x="8.2" y="2" width="1.6" height="14" rx=".8" fill="white"/>
+                            <rect x="2" y="8.2" width="14" height="1.6" rx=".8" fill="white"/>
+                        </g>
                     </svg>
                 </button>
 
@@ -635,14 +717,18 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     title="Mensagens"
                     @click="playClick()"
                 >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path
-                            d="M15 2.5H3a1 1 0 00-1 1v7.5a1 1 0 001 1h3.5l2.5 3 2.5-3H15a1 1 0 001-1V3.5a1 1 0 00-1-1z"
-                            stroke="currentColor"
-                            stroke-width="1.4"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
+                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <defs>
+                            <radialGradient id="grad-msg" cx="40%" cy="30%" r="65%">
+                                <stop offset="0%" stop-color="#7de8ff"/>
+                                <stop offset="100%" stop-color="#005a85"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="26" cy="26" r="24" fill="url(#grad-msg)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                        <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                        <g transform="translate(8,8) scale(2)" fill="none" stroke="white" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 2.5H3a1 1 0 00-1 1v7.5a1 1 0 001 1h3.5l2.5 3 2.5-3H15a1 1 0 001-1V3.5a1 1 0 00-1-1z"/>
+                        </g>
                     </svg>
                     <span
                         v-if="unreadMessages > 0"
@@ -689,20 +775,19 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     title="Notificações"
                     @click="playSfx('notificationPage')"
                 >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path
-                            d="M9 1.5A4.5 4.5 0 004.5 6v3.5L3 11.5h12l-1.5-2V6A4.5 4.5 0 009 1.5z"
-                            stroke="currentColor"
-                            stroke-width="1.4"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                        <path
-                            d="M7.5 12a1.5 1.5 0 003 0"
-                            stroke="currentColor"
-                            stroke-width="1.4"
-                            stroke-linecap="round"
-                        />
+                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <defs>
+                            <radialGradient id="grad-notif" cx="40%" cy="30%" r="65%">
+                                <stop offset="0%" stop-color="#f09ab5"/>
+                                <stop offset="100%" stop-color="#8e1f45"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="26" cy="26" r="24" fill="url(#grad-notif)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                        <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                        <g transform="translate(8,13) scale(2)" fill="none" stroke="white" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 1.5A4.5 4.5 0 004.5 6v3.5L3 11.5h12l-1.5-2V6A4.5 4.5 0 009 1.5z"/>
+                            <path d="M7.5 12a1.5 1.5 0 003 0"/>
+                        </g>
                     </svg>
                     <span
                         v-if="unreadNotifications > 0"
@@ -749,20 +834,20 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     title="Amigos"
                     @click="playClick()"
                 >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <circle cx="6.5" cy="5.5" r="2.3" stroke="currentColor" stroke-width="1.4" />
-                        <path
-                            d="M1.5 14.5c.8-2.5 2.8-3.8 5-3.8s4.2 1.3 5 3.8"
-                            stroke="currentColor"
-                            stroke-width="1.4"
-                            stroke-linecap="round"
-                        />
-                        <path
-                            d="M13 7.5a2 2 0 010 4m2.5 3c-.6-1.8-1.8-2.8-3-3"
-                            stroke="currentColor"
-                            stroke-width="1.4"
-                            stroke-linecap="round"
-                        />
+                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <defs>
+                            <radialGradient id="grad-friends" cx="40%" cy="30%" r="65%">
+                                <stop offset="0%" stop-color="#7de8ff"/>
+                                <stop offset="100%" stop-color="#005a85"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="26" cy="26" r="24" fill="url(#grad-friends)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                        <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                        <g transform="translate(8,8) scale(2)" fill="none" stroke="white" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="6.5" cy="5.5" r="2.3"/>
+                            <path d="M1.5 14.5c.8-2.5 2.8-3.8 5-3.8s4.2 1.3 5 3.8"/>
+                            <path d="M13 7.5a2 2 0 010 4m2.5 3c-.6-1.8-1.8-2.8-3-3"/>
+                        </g>
                     </svg>
                     <span
                         v-if="pendingFriends > 0"
@@ -811,9 +896,19 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                         aria-haspopup="menu"
                         title="Definições"
                     >
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                        <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                            <defs>
+                                <radialGradient id="grad-gear" cx="40%" cy="30%" r="65%">
+                                    <stop offset="0%" stop-color="#c08af0"/>
+                                    <stop offset="100%" stop-color="#4a1d90"/>
+                                </radialGradient>
+                            </defs>
+                            <circle cx="26" cy="26" r="24" fill="url(#grad-gear)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                            <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                            <g transform="translate(8,8) scale(1.5)" fill="none" stroke="white" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                            </g>
                         </svg>
                     </button>
 
@@ -926,51 +1021,19 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                 >
                     <img
                         v-if="authUser.avatar"
-                        :src="authUser.avatar"
-                        :style="{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: `2px solid ${authUser.avatar_color ?? '#009ac7'}`,
-                            boxShadow: `0 2px 8px ${authUser.avatar_color ?? '#009ac7'}44`,
-                        }"
+                        :src="clImg(authUser.avatar, 64, 64, 'fill', 'face')"
+                        :style="avatarChipStyle(32, authUser.avatar_color ?? '#009ac7')"
                     />
                     <div
                         v-else
-                        :style="{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            background: authUser.avatar_color ?? '#009ac7',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '13px',
-                            fontWeight: '800',
-                            color: 'white',
-                            boxShadow: `0 2px 8px ${authUser.avatar_color ?? '#009ac7'}44`,
-                        }"
+                        :style="avatarFallbackStyle(32, authUser.avatar_color ?? '#009ac7')"
                     >
                         {{ authUser.name?.[0]?.toUpperCase() ?? '?' }}
                     </div>
                 </Link>
                 <div
                     v-else-if="authUser"
-                    :style="{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        background: authUser.avatar_color ?? '#009ac7',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '13px',
-                        fontWeight: '800',
-                        color: 'white',
-                        boxShadow: `0 2px 8px ${authUser.avatar_color ?? '#009ac7'}44`,
-                        flexShrink: 0,
-                    }"
+                    :style="avatarFallbackStyle(32, authUser.avatar_color ?? '#009ac7')"
                 >
                     {{ authUser.name?.[0]?.toUpperCase() ?? '?' }}
                 </div>
@@ -1134,30 +1197,11 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                                     <img
                                         v-if="u.avatar"
                                         :src="clImg(u.avatar, 72, 72, 'fill', 'face')"
-                                        :style="{
-                                            width: '36px',
-                                            height: '36px',
-                                            borderRadius: '50%',
-                                            objectFit: 'cover',
-                                            border: `2px solid ${u.avatar_color}`,
-                                            flexShrink: '0',
-                                        }"
+                                        :style="avatarChipStyle(36, u.avatar_color)"
                                     />
                                     <div
                                         v-else
-                                        :style="{
-                                            width: '36px',
-                                            height: '36px',
-                                            borderRadius: '50%',
-                                            background: u.avatar_color,
-                                            flexShrink: '0',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: '13px',
-                                            fontWeight: '800',
-                                            color: 'white',
-                                        }"
+                                        :style="avatarFallbackStyle(36, u.avatar_color)"
                                     >
                                         {{ (u.name ?? '?')[0].toUpperCase() }}
                                     </div>
@@ -1291,32 +1335,11 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                                     <img
                                         v-if="p.author.avatar"
                                         :src="clImg(p.author.avatar, 48, 48, 'fill', 'face')"
-                                        :style="{
-                                            width: '28px',
-                                            height: '28px',
-                                            borderRadius: '50%',
-                                            objectFit: 'cover',
-                                            border: `1.5px solid ${p.author.avatar_color}`,
-                                            flexShrink: '0',
-                                            marginTop: '1px',
-                                        }"
+                                        :style="avatarChipStyle(28, p.author.avatar_color)"
                                     />
                                     <div
                                         v-else
-                                        :style="{
-                                            width: '28px',
-                                            height: '28px',
-                                            borderRadius: '50%',
-                                            background: p.author.avatar_color,
-                                            flexShrink: '0',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: '10px',
-                                            fontWeight: '800',
-                                            color: 'white',
-                                            marginTop: '1px',
-                                        }"
+                                        :style="avatarFallbackStyle(28, p.author.avatar_color)"
                                     >
                                         {{ (p.author.name ?? '?')[0].toUpperCase() }}
                                     </div>
@@ -1387,17 +1410,10 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                 z-index: 10;
             "
         >
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; opacity: 0.5">
-                <div
-                    style="
-                        width: 38px;
-                        height: 38px;
-                        border-radius: 50%;
-                        border: 3px solid #009ac733;
-                        border-top-color: #009ac7;
-                        animation: spin 0.7s linear infinite;
-                    "
-                />
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; opacity: 0.6">
+                <div class="bubble-loader">
+                    <div v-for="i in 8" :key="i" :class="`bl-arm bl-arm-${i}`"><div class="bl-dot"></div></div>
+                </div>
                 <span style="font-size: 12px; font-weight: 600; color: #009ac7; letter-spacing: 0.04em"
                     >A carregar bolhas...</span
                 >
@@ -1785,5 +1801,66 @@ input::placeholder {
 }
 input:focus {
     border-color: #4ebcff !important;
+}
+
+/* ── Bubble loader (Section 4) ───────────────────────────────────── */
+.bubble-loader {
+    position: relative;
+    width: 44px;
+    height: 44px;
+}
+.bl-arm {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 22px; height: 4px;
+    margin-top: -2px; margin-left: 0;
+    transform-origin: 0 50%;
+}
+.bl-arm-1  { transform: rotate(0deg); }
+.bl-arm-2  { transform: rotate(45deg); }
+.bl-arm-3  { transform: rotate(90deg); }
+.bl-arm-4  { transform: rotate(135deg); }
+.bl-arm-5  { transform: rotate(180deg); }
+.bl-arm-6  { transform: rotate(225deg); }
+.bl-arm-7  { transform: rotate(270deg); }
+.bl-arm-8  { transform: rotate(315deg); }
+.bl-dot {
+    position: absolute;
+    right: 0; top: 50%;
+    width: 7px; height: 7px;
+    margin-top: -3.5px;
+    border-radius: 50%;
+    background: #009ac7;
+    box-shadow: 0 0 4px #009ac788;
+    animation: bl-fade 0.8s ease-in-out infinite;
+}
+.bl-arm-1 .bl-dot  { animation-delay: -0.7s; }
+.bl-arm-2 .bl-dot  { animation-delay: -0.6s; }
+.bl-arm-3 .bl-dot  { animation-delay: -0.5s; }
+.bl-arm-4 .bl-dot  { animation-delay: -0.4s; }
+.bl-arm-5 .bl-dot  { animation-delay: -0.3s; }
+.bl-arm-6 .bl-dot  { animation-delay: -0.2s; }
+.bl-arm-7 .bl-dot  { animation-delay: -0.1s; }
+.bl-arm-8 .bl-dot  { animation-delay: 0s; }
+@keyframes bl-fade {
+    0%, 100% { opacity: 0.15; transform: scale(0.7); }
+    50%       { opacity: 1;    transform: scale(1); }
+}
+
+/* ── Floating background bubbles (Section 9) ─────────────────────── */
+.fb {
+    position: absolute;
+    bottom: -70px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, rgba(255,255,255,.38) 0%, rgba(78,188,255,.18) 58%, rgba(78,188,255,.06) 82%, transparent 100%);
+    border: 1px solid rgba(78,188,255,.24);
+    box-shadow: 0 0 14px rgba(78,188,255,.12), inset 0 0 10px rgba(255,255,255,.12);
+    filter: saturate(1.05);
+    animation: fbrise linear infinite;
+    will-change: transform;
+}
+@keyframes fbrise {
+    0%   { transform: translateY(0) scale(1); }
+    100% { transform: translateY(calc(-100vh - 90px)) scale(1.08); }
 }
 </style>

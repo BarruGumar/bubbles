@@ -228,28 +228,31 @@ async function submitUserReport() {
                     <!-- Avatar overlapping -->
                     <div style="position: absolute; bottom: -45px; left: 32px; z-index: 5">
                         <div style="position: relative; display: inline-block">
-                            <img
-                                v-if="profileUser.avatar"
-                                :src="clImg(profileUser.avatar, 200, 200, 'fill', 'face')"
-                                :style="{
-                                    width: '90px',
-                                    height: '90px',
-                                    borderRadius: '50%',
-                                    objectFit: 'cover',
-                                    display: 'block',
-                                    border: profileUser.role === 'site_owner' ? '4px solid transparent' : '4px solid white',
-                                    boxShadow: profileUser.role === 'site_owner'
-                                        ? '0 0 0 3px #d4a017, 0 4px 24px #d4a01755'
-                                        : `0 4px 20px ${profileUser.avatar_color}66`,
-                                }"
-                            />
+                            <span v-if="profileUser.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;">
+                                <img
+                                    :src="clImg(profileUser.avatar, 200, 200, 'fill', 'face')"
+                                    :style="{
+                                        width: '90px',
+                                        height: '90px',
+                                        borderRadius: '50%',
+                                        objectFit: 'cover',
+                                        display: 'block',
+                                        border: profileUser.role === 'site_owner' ? '4px solid transparent' : '4px solid white',
+                                        boxShadow: profileUser.role === 'site_owner'
+                                            ? '0 0 0 3px #d4a017, 0 4px 24px #d4a01755'
+                                            : `0 4px 20px ${profileUser.avatar_color}66`,
+                                    }"
+                                />
+                                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                            </span>
                             <div
                                 v-else
                                 :style="{
                                     width: '90px',
                                     height: '90px',
                                     borderRadius: '50%',
-                                    background: profileUser.avatar_color,
+                                    position: 'relative',
+                                    background: `radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${profileUser.avatar_color}`,
                                     border: profileUser.role === 'site_owner' ? '4px solid transparent' : '4px solid white',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -262,6 +265,7 @@ async function submitUserReport() {
                                         : `0 4px 20px ${profileUser.avatar_color}66`,
                                 }"
                             >
+                                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                                 {{ formatInitial(profileUser.name) }}
                             </div>
                             <span
@@ -279,7 +283,7 @@ async function submitUserReport() {
                 <!-- Body -->
                 <div
                     style="
-                        background: rgba(255, 255, 255, 0.92);
+                        background: var(--card-bg);
                         backdrop-filter: blur(20px);
                         border: 1px solid #4ebcff22;
                         border-top: none;
@@ -352,11 +356,11 @@ async function submitUserReport() {
                                     color: white;
                                     padding: 7px 18px;
                                     border-radius: 99px;
-                                    border: none;
-                                    background: #009ac7;
+                                    border: 1px solid rgba(255,255,255,.25);
+                                    background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
                                     cursor: pointer;
                                     white-space: nowrap;
-                                    box-shadow: 0 3px 12px #009ac730;
+                                    box-shadow: 0 3px 12px #009ac740;
                                     transition: opacity 0.2s;
                                 "
                                 @mouseenter="$event.target.style.opacity = '.8'"
@@ -420,11 +424,11 @@ async function submitUserReport() {
                                         color: white;
                                         padding: 7px 18px;
                                         border-radius: 99px;
-                                        border: none;
-                                        background: #009ac7;
+                                        border: 1px solid rgba(255,255,255,.25);
+                                        background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
                                         cursor: pointer;
                                         white-space: nowrap;
-                                        box-shadow: 0 3px 12px #009ac730;
+                                        box-shadow: 0 3px 12px #009ac740;
                                         transition: opacity 0.2s;
                                     "
                                     @mouseenter="$event.target.style.opacity = '.8'"
@@ -485,11 +489,11 @@ async function submitUserReport() {
                                         color: white;
                                         padding: 7px 18px;
                                         border-radius: 99px;
-                                        border: none;
-                                        background: linear-gradient(135deg, #009ac7, #4ebcff);
+                                        border: 1px solid rgba(255,255,255,.25);
+                                        background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
                                         cursor: pointer;
                                         white-space: nowrap;
-                                        box-shadow: 0 3px 12px #009ac730;
+                                        box-shadow: 0 3px 12px #009ac740;
                                         transition: opacity 0.2s;
                                     "
                                     @mouseenter="$event.target.style.opacity = '.85'"
@@ -586,7 +590,7 @@ async function submitUserReport() {
             <div
                 v-if="!communities || communities.length === 0"
                 style="
-                    background: rgba(255, 255, 255, 0.88);
+                    background: var(--card-bg);
                     backdrop-filter: blur(20px);
                     border-radius: 16px;
                     border: 1px solid #4ebcff1a;
@@ -609,7 +613,7 @@ async function submitUserReport() {
             <div
                 v-if="communities && communities.length"
                 style="
-                    background: rgba(255, 255, 255, 0.88);
+                    background: var(--card-bg);
                     backdrop-filter: blur(20px);
                     border-radius: 16px;
                     border: 1px solid #4ebcff1a;
@@ -701,7 +705,7 @@ async function submitUserReport() {
             <div
                 v-if="profileFriends && profileFriends.length"
                 style="
-                    background: rgba(255, 255, 255, 0.88);
+                    background: var(--card-bg);
                     backdrop-filter: blur(20px);
                     border-radius: 16px;
                     border: 1px solid #4ebcff1a;
@@ -729,31 +733,27 @@ async function submitUserReport() {
                         :href="route('profile.show', f.username)"
                         style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; min-width: 0;"
                     >
-                        <img
+                        <span
                             v-if="f.avatar"
-                            :src="f.avatar"
-                            loading="lazy"
-                            :style="{
-                                width: '62px',
-                                height: '62px',
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                                border: `2.5px solid ${f.avatar_color}`,
-                                boxShadow: `0 3px 12px ${f.avatar_color}44`,
-                                display: 'block',
-                                flexShrink: '0',
-                                transition: 'transform .22s cubic-bezier(.34,1.56,.64,1)',
-                            }"
+                            style="position:relative;display:inline-block;border-radius:50%;line-height:0;transition:transform .22s cubic-bezier(.34,1.56,.64,1);"
                             @mouseenter="$event.currentTarget.style.transform = 'scale(1.08)'"
                             @mouseleave="$event.currentTarget.style.transform = 'scale(1)'"
-                        />
+                        >
+                            <img
+                                :src="f.avatar"
+                                loading="lazy"
+                                :style="{ width:'62px', height:'62px', borderRadius:'50%', objectFit:'cover', display:'block', border:`2.5px solid ${f.avatar_color}`, boxShadow:`0 3px 12px ${f.avatar_color}44` }"
+                            />
+                            <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                        </span>
                         <div
                             v-else
                             :style="{
                                 width: '62px',
                                 height: '62px',
                                 borderRadius: '50%',
-                                background: f.avatar_color,
+                                position: 'relative',
+                                background: `radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${f.avatar_color}`,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -767,6 +767,7 @@ async function submitUserReport() {
                             @mouseenter="$event.currentTarget.style.transform = 'scale(1.08)'"
                             @mouseleave="$event.currentTarget.style.transform = 'scale(1)'"
                         >
+                            <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                             {{ formatInitial(f.name) }}
                         </div>
                         <span
@@ -819,7 +820,7 @@ async function submitUserReport() {
             <div
                 v-if="isOwn"
                 style="
-                    background: rgba(255, 255, 255, 0.88);
+                    background: var(--card-bg);
                     backdrop-filter: blur(20px);
                     border-radius: 18px;
                     border: 1px solid #4ebcff22;
@@ -993,13 +994,13 @@ async function submitUserReport() {
                                 style="
                                     padding: 8px 20px;
                                     border-radius: 99px;
-                                    background: #009ac7;
-                                    border: none;
+                                    border: 1px solid rgba(255,255,255,.25);
+                                    background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
                                     color: white;
                                     font-size: 12px;
                                     font-weight: 700;
                                     cursor: pointer;
-                                    box-shadow: 0 3px 12px #009ac730;
+                                    box-shadow: 0 3px 12px #009ac740;
                                     transition: opacity 0.2s;
                                 "
                                 :style="{

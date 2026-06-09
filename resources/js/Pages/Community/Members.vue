@@ -19,7 +19,23 @@ const banForm   = ref({ reason: '', banned_until: '' });
 const muteForm  = ref({ reason: '', muted_until: '' });
 
 const roleLabel  = { owner: 'Criador', admin: 'Admin', moderator: 'Moderador', member: 'Membro', banned: 'Banido' };
-const roleColor  = { owner: '#009ac7', admin: '#9b6bdf', moderator: '#2ea87e', member: '#8ba0b0', banned: '#e05555' };
+
+function roleBadgeStyle(role) {
+    const map = {
+        owner:     { bg: 'rgba(255,180,0,.18)',   border: 'rgba(255,180,0,.4)',   text: '#ffd700', glow: '0 0 8px rgba(255,180,0,.3)' },
+        admin:     { bg: 'rgba(0,154,199,.18)',    border: 'rgba(0,154,199,.4)',   text: '#4ebcff', glow: null },
+        moderator: { bg: 'rgba(0,180,100,.18)',    border: 'rgba(0,180,100,.4)',   text: '#4fffaa', glow: null },
+        member:    { bg: 'rgba(255,255,255,.06)',  border: 'rgba(255,255,255,.15)', text: '#8ba0b0', glow: null },
+        banned:    { bg: 'rgba(224,85,85,.18)',    border: 'rgba(224,85,85,.4)',   text: '#ff7070', glow: null },
+    };
+    const s = map[role] ?? map.member;
+    return {
+        fontSize: '10px', fontWeight: '800', padding: '3px 10px', borderRadius: '99px',
+        background: s.bg, border: `1px solid ${s.border}`, color: s.text,
+        boxShadow: s.glow ? `inset 0 1px 0 rgba(255,255,255,.1), ${s.glow}` : 'inset 0 1px 0 rgba(255,255,255,.1)',
+        display: 'inline-flex', alignItems: 'center',
+    };
+}
 const filterLabel = { all: 'Todos', staff: 'Staff', banned: 'Banidos', muted: 'Silenciados' };
 
 let timer = null;
@@ -125,10 +141,15 @@ function unmute(member) {
                             display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap' }">
 
                         <!-- Avatar -->
-                        <img v-if="m.avatar" :src="clImg(m.avatar,72,72,'fill','face')"
-                            :style="{ width:'38px', height:'38px', borderRadius:'50%', objectFit:'cover', border:`2px solid ${m.avatar_color}`, flexShrink:0 }" />
-                        <div v-else :style="{ width:'38px', height:'38px', borderRadius:'50%', background:m.avatar_color,
-                            display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'800', color:'white', flexShrink:0 }">
+                        <span v-if="m.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;flex-shrink:0;">
+                            <img :src="clImg(m.avatar,72,72,'fill','face')"
+                                :style="{ width:'38px', height:'38px', borderRadius:'50%', objectFit:'cover', display:'block', border:`2px solid ${m.avatar_color}`, boxShadow:`0 2px 10px ${m.avatar_color}44` }" />
+                            <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                        </span>
+                        <div v-else :style="{ width:'38px', height:'38px', borderRadius:'50%', position:'relative',
+                            background:`radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${m.avatar_color}`,
+                            display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'800', color:'white', flexShrink:0, boxShadow:`0 2px 10px ${m.avatar_color}44` }">
+                            <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                             {{ (m.name ?? '?')[0].toUpperCase() }}
                         </div>
 
@@ -140,8 +161,7 @@ function unmute(member) {
                                     {{ m.name }}
                                 </Link>
                                 <span style="font-size:11px; color:var(--text-3);">@{{ m.username }}</span>
-                                <span :style="{ fontSize:'10px', fontWeight:'800', padding:'2px 8px', borderRadius:'99px',
-                                    background: roleColor[m.role]+'22', color: roleColor[m.role] }">
+                                <span :style="roleBadgeStyle(m.role)">
                                     {{ roleLabel[m.role] ?? m.role }}
                                 </span>
                                 <span v-if="m.status === 'banned'" style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:99px; background:#fff0f0; color:#e05555;">

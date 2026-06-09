@@ -2,6 +2,8 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useAudio } from '@/Composables/useAudio';
 
+const props = defineProps({ sphere: { type: Boolean, default: false } });
+
 const {
     bgmVolume, sfxVolume, bgmEnabled, sfxEnabled, muted,
     toggleMuted, setBgmVolume, setSfxVolume, setBgmEnabled, setSfxEnabled,
@@ -28,6 +30,44 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
     <div style="position: relative">
         <!-- ── Trigger button ─────────────────────────────────── -->
         <button
+            v-if="sphere"
+            ref="btnEl"
+            @click.stop="toggle"
+            :title="muted ? 'Áudio silenciado' : 'Controlo de áudio'"
+            :style="{
+                width: '36px', height: '36px', borderRadius: '50%',
+                border: 'none', background: 'transparent',
+                color: 'white', cursor: 'pointer', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.2s', flexShrink: 0,
+                padding: 0,
+            }"
+        >
+            <svg width="36" height="36" viewBox="0 0 52 52" style="display:block">
+                <defs>
+                    <radialGradient id="grad-audio" cx="40%" cy="30%" r="65%">
+                        <stop offset="0%" stop-color="#7de8ff"/>
+                        <stop offset="100%" stop-color="#005a85"/>
+                    </radialGradient>
+                </defs>
+                <circle cx="26" cy="26" r="24" fill="url(#grad-audio)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                <g v-if="muted" transform="translate(7.5,7.5) scale(1.35)" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                    <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                    <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                </g>
+                <g v-else transform="translate(7.5,7.5) scale(1.35)" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </g>
+            </svg>
+        </button>
+        <button
+            v-else
             ref="btnEl"
             @click.stop="toggle"
             :title="muted ? 'Áudio silenciado' : 'Controlo de áudio'"

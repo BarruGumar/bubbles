@@ -130,16 +130,7 @@ function formatInitial(name) {
 </script>
 
 <template>
-    <div
-        style="
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            border: 1px solid #4ebcff1a;
-            box-shadow: 0 2px 12px #009ac708;
-            padding: 20px;
-        "
-    >
+    <div class="post-bubble" style="padding: 20px;">
         <!-- Community badge -->
         <Link
             v-if="community"
@@ -180,20 +171,22 @@ function formatInitial(name) {
                 :href="author.username ? route('profile.show', author.username) : undefined"
                 style="flex-shrink: 0; display: block; text-decoration: none"
             >
-                <img
-                    v-if="author.avatar"
-                    :src="clImg(author.avatar, 80, 80, 'fill', 'face')"
-                    loading="lazy"
-                    :style="{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        display: 'block',
-                        border: isCreator ? `2px solid ${accentColor}` : `2px solid ${author.avatar_color}`,
-                        boxShadow: isCreator ? `0 0 0 3px ${accentColor}30, 0 2px 10px ${accentColor}50` : 'none',
-                    }"
-                />
+                <span v-if="author.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;flex-shrink:0;">
+                    <img
+                        :src="clImg(author.avatar, 80, 80, 'fill', 'face')"
+                        loading="lazy"
+                        :style="{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            display: 'block',
+                            border: isCreator ? `2px solid ${accentColor}` : `2px solid ${author.avatar_color}`,
+                            boxShadow: isCreator ? `0 0 0 3px ${accentColor}30, 0 2px 10px ${accentColor}50` : `0 2px 12px ${author.avatar_color}44`,
+                        }"
+                    />
+                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                </span>
                 <div
                     v-else
                     :style="{
@@ -201,7 +194,8 @@ function formatInitial(name) {
                         height: '38px',
                         borderRadius: '50%',
                         flexShrink: 0,
-                        background: author.avatar_color ?? '#009ac7',
+                        position: 'relative',
+                        background: `radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${author.avatar_color ?? '#009ac7'}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -209,8 +203,10 @@ function formatInitial(name) {
                         fontWeight: '800',
                         color: 'white',
                         border: isCreator ? `2px solid ${accentColor}` : 'none',
+                        boxShadow: `0 2px 12px ${(author.avatar_color ?? '#009ac7')}44`,
                     }"
                 >
+                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                     {{ formatInitial(author.name) }}
                 </div>
             </component>
@@ -467,3 +463,24 @@ function formatInitial(name) {
 
     <PostImageLightbox v-if="post.image" :image-url="post.image" :open="lightboxOpen" @close="lightboxOpen = false" />
 </template>
+
+<style scoped>
+.post-bubble {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(78,188,255,.15);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 4px 16px rgba(0,0,0,.1);
+    position: relative;
+    overflow: hidden;
+}
+.post-bubble::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 40%;
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,.04), transparent);
+    pointer-events: none;
+}
+</style>

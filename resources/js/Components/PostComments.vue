@@ -105,19 +105,23 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
             <!-- Comment row -->
             <div style="display:flex; gap:8px; align-items:flex-start">
                 <!-- Avatar -->
-                <img v-if="c.author.avatar" :src="c.author.avatar" loading="lazy"
-                    :style="{ width:'28px', height:'28px', borderRadius:'50%', objectFit:'cover',
-                              border:`1.5px solid ${c.author.avatar_color}`, flexShrink:0 }" />
-                <div v-else :style="{ width:'28px', height:'28px', borderRadius:'50%', flexShrink:0,
-                    background: c.author.avatar_color ?? '#009ac7', display:'flex',
-                    alignItems:'center', justifyContent:'center', fontSize:'11px',
-                    fontWeight:'800', color:'white' }">
+                <span v-if="c.author.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;flex-shrink:0;">
+                    <img :src="c.author.avatar" loading="lazy"
+                        :style="{ width:'28px', height:'28px', borderRadius:'50%', objectFit:'cover', display:'block',
+                                  border:`1.5px solid ${c.author.avatar_color}`, boxShadow:`0 2px 8px ${c.author.avatar_color}44` }" />
+                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                </span>
+                <div v-else :style="{ width:'28px', height:'28px', borderRadius:'50%', flexShrink:0, position:'relative',
+                    background:`radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${c.author.avatar_color ?? '#009ac7'}`,
+                    display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px',
+                    fontWeight:'800', color:'white', boxShadow:`0 2px 8px ${c.author.avatar_color ?? '#009ac7'}44` }">
+                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                     {{ initial(c.author.name) }}
                 </div>
 
                 <!-- Bubble + meta -->
                 <div style="flex:1; min-width:0">
-                    <div style="background:rgba(240,248,255,0.8); border-radius:12px; padding:8px 12px">
+                    <div class="comment-bubble" style="padding:8px 12px">
                         <Link v-if="c.author.username" :href="route('profile.show', c.author.username)"
                             style="font-size:12px; font-weight:700; color:#3a6478; text-decoration:none">
                             {{ c.author.name }}
@@ -196,13 +200,16 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
             <!-- Reply input (inline) -->
             <div v-if="activeReply === c.id && authUser"
                 style="display:flex; gap:6px; align-items:center; margin-top:6px; padding-left:36px">
-                <img v-if="authUser.avatar" :src="authUser.avatar" loading="lazy"
-                    :style="{ width:'22px', height:'22px', borderRadius:'50%', objectFit:'cover',
-                              border:`1.5px solid ${authUser.avatar_color ?? '#009ac7'}`, flexShrink:0 }" />
-                <div v-else :style="{ width:'22px', height:'22px', borderRadius:'50%', flexShrink:0,
-                    background: authUser.avatar_color ?? '#009ac7', display:'flex',
-                    alignItems:'center', justifyContent:'center', fontSize:'9px',
-                    fontWeight:'800', color:'white' }">
+                <span v-if="authUser.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;flex-shrink:0;">
+                    <img :src="authUser.avatar" loading="lazy"
+                        :style="{ width:'22px', height:'22px', borderRadius:'50%', objectFit:'cover', display:'block',
+                                  border:`1.5px solid ${authUser.avatar_color ?? '#009ac7'}` }" />
+                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                </span>
+                <div v-else :style="{ width:'22px', height:'22px', borderRadius:'50%', flexShrink:0, position:'relative',
+                    background:`radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${authUser.avatar_color ?? '#009ac7'}`,
+                    display:'flex', alignItems:'center', justifyContent:'center', fontSize:'9px', fontWeight:'800', color:'white' }">
+                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                     {{ initial(authUser.name) }}
                 </div>
                 <input v-model="replyTexts[c.id]"
@@ -226,19 +233,23 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
             <div v-if="c.replies && c.replies.length" style="margin-top:6px; padding-left:36px; display:flex; flex-direction:column; gap:6px">
                 <div v-for="r in c.replies" :key="r.id" style="display:flex; gap:6px; align-items:flex-start">
                     <!-- Small avatar -->
-                    <img v-if="r.author.avatar" :src="r.author.avatar" loading="lazy"
-                        :style="{ width:'22px', height:'22px', borderRadius:'50%', objectFit:'cover',
-                                  border:`1.5px solid ${r.author.avatar_color}`, flexShrink:0 }" />
-                    <div v-else :style="{ width:'22px', height:'22px', borderRadius:'50%', flexShrink:0,
-                        background: r.author.avatar_color ?? '#009ac7', display:'flex',
-                        alignItems:'center', justifyContent:'center', fontSize:'9px',
+                    <span v-if="r.author.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;flex-shrink:0;">
+                        <img :src="r.author.avatar" loading="lazy"
+                            :style="{ width:'22px', height:'22px', borderRadius:'50%', objectFit:'cover', display:'block',
+                                      border:`1.5px solid ${r.author.avatar_color}`, boxShadow:`0 2px 6px ${r.author.avatar_color}44` }" />
+                        <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                    </span>
+                    <div v-else :style="{ width:'22px', height:'22px', borderRadius:'50%', flexShrink:0, position:'relative',
+                        background:`radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${r.author.avatar_color ?? '#009ac7'}`,
+                        display:'flex', alignItems:'center', justifyContent:'center', fontSize:'9px',
                         fontWeight:'800', color:'white' }">
+                        <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                         {{ initial(r.author.name) }}
                     </div>
 
                     <!-- Reply bubble + meta -->
                     <div style="flex:1; min-width:0">
-                        <div style="background:rgba(240,248,255,0.6); border-radius:10px; padding:6px 10px">
+                        <div style="background:var(--surface); border:1px solid rgba(78,188,255,.1); border-radius:10px; padding:6px 10px; box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
                             <Link v-if="r.author.username" :href="route('profile.show', r.author.username)"
                                 style="font-size:11px; font-weight:700; color:#3a6478; text-decoration:none">
                                 {{ r.author.name }}
@@ -310,13 +321,16 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
 
         <!-- New comment input -->
         <div v-if="authUser" style="display:flex; gap:8px; align-items:center; margin-top:4px">
-            <img v-if="authUser.avatar" :src="authUser.avatar" loading="lazy"
-                :style="{ width:'28px', height:'28px', borderRadius:'50%', objectFit:'cover',
-                          border:`1.5px solid ${authUser.avatar_color ?? '#009ac7'}`, flexShrink:0 }" />
-            <div v-else :style="{ width:'28px', height:'28px', borderRadius:'50%', flexShrink:0,
-                background: authUser.avatar_color ?? '#009ac7', display:'flex',
-                alignItems:'center', justifyContent:'center', fontSize:'11px',
-                fontWeight:'800', color:'white' }">
+            <span v-if="authUser.avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;flex-shrink:0;">
+                <img :src="authUser.avatar" loading="lazy"
+                    :style="{ width:'28px', height:'28px', borderRadius:'50%', objectFit:'cover', display:'block',
+                              border:`1.5px solid ${authUser.avatar_color ?? '#009ac7'}` }" />
+                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+            </span>
+            <div v-else :style="{ width:'28px', height:'28px', borderRadius:'50%', flexShrink:0, position:'relative',
+                background:`radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${authUser.avatar_color ?? '#009ac7'}`,
+                display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:'800', color:'white' }">
+                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                 {{ initial(authUser.name) }}
             </div>
             <div style="flex:1; display:flex; gap:6px">
@@ -343,3 +357,24 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
 
     </div>
 </template>
+
+<style scoped>
+.comment-bubble {
+    background: var(--surface);
+    border: 1px solid rgba(78,188,255,.12);
+    border-radius: 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(0,0,0,.08);
+    position: relative;
+}
+.comment-bubble::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 10px;
+    width: 10px; height: 10px;
+    background: var(--surface);
+    border-left: 1px solid rgba(78,188,255,.12);
+    border-bottom: 1px solid rgba(78,188,255,.12);
+    transform: rotate(45deg);
+}
+</style>

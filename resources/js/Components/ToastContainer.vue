@@ -3,11 +3,25 @@ import { useToast } from '@/Composables/useToast';
 
 const { toasts, dismiss } = useToast();
 
-function bg(type) {
-    if (type === 'error') return 'linear-gradient(135deg,#c74a6b,#e07b9a)';
-    if (type === 'warning') return 'linear-gradient(135deg,#d08a00,#e0b040)';
-    if (type === 'success') return 'linear-gradient(135deg,#1a9e6b,#2ec98a)';
-    return 'linear-gradient(135deg,#009ac7,#4ebcff)';
+function borderCol(type) {
+    if (type === 'error')   return 'rgba(199,74,107,.4)';
+    if (type === 'warning') return 'rgba(208,138,0,.4)';
+    if (type === 'success') return 'rgba(30,160,107,.4)';
+    return 'rgba(0,154,199,.4)';
+}
+
+function glow(type) {
+    if (type === 'error')   return '0 4px 20px rgba(199,74,107,.25)';
+    if (type === 'warning') return '0 4px 20px rgba(208,138,0,.25)';
+    if (type === 'success') return '0 4px 20px rgba(30,160,107,.25)';
+    return '0 4px 20px rgba(0,154,199,.25)';
+}
+
+function iconCol(type) {
+    if (type === 'error')   return '#e87a9a';
+    if (type === 'warning') return '#e0c060';
+    if (type === 'success') return '#4fffaa';
+    return '#4ebcff';
 }
 
 function icon(type) {
@@ -39,6 +53,7 @@ function icon(type) {
                     v-for="toast in toasts"
                     :key="toast.id"
                     :role="toast.type === 'error' ? 'alert' : 'status'"
+                    class="toast-item"
                     :style="{
                         pointerEvents: 'all',
                         display: 'flex',
@@ -51,16 +66,19 @@ function icon(type) {
                         color: 'white',
                         minWidth: '220px',
                         maxWidth: '360px',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
                         cursor: 'pointer',
-                        backdropFilter: 'blur(12px)',
-                        background: bg(toast.type),
+                        position: 'relative',
+                        overflow: 'hidden',
+                        background: 'rgba(13,27,42,.88)',
+                        border: `1px solid ${borderCol(toast.type)}`,
+                        boxShadow: `inset 0 1px 0 rgba(255,255,255,.1), ${glow(toast.type)}`,
+                        backdropFilter: 'blur(16px)',
                     }"
                     @click="dismiss(toast.id)"
                 >
-                    <span style="font-size: 15px; flex-shrink: 0; font-weight: 900">{{ icon(toast.type) }}</span>
+                    <span :style="{ fontSize: '15px', flexShrink: '0', fontWeight: '900', color: iconCol(toast.type) }">{{ icon(toast.type) }}</span>
                     <span style="flex: 1; line-height: 1.4">{{ toast.message }}</span>
-                    <span style="font-size: 16px; opacity: 0.6; flex-shrink: 0; line-height: 1">×</span>
+                    <span style="font-size: 16px; opacity: 0.4; flex-shrink: 0; line-height: 1">×</span>
                 </div>
             </TransitionGroup>
         </div>
@@ -68,6 +86,16 @@ function icon(type) {
 </template>
 
 <style scoped>
+.toast-item::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    border-radius: 14px 14px 0 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,.06), transparent);
+    pointer-events: none;
+    z-index: 1;
+}
 .toast-enter-active {
     transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
