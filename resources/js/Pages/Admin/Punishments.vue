@@ -122,7 +122,7 @@ function submitRevoke() {
             </select>
 
             <button @click="showModal = true"
-                style="margin-left: auto; background: #009ac7; color: white; border: none; border-radius: 10px; padding: 9px 18px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;">
+                style="margin-left: auto; background: rgba(0,154,199,.45); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); color: white; border: 1px solid rgba(255,255,255,.45); border-radius: 10px; padding: 9px 18px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; text-shadow: 0 1px 4px rgba(0,60,100,.6); box-shadow: 0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4);">
                 + Nova Punição
             </button>
         </div>

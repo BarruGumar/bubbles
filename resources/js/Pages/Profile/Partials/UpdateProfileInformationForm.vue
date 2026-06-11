@@ -234,8 +234,12 @@ function removeBanner() {
                     :style="{
                         padding: '8px 20px',
                         borderRadius: '10px',
-                        border: 'none',
-                        background: '#009ac7',
+                        border: '1px solid rgba(255,255,255,.45)',
+                        background: 'rgba(0,154,199,.45)',
+                        backdropFilter: 'blur(16px) saturate(160%)',
+                        webkitBackdropFilter: 'blur(16px) saturate(160%)',
+                        textShadow: '0 1px 4px rgba(0,60,100,.6)',
+                        boxShadow: '0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4)',
                         color: 'white',
                         fontSize: '12px',
                         fontWeight: '700',
@@ -371,8 +375,12 @@ function removeBanner() {
                         :style="{
                             padding: '7px 18px',
                             borderRadius: '10px',
-                            border: 'none',
-                            background: '#009ac7',
+                            border: '1px solid rgba(255,255,255,.45)',
+                            background: 'rgba(0,154,199,.45)',
+                            backdropFilter: 'blur(16px) saturate(160%)',
+                            webkitBackdropFilter: 'blur(16px) saturate(160%)',
+                            textShadow: '0 1px 4px rgba(0,60,100,.6)',
+                            boxShadow: '0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4)',
                             color: 'white',
                             fontSize: '12px',
                             fontWeight: '700',
@@ -687,13 +695,16 @@ function removeBanner() {
                     style="
                         padding: 11px 28px;
                         border-radius: 12px;
-                        background: #009ac7;
-                        border: none;
+                        background: rgba(0,154,199,.45);
+                        backdrop-filter: blur(16px) saturate(160%);
+                        -webkit-backdrop-filter: blur(16px) saturate(160%);
+                        border: 1px solid rgba(255,255,255,.45);
                         color: white;
+                        text-shadow: 0 1px 4px rgba(0,60,100,.6);
                         font-size: 13px;
                         font-weight: 700;
                         cursor: pointer;
-                        box-shadow: 0 4px 14px #009ac730;
+                        box-shadow: 0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4);
                         transition: opacity 0.2s;
                     "
                     :style="{ opacity: form.processing ? 0.7 : 1 }"

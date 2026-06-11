@@ -287,7 +287,9 @@ onUnmounted(() => {
                             :style="{
                                 padding: isMobile ? '5px 11px' : '7px 16px',
                                 borderRadius: '99px',
-                                background: 'linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 50%, rgba(0,0,0,.06) 100%), linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%)',
+                                background: 'rgba(0,154,199,.45)',
+                                backdropFilter: 'blur(16px) saturate(160%)',
+                                webkitBackdropFilter: 'blur(16px) saturate(160%)',
                                 border: '1px solid rgba(255,255,255,.45)',
                                 color: 'white',
                                 textDecoration: 'none',
@@ -295,7 +297,8 @@ onUnmounted(() => {
                                 fontWeight: '700',
                                 cursor: 'pointer',
                                 display: 'inline-block',
-                                boxShadow: '0 6px 24px rgba(0,154,199,.5), inset 0 1px 0 rgba(255,255,255,.35)',
+                                textShadow: '0 1px 4px rgba(0,60,100,.6)',
+                                boxShadow: '0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4)',
                                 transition: 'opacity .2s',
                             }"
                             @mouseenter="$event.currentTarget.style.opacity = '.88'"

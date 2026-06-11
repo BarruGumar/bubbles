@@ -62,9 +62,9 @@ function isExpired(iso) {
             <button
                 @click="openModal"
                 style="
-                    padding: 8px 18px; border-radius: 99px; border: none;
-                    background: #009ac7; color: white;
-                    font-size: 13px; font-weight: 700; cursor: pointer;
+                    padding: 8px 18px; border-radius: 99px; border: 1px solid rgba(255,255,255,.45);
+                    background: rgba(0,154,199,.45); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); color: white;
+                    text-shadow: 0 1px 4px rgba(0,60,100,.6); font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4);
                 "
             >+ Novo aviso</button>
         </div>
@@ -260,9 +260,9 @@ function isExpired(iso) {
                             @click="submit"
                             :disabled="!form.title.trim() || !form.body.trim()"
                             style="
-                                padding: 9px 22px; border-radius: 10px; border: none;
-                                background: #009ac7; color: white;
-                                font-size: 13px; font-weight: 700; cursor: pointer;
+                                padding: 9px 22px; border-radius: 10px; border: 1px solid rgba(255,255,255,.45);
+                                background: rgba(0,154,199,.45); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); color: white;
+                                text-shadow: 0 1px 4px rgba(0,60,100,.6); font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4);
                             "
                             :style="{ opacity: !form.title.trim() || !form.body.trim() ? 0.5 : 1 }"
                         >Publicar aviso</button>

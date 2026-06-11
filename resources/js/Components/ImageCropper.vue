@@ -347,13 +347,16 @@ function confirm() {
                     style="
                         padding: 9px 22px;
                         border-radius: 10px;
-                        border: none;
-                        background: #009ac7;
+                        border: 1px solid rgba(255,255,255,.45);
+                        background: rgba(0,154,199,.45);
+                        backdrop-filter: blur(16px) saturate(160%);
+                        -webkit-backdrop-filter: blur(16px) saturate(160%);
                         color: white;
+                        text-shadow: 0 1px 4px rgba(0,60,100,.6);
                         font-size: 12px;
                         font-weight: 700;
                         cursor: pointer;
-                        box-shadow: 0 3px 12px #009ac730;
+                        box-shadow: 0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4);
                         transition: opacity 0.2s;
                     "
                     @mouseenter="$event.target.style.opacity = '.85'"

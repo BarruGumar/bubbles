@@ -2000,9 +2000,9 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 .scroll-btn-wrap { position: absolute; bottom: 90px; right: 20px; z-index: 10; }
 .scroll-btn {
     position: relative;
-    width: 38px; height: 38px; border-radius: 50%; border: none;
-    background: #009ac7; color: white; font-size: 16px; cursor: pointer;
-    box-shadow: 0 4px 16px #009ac740; display: flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,.45);
+    background: rgba(0,154,199,.45); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); color: white; font-size: 16px; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center;
     transition: transform 0.2s;
 }
 .scroll-btn:hover { transform: scale(1.1); }
@@ -2073,7 +2073,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 /* Edit mode buttons */
 .edit-actions { display: flex; gap: 6px; justify-content: flex-end; padding: 0 6px 6px; }
 .btn-cancel { padding: 4px 12px; border-radius: 99px; border: 1.5px solid #009ac744; background: transparent; color: #009ac7; font-size: 11px; font-weight: 700; cursor: pointer; }
-.btn-save { padding: 4px 12px; border-radius: 99px; border: none; background: #009ac7; color: white; font-size: 11px; font-weight: 700; cursor: pointer; }
+.btn-save { padding: 4px 12px; border-radius: 99px; border: 1px solid rgba(255,255,255,.45); background: rgba(0,154,199,.45); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); color: white; text-shadow: 0 1px 4px rgba(0,60,100,.6); font-size: 11px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4); }
 .btn-save:disabled { opacity: 0.6; }
 
 /* ── Scrollbar ────────────────────────────────────────────────── */
@@ -2225,11 +2225,11 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 .gd-name-static { font-size: 14px; font-weight: 700; color: #3a6478; margin: 0; text-align: center; }
 .gd-members-count { font-size: 11px; color: #8ba0b0; margin: 0; }
 .gd-save-btn {
-    padding: 6px 18px; border-radius: 20px; border: none;
-    background: #009ac7; color: #fff; font-size: 12px; font-weight: 700;
-    cursor: pointer; transition: background .15s;
+    padding: 6px 18px; border-radius: 20px; border: 1px solid rgba(255,255,255,.45);
+    background: rgba(0,154,199,.45); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); color: #fff; text-shadow: 0 1px 4px rgba(0,60,100,.6); font-size: 12px; font-weight: 700;
+    cursor: pointer; box-shadow: 0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4); transition: opacity .15s;
 }
-.gd-save-btn:hover:not(:disabled) { background: #007fa8; }
+.gd-save-btn:hover:not(:disabled) { opacity: .88; }
 .gd-save-btn:disabled { opacity: .5; cursor: default; }
 .gd-divider { height: 1px; background: #009ac710; margin: 0 18px; }
 .gd-section-row {
@@ -2272,11 +2272,11 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 .gd-friend-name { font-size: 12px; font-weight: 700; color: #3a6478; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gd-friend-user { font-size: 11px; color: #8ba0b0; margin: 0; }
 .gd-friend-add-btn {
-    padding: 4px 10px; border-radius: 20px; border: none;
-    background: #009ac7; color: #fff; font-size: 11px; font-weight: 700;
-    cursor: pointer; white-space: nowrap; transition: background .15s; flex-shrink: 0;
+    padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,.45);
+    background: rgba(0,154,199,.45); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); color: #fff; text-shadow: 0 1px 4px rgba(0,60,100,.6); font-size: 11px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4); transition: opacity .15s; flex-shrink: 0;
 }
-.gd-friend-add-btn:hover:not(:disabled) { background: #007fa8; }
+.gd-friend-add-btn:hover:not(:disabled) { opacity: .88; }
 .gd-friend-add-btn:disabled { opacity: .5; cursor: default; }
 .gd-expand-enter-active, .gd-expand-leave-active { transition: max-height .22s ease, opacity .18s ease; max-height: 300px; overflow: hidden; }
 .gd-expand-enter-from, .gd-expand-leave-to { max-height: 0; opacity: 0; }

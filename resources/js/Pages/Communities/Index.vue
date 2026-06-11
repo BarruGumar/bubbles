@@ -40,7 +40,7 @@ function leave(id) {
                     <p style="font-size: 14px; color: #8ba0b0">Ainda não fazes parte de nenhuma comunidade.</p>
                     <p style="font-size: 12px; color: #b0c0cc; margin-top: 6px">Explora as bolhas e junta-te a uma comunidade!</p>
                     <Link :href="route('bubbles')"
-                        style="display: inline-block; margin-top: 16px; padding: 9px 22px; border-radius: 99px; background: #009ac7; color: white; font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 3px 12px #009ac730; transition: opacity 0.2s;"
+                        style="display: inline-block; margin-top: 16px; padding: 9px 22px; border-radius: 99px; background: rgba(0,154,199,.45); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); border: 1px solid rgba(255,255,255,.45); color: white; text-shadow: 0 1px 4px rgba(0,60,100,.6); font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 6px 20px rgba(0,154,199,.4), inset 0 1px 0 rgba(255,255,255,.4); transition: opacity 0.2s;"
                         @mouseenter="$event.currentTarget.style.opacity = '.85'"
                         @mouseleave="$event.currentTarget.style.opacity = '1'">
                         Explorar bolhas
