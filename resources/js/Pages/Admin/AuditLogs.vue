@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
@@ -63,6 +63,19 @@ function deleteAllLogs() {
     if (!confirm('Última confirmação — esta ação não pode ser desfeita. Continuar?')) return;
     router.delete(route('admin.audit-logs.destroy-all'), {}, { preserveScroll: true });
 }
+
+const lastRefreshed = ref(new Date());
+let pollTimer = null;
+
+function poll() {
+    if (detailLog.value) return;
+    router.reload({ only: ['logs'], preserveScroll: true, onSuccess: () => {
+        lastRefreshed.value = new Date();
+    }});
+}
+
+onMounted(() => { pollTimer = setInterval(poll, 15000); });
+onUnmounted(() => clearInterval(pollTimer));
 </script>
 
 <template>
@@ -124,6 +137,13 @@ function deleteAllLogs() {
 
         <!-- Log table -->
         <div style="background:white; border-radius:14px; border:1px solid #eef2f8; box-shadow:0 2px 8px rgba(0,0,0,.04); overflow:hidden;">
+            <div style="padding:10px 16px 0; display:flex; align-items:center; gap:8px;">
+                <span style="display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700; color:#2ea87e; text-transform:uppercase; letter-spacing:.06em;">
+                    <span style="width:7px; height:7px; border-radius:50%; background:#2ea87e; display:inline-block; animation:pulse-dot 2s infinite;"></span>
+                    Live
+                </span>
+                <span style="font-size:10px; color:#b0c0cc;">Atualizado às {{ lastRefreshed.toLocaleTimeString('pt-PT') }}</span>
+            </div>
             <div v-if="logs.data.length === 0" style="padding:48px; text-align:center; color:#8ba0b0; font-size:13px;">
                 Sem logs para este filtro.
             </div>
@@ -208,3 +228,10 @@ function deleteAllLogs() {
         </div>
     </AdminLayout>
 </template>
+
+<style scoped>
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .4; transform: scale(.7); }
+}
+</style>
