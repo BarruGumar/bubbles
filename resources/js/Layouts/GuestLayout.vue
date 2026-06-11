@@ -79,20 +79,7 @@ import BackgroundAmbient from '@/Components/BackgroundAmbient.vue';
         </div>
 
         <!-- Glass card -->
-        <div
-            style="
-                width: 100%;
-                max-width: 420px;
-                background: rgba(255, 255, 255, 0.88);
-                backdrop-filter: blur(20px);
-                border-radius: 22px;
-                padding: 36px;
-                border: 1px solid #4ebcff2a;
-                box-shadow: 0 16px 56px #009ac71a;
-                position: relative;
-                z-index: 1;
-            "
-        >
+        <div class="guest-card">
             <slot />
         </div>
 
@@ -115,5 +102,95 @@ html.dark body:has(.guest-page)::before {
 }
 html.dark body:has(.guest-page) {
     background: linear-gradient(160deg, #f0f8ff 0%, #daeef9 50%, #c5e5f5 100%) !important;
+}
+
+.guest-card {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 24px;
+    padding: 36px;
+    border: 1px solid rgba(78, 188, 255, 0.22);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        0 20px 60px rgba(0, 154, 199, 0.12),
+        0 4px 16px rgba(0, 0, 0, 0.06);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+.guest-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 44%;
+    border-radius: 24px 24px 0 0;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.18), transparent);
+    pointer-events: none;
+}
+
+/* Auth inputs */
+.auth-input {
+    background: rgba(240, 248, 255, 0.8);
+    border: 1.5px solid rgba(78, 188, 255, 0.28);
+    border-radius: 99px;
+    padding: 11px 18px;
+    font-size: 13px;
+    color: #3a6478;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+.auth-input:focus {
+    border-color: #009ac7;
+    box-shadow: 0 0 0 3px rgba(0, 154, 199, 0.1);
+}
+
+/* Auth primary button */
+.auth-btn-primary {
+    width: 100%;
+    padding: 13px;
+    border-radius: 99px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 154, 199, 0.4);
+    transition: opacity 0.2s;
+    margin-top: 4px;
+    font-family: inherit;
+}
+.auth-btn-primary:hover { opacity: 0.88; }
+.auth-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Auth Google button */
+.auth-btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 99px;
+    border: 1.5px solid rgba(78, 188, 255, 0.25);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(8px);
+    color: #3a6478;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    margin-top: 4px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
+}
+.auth-btn-google:hover {
+    border-color: rgba(0, 154, 199, 0.45);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 2px 12px rgba(0, 154, 199, 0.15), inset 0 1px 0 rgba(255,255,255,.5);
 }
 </style>

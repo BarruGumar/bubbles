@@ -140,26 +140,24 @@ const banModalVisible = ref(!!props.punishmentModal);
                         v-if="canRegister"
                         :href="route('register')"
                         :style="{
-                            padding: '8px 16px',
-                            borderRadius: '10px',
-                            background: '#009ac7',
+                            padding: '7px 16px',
+                            borderRadius: '99px',
+                            background: 'linear-gradient(160deg, rgba(100,205,255,.72) 0%, rgba(0,154,199,.65) 55%, rgba(0,100,140,.7) 100%)',
+                            backdropFilter: 'blur(16px)',
+                            webkitBackdropFilter: 'blur(16px)',
                             color: 'white',
                             textDecoration: 'none',
                             fontSize: '13px',
-                            fontWeight: '600',
-                            transition: 'background .15s, box-shadow .15s',
+                            fontWeight: '700',
+                            transition: 'opacity .2s',
                             cursor: 'pointer',
                             display: 'inline-block',
-                            boxShadow: '0 4px 12px #009ac722',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.45), 0 2px 10px rgba(0,154,199,.25)',
+                            border: '1px solid rgba(255,255,255,.35)',
+                            textShadow: '0 1px 3px rgba(0,60,100,.3)',
                         }"
-                        @mouseenter="
-                            $event.currentTarget.style.background = '#0088a8';
-                            $event.currentTarget.style.boxShadow = '0 6px 16px #009ac744';
-                        "
-                        @mouseleave="
-                            $event.currentTarget.style.background = '#009ac7';
-                            $event.currentTarget.style.boxShadow = '0 4px 12px #009ac722';
-                        "
+                        @mouseenter="$event.currentTarget.style.opacity = '.85'"
+                        @mouseleave="$event.currentTarget.style.opacity = '1'"
                     >
                         Criar conta
                     </Link>
@@ -200,27 +198,24 @@ const banModalVisible = ref(!!props.punishmentModal);
                     <Link
                         :href="route('login')"
                         :style="{
-                            padding: '12px 32px',
-                            borderRadius: '12px',
-                            background: '#009ac7',
+                            padding: '13px 36px',
+                            borderRadius: '99px',
+                            background: 'linear-gradient(160deg, rgba(100,205,255,.78) 0%, rgba(0,154,199,.7) 55%, rgba(0,100,140,.75) 100%)',
+                            backdropFilter: 'blur(18px)',
+                            webkitBackdropFilter: 'blur(18px)',
                             color: 'white',
                             textDecoration: 'none',
                             fontSize: '14px',
                             fontWeight: '700',
-                            transition: 'background .2s, box-shadow .2s',
+                            transition: 'opacity .2s',
                             cursor: 'pointer',
                             display: 'inline-block',
-                            boxShadow: '0 6px 20px #009ac733',
-                            border: 'none',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.48), inset 0 -1px 0 rgba(0,60,100,.22), 0 4px 20px rgba(0,154,199,.32)',
+                            border: '1px solid rgba(255,255,255,.4)',
+                            textShadow: '0 1px 3px rgba(0,60,100,.3)',
                         }"
-                        @mouseenter="
-                            $event.currentTarget.style.background = '#0088a8';
-                            $event.currentTarget.style.boxShadow = '0 8px 28px #009ac755';
-                        "
-                        @mouseleave="
-                            $event.currentTarget.style.background = '#009ac7';
-                            $event.currentTarget.style.boxShadow = '0 6px 20px #009ac733';
-                        "
+                        @mouseenter="$event.currentTarget.style.opacity = '.85'"
+                        @mouseleave="$event.currentTarget.style.opacity = '1'"
                     >
                         Entrar
                     </Link>
@@ -229,27 +224,23 @@ const banModalVisible = ref(!!props.punishmentModal);
                         v-if="canRegister"
                         :href="route('register')"
                         :style="{
-                            padding: '12px 32px',
-                            borderRadius: '12px',
-                            background: 'rgba(255,255,255,0.85)',
-                            color: '#009ac7',
+                            padding: '13px 36px',
+                            borderRadius: '99px',
+                            background: 'linear-gradient(160deg, rgba(255,255,255,.75) 0%, rgba(210,240,255,.62) 100%)',
+                            backdropFilter: 'blur(18px)',
+                            webkitBackdropFilter: 'blur(18px)',
+                            color: '#2a5a72',
                             textDecoration: 'none',
                             fontSize: '14px',
                             fontWeight: '700',
-                            transition: 'background .2s, box-shadow .2s',
+                            transition: 'opacity .2s',
                             cursor: 'pointer',
                             display: 'inline-block',
-                            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-                            border: '1px solid rgba(0,154,199,0.2)',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.72), 0 2px 12px rgba(0,0,0,.08)',
+                            border: '1px solid rgba(255,255,255,.55)',
                         }"
-                        @mouseenter="
-                            $event.currentTarget.style.background = 'white';
-                            $event.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)';
-                        "
-                        @mouseleave="
-                            $event.currentTarget.style.background = 'rgba(255,255,255,0.85)';
-                            $event.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
-                        "
+                        @mouseenter="$event.currentTarget.style.opacity = '.85'"
+                        @mouseleave="$event.currentTarget.style.opacity = '1'"
                     >
                         Criar conta
                     </Link>
@@ -260,27 +251,24 @@ const banModalVisible = ref(!!props.punishmentModal);
                     <Link
                         :href="route('bubbles')"
                         :style="{
-                            padding: '12px 32px',
-                            borderRadius: '12px',
-                            background: '#009ac7',
+                            padding: '13px 36px',
+                            borderRadius: '99px',
+                            background: 'linear-gradient(160deg, rgba(100,205,255,.78) 0%, rgba(0,154,199,.7) 55%, rgba(0,100,140,.75) 100%)',
+                            backdropFilter: 'blur(18px)',
+                            webkitBackdropFilter: 'blur(18px)',
                             color: 'white',
                             textDecoration: 'none',
                             fontSize: '14px',
                             fontWeight: '700',
-                            transition: 'background .2s, box-shadow .2s',
+                            transition: 'opacity .2s',
                             cursor: 'pointer',
                             display: 'inline-block',
-                            boxShadow: '0 6px 20px #009ac733',
-                            border: 'none',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.48), inset 0 -1px 0 rgba(0,60,100,.22), 0 4px 20px rgba(0,154,199,.32)',
+                            border: '1px solid rgba(255,255,255,.4)',
+                            textShadow: '0 1px 3px rgba(0,60,100,.3)',
                         }"
-                        @mouseenter="
-                            $event.currentTarget.style.background = '#0088a8';
-                            $event.currentTarget.style.boxShadow = '0 8px 28px #009ac755';
-                        "
-                        @mouseleave="
-                            $event.currentTarget.style.background = '#009ac7';
-                            $event.currentTarget.style.boxShadow = '0 6px 20px #009ac733';
-                        "
+                        @mouseenter="$event.currentTarget.style.opacity = '.85'"
+                        @mouseleave="$event.currentTarget.style.opacity = '1'"
                     >
                         Explorar Comunidades
                     </Link>
