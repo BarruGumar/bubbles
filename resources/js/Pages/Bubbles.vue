@@ -580,7 +580,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                 padding: isMobile ? '0 10px' : '0 24px',
             }"
         >
-            <span style="font-weight: 900; font-size: 22px; color: #009ac7; letter-spacing: -1px; user-select: none"
+            <span style="font-weight: 900; font-size: 30px; color: #009ac7; letter-spacing: -1px; user-select: none"
                 >bubbles</span
             >
 
@@ -592,8 +592,8 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                 <button
                     @click.stop="openSearch(); playSfx('search')"
                     :style="{
-                        width: '36px',
-                        height: '36px',
+                        width: isMobile ? '30px' : '36px',
+                        height: isMobile ? '30px' : '36px',
                         borderRadius: '10px',
                         border: 'none',
                         background: 'transparent',
@@ -608,7 +608,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     @mouseleave="$event.currentTarget.style.background = 'transparent'"
                     title="Pesquisar (Ctrl+K)"
                 >
-                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                    <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
                         <defs>
                             <radialGradient id="grad-search" cx="40%" cy="30%" r="65%">
                                 <stop offset="0%" stop-color="#7de8ff"/>
@@ -628,8 +628,8 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                 <button
                     @click.stop="toggleFeed()"
                     :style="{
-                        width: '36px',
-                        height: '36px',
+                        width: isMobile ? '30px' : '36px',
+                        height: isMobile ? '30px' : '36px',
                         borderRadius: '10px',
                         border: 'none',
                         background: feedOpen ? '#009ac714' : 'transparent',
@@ -644,7 +644,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     @mouseleave="$event.currentTarget.style.background = feedOpen ? '#009ac714' : 'transparent'"
                     title="Feed"
                 >
-                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                    <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
                         <defs>
                             <radialGradient id="grad-feed" cx="40%" cy="30%" r="65%">
                                 <stop offset="0%" stop-color="#7de8ff"/>
@@ -663,8 +663,8 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                 <button
                     @click.stop="showAdd = !showAdd; playSfx('newBubble')"
                     :style="{
-                        width: '36px',
-                        height: '36px',
+                        width: isMobile ? '30px' : '36px',
+                        height: isMobile ? '30px' : '36px',
                         borderRadius: '10px',
                         border: 'none',
                         background: showAdd ? '#009ac714' : 'transparent',
@@ -679,7 +679,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     @mouseleave="$event.currentTarget.style.background = showAdd ? '#009ac714' : 'transparent'"
                     title="Nova bolha"
                 >
-                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                    <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
                         <defs>
                             <radialGradient id="grad-bubble" cx="40%" cy="30%" r="65%">
                                 <stop offset="0%" stop-color="#7de8ff"/>
@@ -700,8 +700,8 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     v-if="authUser"
                     :href="route('conversations.index')"
                     :style="{
-                        width: '36px',
-                        height: '36px',
+                        width: isMobile ? '30px' : '36px',
+                        height: isMobile ? '30px' : '36px',
                         borderRadius: '10px',
                         background: 'transparent',
                         color: 'var(--text-2)',
@@ -717,7 +717,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     title="Mensagens"
                     @click="playClick()"
                 >
-                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                    <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
                         <defs>
                             <radialGradient id="grad-msg" cx="40%" cy="30%" r="65%">
                                 <stop offset="0%" stop-color="#7de8ff"/>
@@ -758,8 +758,8 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     v-if="authUser"
                     :href="route('notifications.index')"
                     :style="{
-                        width: '36px',
-                        height: '36px',
+                        width: isMobile ? '30px' : '36px',
+                        height: isMobile ? '30px' : '36px',
                         borderRadius: '10px',
                         background: 'transparent',
                         color: 'var(--text-2)',
@@ -775,18 +775,18 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     title="Notificações"
                     @click="playSfx('notificationPage')"
                 >
-                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                    <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
                         <defs>
                             <radialGradient id="grad-notif" cx="40%" cy="30%" r="65%">
-                                <stop offset="0%" stop-color="#f09ab5"/>
-                                <stop offset="100%" stop-color="#8e1f45"/>
+                                <stop offset="0%" stop-color="#5ee0a0"/>
+                                <stop offset="100%" stop-color="#1a6e3a"/>
                             </radialGradient>
                         </defs>
                         <circle cx="26" cy="26" r="24" fill="url(#grad-notif)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
                         <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
-                        <g transform="translate(8,13) scale(2)" fill="none" stroke="white" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 1.5A4.5 4.5 0 004.5 6v3.5L3 11.5h12l-1.5-2V6A4.5 4.5 0 009 1.5z"/>
-                            <path d="M7.5 12a1.5 1.5 0 003 0"/>
+                        <g transform="translate(8,8) scale(1.5)" fill="none" stroke="white" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                         </g>
                     </svg>
                     <span
@@ -817,8 +817,8 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     v-if="authUser"
                     :href="route('friends.index')"
                     :style="{
-                        width: '36px',
-                        height: '36px',
+                        width: isMobile ? '30px' : '36px',
+                        height: isMobile ? '30px' : '36px',
                         borderRadius: '10px',
                         background: 'transparent',
                         color: 'var(--text-2)',
@@ -834,7 +834,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                     title="Amigos"
                     @click="playClick()"
                 >
-                    <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                    <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
                         <defs>
                             <radialGradient id="grad-friends" cx="40%" cy="30%" r="65%">
                                 <stop offset="0%" stop-color="#7de8ff"/>
@@ -896,7 +896,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                         aria-haspopup="menu"
                         title="Definições"
                     >
-                        <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
                             <defs>
                                 <radialGradient id="grad-gear" cx="40%" cy="30%" r="65%">
                                     <stop offset="0%" stop-color="#c08af0"/>

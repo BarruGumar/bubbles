@@ -76,7 +76,7 @@ const navLinks = [
         >
             <div style="padding: 20px 18px; border-bottom: 1px solid #ffffff14">
                 <Link href="/bubbles" style="text-decoration: none">
-                    <span style="font-weight: 900; font-size: 18px; color: #009ac7; letter-spacing: -1px">bubbles</span>
+                    <span style="font-weight: 900; font-size: 26px; color: #009ac7; letter-spacing: -1px">bubbles</span>
                 </Link>
                 <p
                     style="

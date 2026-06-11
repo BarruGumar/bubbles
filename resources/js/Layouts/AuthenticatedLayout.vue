@@ -139,7 +139,7 @@ onUnmounted(() => {
                 <!-- Left: logo + nav links -->
                 <div style="display:flex;align-items:center;gap:24px;flex-shrink:0">
                     <Link href="/bubbles" style="text-decoration:none" @click="playSfx('bubblesHomePage')">
-                        <span style="font-weight:900;font-size:20px;color:#009ac7;letter-spacing:-1px">bubbles</span>
+                        <span style="font-weight:900;font-size:30px;color:#009ac7;letter-spacing:-1px">bubbles</span>
                     </Link>
                     <Link v-if="!isMobile" href="/bubbles" class="nav-link" @click="playClick()">Explorar</Link>
                     <Link v-if="user && !isMobile" :href="route('friends.index')" class="nav-link" style="position:relative;display:inline-flex;align-items:center;gap:6px" @click="playClick()">
@@ -161,7 +161,7 @@ onUnmounted(() => {
 
                     <!-- Search button -->
                     <button @click.stop="openSearch(); playSfx('search')" class="icon-btn-nav" title="Pesquisar (Ctrl+K)">
-                        <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
                             <defs>
                                 <radialGradient id="al-grad-search" cx="40%" cy="30%" r="65%">
                                     <stop offset="0%" stop-color="#7de8ff"/>
@@ -178,11 +178,11 @@ onUnmounted(() => {
 
                     <!-- Notifications bell -->
                     <Link v-if="user" :href="route('notifications.index')" class="icon-btn-nav" style="position:relative;text-decoration:none" title="Notificações" @click="playSfx('notificationPage')">
-                        <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
                             <defs>
                                 <radialGradient id="al-grad-bell" cx="40%" cy="30%" r="65%">
-                                    <stop offset="0%" stop-color="#7de8ff"/>
-                                    <stop offset="100%" stop-color="#005a85"/>
+                                    <stop offset="0%" stop-color="#5ee0a0"/>
+                                    <stop offset="100%" stop-color="#1a6e3a"/>
                                 </radialGradient>
                             </defs>
                             <circle cx="26" cy="26" r="24" fill="url(#al-grad-bell)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
@@ -414,6 +414,9 @@ onUnmounted(() => {
     padding: 0;
 }
 .icon-btn-nav:hover { background: rgba(0, 154, 199, 0.08); }
+@media (max-width: 639px) {
+    .icon-btn-nav { width: 30px; height: 30px; }
+}
 
 /* ── Notification dot ──────────────────────────────────────────── */
 .notif-dot {
