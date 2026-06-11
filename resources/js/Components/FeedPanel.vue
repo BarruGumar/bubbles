@@ -21,6 +21,7 @@ const emit = defineEmits(['load-more']);
     <Transition name="slide-left">
         <div
             v-if="open"
+            class="feed-panel"
             :style="{
                 position: 'absolute',
                 left: isMobile ? '8px' : '16px',
@@ -28,11 +29,6 @@ const emit = defineEmits(['load-more']);
                 zIndex: 38,
                 width: isMobile ? 'calc(100vw - 16px)' : '380px',
                 height: 'calc(100vh - 86px)',
-                background: 'var(--card-bg)',
-                backdropFilter: 'blur(16px)',
-                borderRadius: '18px',
-                border: '1px solid var(--card-border)',
-                boxShadow: '0 4px 20px #009ac70c',
                 display: 'flex',
                 flexDirection: 'column',
             }"
@@ -41,27 +37,16 @@ const emit = defineEmits(['load-more']);
         >
             <!-- Header -->
             <div
+                class="feed-header"
                 style="
                     padding: 14px 16px 10px;
-                    border-bottom: 1px solid var(--dropdown-sep);
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
                     flex-shrink: 0;
                 "
             >
-                <p
-                    style="
-                        font-size: 10px;
-                        font-weight: 800;
-                        color: var(--text-3);
-                        text-transform: uppercase;
-                        letter-spacing: 0.1em;
-                        margin: 0;
-                    "
-                >
-                    Feed
-                </p>
+                <p class="feed-title">Feed</p>
                 <Link
                     :href="route('feed.index')"
                     style="font-size: 11px; font-weight: 700; color: #009ac7; text-decoration: none"
@@ -139,6 +124,42 @@ const emit = defineEmits(['load-more']);
 </template>
 
 <style scoped>
+.feed-panel {
+    background: rgba(255, 255, 255, .85);
+    border: 1px solid rgba(255, 255, 255, .95);
+    border-radius: 18px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 154, 199, .1), inset 0 1px 0 rgba(255, 255, 255, .95);
+}
+html.dark .feed-panel {
+    background: rgba(255, 255, 255, .06);
+    border-top: 1px solid rgba(255, 255, 255, .3);
+    border-left: 1px solid rgba(255, 255, 255, .15);
+    border-right: 1px solid rgba(255, 255, 255, .06);
+    border-bottom: 1px solid rgba(255, 255, 255, .04);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+
+.feed-header {
+    border-bottom: 1px solid rgba(0, 0, 0, .06);
+}
+html.dark .feed-header {
+    border-bottom: 1px solid rgba(255, 255, 255, .06);
+}
+
+.feed-title {
+    font-size: 10px;
+    font-weight: 800;
+    color: #009ac7;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0;
+}
+html.dark .feed-title { color: #4ebcff; }
+
 .slide-left-enter-active {
     transition:
         opacity 0.28s ease,

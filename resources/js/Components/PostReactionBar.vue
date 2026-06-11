@@ -133,8 +133,8 @@ function toggleLike() {
                     style="
                         position: absolute;
                         bottom: calc(100% + 8px);
-                        left: 50%;
-                        transform: translateX(-50%);
+                        left: 0;
+                        transform: none;
                         background: var(--card-bg, rgba(255,255,255,0.96));
                         border-radius: 99px;
                         border: 1px solid var(--card-border, rgba(78,188,255,0.18));
@@ -280,10 +280,10 @@ function toggleLike() {
 }
 .picker-enter-from {
     opacity: 0;
-    transform: translateX(-50%) translateY(6px) scale(0.92);
+    transform: translateY(6px) scale(0.92);
 }
 .picker-leave-to {
     opacity: 0;
-    transform: translateX(-50%) translateY(4px) scale(0.95);
+    transform: translateY(4px) scale(0.95);
 }
 </style>
