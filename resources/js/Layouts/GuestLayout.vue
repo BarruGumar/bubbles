@@ -155,13 +155,13 @@ html.dark body:has(.guest-page) {
     width: 100%;
     padding: 13px;
     border-radius: 99px;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 50%, rgba(0,0,0,.06) 100%), linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
     color: white;
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 154, 199, 0.4);
+    box-shadow: 0 6px 24px rgba(0,154,199,.5), inset 0 1px 0 rgba(255,255,255,.35);
     transition: opacity 0.2s;
     margin-top: 4px;
     font-family: inherit;

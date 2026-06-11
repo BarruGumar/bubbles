@@ -356,11 +356,11 @@ async function submitUserReport() {
                                     color: white;
                                     padding: 7px 18px;
                                     border-radius: 99px;
-                                    border: 1px solid rgba(255,255,255,.25);
-                                    background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
+                                    border: 1px solid rgba(255,255,255,.45);
+                                    background: linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 50%, rgba(0,0,0,.06) 100%), linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
                                     cursor: pointer;
                                     white-space: nowrap;
-                                    box-shadow: 0 3px 12px #009ac740;
+                                    box-shadow: 0 6px 24px rgba(0,154,199,.5), inset 0 1px 0 rgba(255,255,255,.35);
                                     transition: opacity 0.2s;
                                 "
                                 @mouseenter="$event.target.style.opacity = '.8'"
@@ -994,13 +994,13 @@ async function submitUserReport() {
                                 style="
                                     padding: 8px 20px;
                                     border-radius: 99px;
-                                    border: 1px solid rgba(255,255,255,.25);
-                                    background: linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
+                                    border: 1px solid rgba(255,255,255,.45);
+                                    background: linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 50%, rgba(0,0,0,.06) 100%), linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%);
                                     color: white;
                                     font-size: 12px;
                                     font-weight: 700;
                                     cursor: pointer;
-                                    box-shadow: 0 3px 12px #009ac740;
+                                    box-shadow: 0 6px 24px rgba(0,154,199,.5), inset 0 1px 0 rgba(255,255,255,.35);
                                     transition: opacity 0.2s;
                                 "
                                 :style="{

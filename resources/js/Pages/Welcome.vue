@@ -142,21 +142,18 @@ const banModalVisible = ref(!!props.punishmentModal);
                         :style="{
                             padding: '7px 16px',
                             borderRadius: '99px',
-                            background: 'linear-gradient(160deg, rgba(100,205,255,.72) 0%, rgba(0,154,199,.65) 55%, rgba(0,100,140,.7) 100%)',
-                            backdropFilter: 'blur(16px)',
-                            webkitBackdropFilter: 'blur(16px)',
+                            background: 'linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 50%, rgba(0,0,0,.06) 100%), linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%)',
+                            border: '1px solid rgba(255,255,255,.45)',
                             color: 'white',
                             textDecoration: 'none',
                             fontSize: '13px',
                             fontWeight: '700',
-                            transition: 'opacity .2s',
                             cursor: 'pointer',
                             display: 'inline-block',
-                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.45), 0 2px 10px rgba(0,154,199,.25)',
-                            border: '1px solid rgba(255,255,255,.35)',
-                            textShadow: '0 1px 3px rgba(0,60,100,.3)',
+                            boxShadow: '0 6px 24px rgba(0,154,199,.5), inset 0 1px 0 rgba(255,255,255,.35)',
+                            transition: 'opacity .2s',
                         }"
-                        @mouseenter="$event.currentTarget.style.opacity = '.85'"
+                        @mouseenter="$event.currentTarget.style.opacity = '.88'"
                         @mouseleave="$event.currentTarget.style.opacity = '1'"
                     >
                         Criar conta
@@ -200,21 +197,18 @@ const banModalVisible = ref(!!props.punishmentModal);
                         :style="{
                             padding: '13px 36px',
                             borderRadius: '99px',
-                            background: 'linear-gradient(160deg, rgba(100,205,255,.78) 0%, rgba(0,154,199,.7) 55%, rgba(0,100,140,.75) 100%)',
-                            backdropFilter: 'blur(18px)',
-                            webkitBackdropFilter: 'blur(18px)',
+                            background: 'linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 50%, rgba(0,0,0,.06) 100%), linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%)',
+                            border: '1px solid rgba(255,255,255,.45)',
                             color: 'white',
                             textDecoration: 'none',
                             fontSize: '14px',
                             fontWeight: '700',
-                            transition: 'opacity .2s',
                             cursor: 'pointer',
                             display: 'inline-block',
-                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.48), inset 0 -1px 0 rgba(0,60,100,.22), 0 4px 20px rgba(0,154,199,.32)',
-                            border: '1px solid rgba(255,255,255,.4)',
-                            textShadow: '0 1px 3px rgba(0,60,100,.3)',
+                            boxShadow: '0 6px 24px rgba(0,154,199,.5), inset 0 1px 0 rgba(255,255,255,.35)',
+                            transition: 'opacity .2s',
                         }"
-                        @mouseenter="$event.currentTarget.style.opacity = '.85'"
+                        @mouseenter="$event.currentTarget.style.opacity = '.88'"
                         @mouseleave="$event.currentTarget.style.opacity = '1'"
                     >
                         Entrar
@@ -226,18 +220,18 @@ const banModalVisible = ref(!!props.punishmentModal);
                         :style="{
                             padding: '13px 36px',
                             borderRadius: '99px',
-                            background: 'linear-gradient(160deg, rgba(255,255,255,.75) 0%, rgba(210,240,255,.62) 100%)',
-                            backdropFilter: 'blur(18px)',
-                            webkitBackdropFilter: 'blur(18px)',
-                            color: '#2a5a72',
+                            background: 'rgba(78,188,255,.18)',
+                            backdropFilter: 'blur(10px) saturate(130%)',
+                            webkitBackdropFilter: 'blur(10px) saturate(130%)',
+                            border: '1.5px solid rgba(78,188,255,.38)',
+                            color: '#005a85',
                             textDecoration: 'none',
                             fontSize: '14px',
                             fontWeight: '700',
-                            transition: 'opacity .2s',
                             cursor: 'pointer',
                             display: 'inline-block',
-                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.72), 0 2px 12px rgba(0,0,0,.08)',
-                            border: '1px solid rgba(255,255,255,.55)',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.5), 0 2px 12px rgba(78,188,255,.15)',
+                            transition: 'opacity .2s',
                         }"
                         @mouseenter="$event.currentTarget.style.opacity = '.85'"
                         @mouseleave="$event.currentTarget.style.opacity = '1'"
@@ -253,21 +247,18 @@ const banModalVisible = ref(!!props.punishmentModal);
                         :style="{
                             padding: '13px 36px',
                             borderRadius: '99px',
-                            background: 'linear-gradient(160deg, rgba(100,205,255,.78) 0%, rgba(0,154,199,.7) 55%, rgba(0,100,140,.75) 100%)',
-                            backdropFilter: 'blur(18px)',
-                            webkitBackdropFilter: 'blur(18px)',
+                            background: 'linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 50%, rgba(0,0,0,.06) 100%), linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%)',
+                            border: '1px solid rgba(255,255,255,.45)',
                             color: 'white',
                             textDecoration: 'none',
                             fontSize: '14px',
                             fontWeight: '700',
-                            transition: 'opacity .2s',
                             cursor: 'pointer',
                             display: 'inline-block',
-                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.48), inset 0 -1px 0 rgba(0,60,100,.22), 0 4px 20px rgba(0,154,199,.32)',
-                            border: '1px solid rgba(255,255,255,.4)',
-                            textShadow: '0 1px 3px rgba(0,60,100,.3)',
+                            boxShadow: '0 6px 24px rgba(0,154,199,.5), inset 0 1px 0 rgba(255,255,255,.35)',
+                            transition: 'opacity .2s',
                         }"
-                        @mouseenter="$event.currentTarget.style.opacity = '.85'"
+                        @mouseenter="$event.currentTarget.style.opacity = '.88'"
                         @mouseleave="$event.currentTarget.style.opacity = '1'"
                     >
                         Explorar Comunidades

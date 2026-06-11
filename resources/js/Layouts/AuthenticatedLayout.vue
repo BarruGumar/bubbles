@@ -157,20 +157,40 @@ onUnmounted(() => {
                 <div style="display:flex;align-items:center;gap:8px">
 
                     <!-- Audio controls -->
-                    <AudioControls v-if="user" />
+                    <AudioControls v-if="user" sphere />
 
                     <!-- Search button -->
                     <button @click.stop="openSearch(); playSfx('search')" class="icon-btn-nav" title="Pesquisar (Ctrl+K)">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                            <defs>
+                                <radialGradient id="al-grad-search" cx="40%" cy="30%" r="65%">
+                                    <stop offset="0%" stop-color="#7de8ff"/>
+                                    <stop offset="100%" stop-color="#005a85"/>
+                                </radialGradient>
+                            </defs>
+                            <circle cx="26" cy="26" r="24" fill="url(#al-grad-search)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                            <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                            <g transform="translate(8,8) scale(1.5)" fill="none" stroke="white" stroke-width="1.47" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </g>
                         </svg>
                     </button>
 
                     <!-- Notifications bell -->
                     <Link v-if="user" :href="route('notifications.index')" class="icon-btn-nav" style="position:relative;text-decoration:none" title="Notificações" @click="playSfx('notificationPage')">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        <svg :width="isMobile ? '30' : '36'" :height="isMobile ? '30' : '36'" viewBox="0 0 52 52" style="display:block">
+                            <defs>
+                                <radialGradient id="al-grad-bell" cx="40%" cy="30%" r="65%">
+                                    <stop offset="0%" stop-color="#7de8ff"/>
+                                    <stop offset="100%" stop-color="#005a85"/>
+                                </radialGradient>
+                            </defs>
+                            <circle cx="26" cy="26" r="24" fill="url(#al-grad-bell)" fill-opacity=".58" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                            <ellipse cx="19" cy="17" rx="9" ry="5" fill="rgba(255,255,255,.30)" transform="rotate(-15,19,17)"/>
+                            <g transform="translate(8,8) scale(1.5)" fill="none" stroke="white" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </g>
                         </svg>
                         <span v-if="unreadNotifications > 0" class="notif-dot">{{ unreadNotifications > 9 ? '9+' : unreadNotifications }}</span>
                     </Link>
@@ -241,9 +261,46 @@ onUnmounted(() => {
                     </div>
 
                     <!-- Not logged in -->
-                    <div v-else style="display:flex;gap:10px">
-                        <Link :href="route('login')" style="font-size:13px;font-weight:600;color:#009ac7;text-decoration:none;padding:7px 16px;border-radius:99px;border:1.5px solid #009ac7;transition:all 0.2s">Entrar</Link>
-                        <Link :href="route('register')" style="font-size:13px;font-weight:700;color:white;text-decoration:none;padding:7px 16px;border-radius:99px;background:#009ac7;box-shadow:0 3px 12px #009ac740">Registo</Link>
+                    <div v-else style="display:flex;align-items:center;gap:6px">
+                        <Link
+                            :href="route('login')"
+                            :style="{
+                                padding: isMobile ? '5px 11px' : '7px 16px',
+                                borderRadius: '99px',
+                                background: 'rgba(78,188,255,.18)',
+                                backdropFilter: 'blur(10px) saturate(130%)',
+                                webkitBackdropFilter: 'blur(10px) saturate(130%)',
+                                border: '1.5px solid rgba(78,188,255,.38)',
+                                color: '#005a85',
+                                textDecoration: 'none',
+                                fontSize: isMobile ? '12px' : '13px',
+                                fontWeight: '600',
+                                display: 'inline-block',
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,.5)',
+                                transition: 'opacity .2s',
+                            }"
+                            @mouseenter="$event.currentTarget.style.opacity = '.85'"
+                            @mouseleave="$event.currentTarget.style.opacity = '1'"
+                        >Entrar</Link>
+                        <Link
+                            :href="route('register')"
+                            :style="{
+                                padding: isMobile ? '5px 11px' : '7px 16px',
+                                borderRadius: '99px',
+                                background: 'linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 50%, rgba(0,0,0,.06) 100%), linear-gradient(180deg, #4ebcff 0%, #009ac7 55%, #006d8e 100%)',
+                                border: '1px solid rgba(255,255,255,.45)',
+                                color: 'white',
+                                textDecoration: 'none',
+                                fontSize: isMobile ? '12px' : '13px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'inline-block',
+                                boxShadow: '0 6px 24px rgba(0,154,199,.5), inset 0 1px 0 rgba(255,255,255,.35)',
+                                transition: 'opacity .2s',
+                            }"
+                            @mouseenter="$event.currentTarget.style.opacity = '.88'"
+                            @mouseleave="$event.currentTarget.style.opacity = '1'"
+                        >{{ isMobile ? 'Conta' : 'Registo' }}</Link>
                     </div>
                 </div>
             </div>
@@ -345,17 +402,15 @@ onUnmounted(() => {
 
 /* ── Icon buttons (search, bell) ───────────────────────────────── */
 .icon-btn-nav {
-    width: 32px; height: 32px; border-radius: 50%;
-    border: 1.5px solid var(--nav-border);
+    width: 36px; height: 36px; border-radius: 10px;
+    border: none;
     background: transparent; color: var(--text-3);
     cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
+    transition: background 0.15s;
     -webkit-tap-highlight-color: transparent;
+    padding: 0;
 }
-.icon-btn-nav:hover {
-    background: rgba(0, 154, 199, 0.08); color: #009ac7;
-    border-color: rgba(0, 154, 199, 0.28);
-}
+.icon-btn-nav:hover { background: rgba(0, 154, 199, 0.08); }
 
 /* ── Notification dot ──────────────────────────────────────────── */
 .notif-dot {
