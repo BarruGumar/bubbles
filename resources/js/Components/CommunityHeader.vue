@@ -250,8 +250,8 @@ function leaveCommunity() {
                             $event.currentTarget.style.color = '#009ac7';
                         "
                         @mouseleave="
-                            $event.currentTarget.style.background = '#f0f8ff';
-                            $event.currentTarget.style.color = '#5a7a8a';
+                            $event.currentTarget.style.background = '';
+                            $event.currentTarget.style.color = '';
                         "
                     >
                         👥 Membros
@@ -275,8 +275,8 @@ function leaveCommunity() {
                             $event.currentTarget.style.color = '#009ac7';
                         "
                         @mouseleave="
-                            $event.currentTarget.style.background = '#f0f8ff';
-                            $event.currentTarget.style.color = '#5a7a8a';
+                            $event.currentTarget.style.background = '';
+                            $event.currentTarget.style.color = '';
                         "
                     >
                         ⚙ Editar
@@ -309,8 +309,8 @@ function leaveCommunity() {
                             $event.currentTarget.style.color = '#009ac7';
                         "
                         @mouseleave="
-                            $event.currentTarget.style.background = '#f0f8ff';
-                            $event.currentTarget.style.color = '#5a7a8a';
+                            $event.currentTarget.style.background = '';
+                            $event.currentTarget.style.color = '';
                         "
                     >
                         👥 Membros
