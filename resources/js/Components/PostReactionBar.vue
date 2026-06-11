@@ -15,7 +15,7 @@ const props = defineProps({
 const emit = defineEmits(['toggle-comments']);
 
 const reactorsModal = ref(null);
-const { playClick } = useAudio();
+const { playSfx } = useAudio();
 
 function openReactorsModal() {
     if (!props.reactorsRoute || localLikeCount.value === 0) return;
@@ -82,10 +82,10 @@ function cancelHide() {
 function setReaction(type) {
     if (!props.authUser || likeLoading.value) return;
     showReactionPicker.value = false;
-    playClick();
 
     const prevReaction = localUserReaction.value;
     const isSame = prevReaction === type;
+    if (!isSame) playSfx('reaction');
     const hadReaction = prevReaction !== null;
 
     if (isSame) {

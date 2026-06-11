@@ -42,4 +42,7 @@ export const SFX = {
     pageChange:        '/music/PageChange.mp3',
     created:           '/music/Created.mp3',
     conversation:      '/music/Conversation.mp3',
+    reaction:          '/music/Reaction.mp3',
+    settings:          '/music/Definições.mp3',
+    changeTheme:       '/music/ChangeTheme.mp3',
 };

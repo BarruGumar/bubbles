@@ -31,8 +31,9 @@ function reactionEmoji(type) {
     return REACTIONS.find(r => r.type === type)?.emoji ?? '👍';
 }
 
-function reactComment(id, type) {
+function reactComment(id, type, currentReaction = null) {
     pickerOpen.value[id] = false;
+    if (type !== currentReaction) playSfx('reaction');
     router.post(route('comments.like', id), { type }, {
         preserveScroll: true,
         preserveState: true,
@@ -147,7 +148,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                                 @mouseenter="keepPickerOpen(c.id)"
                                 @mouseleave="cancelPickerTimer(c.id)">
                                 <button v-for="r in REACTIONS" :key="r.type"
-                                    @click="reactComment(c.id, r.type)"
+                                    @click="reactComment(c.id, r.type, c.user_reaction)"
                                     :title="r.type"
                                     style="background:none; border:none; cursor:pointer; font-size:16px;
                                            padding:2px 3px; border-radius:8px; transition:transform 0.12s"
@@ -158,7 +159,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                             </div>
 
                             <button
-                                @click="reactComment(c.id, c.user_reaction ?? 'like')"
+                                @click="reactComment(c.id, c.user_reaction ?? 'like', c.user_reaction)"
                                 @mouseenter="startPickerTimer(c.id)"
                                 @mouseleave="cancelPickerTimer(c.id)"
                                 style="background:none; border:none; cursor:pointer; padding:0;
@@ -274,7 +275,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                                     @mouseenter="keepPickerOpen(r.id)"
                                     @mouseleave="cancelPickerTimer(r.id)">
                                     <button v-for="rx in REACTIONS" :key="rx.type"
-                                        @click="reactComment(r.id, rx.type)"
+                                        @click="reactComment(r.id, rx.type, r.user_reaction)"
                                         style="background:none; border:none; cursor:pointer; font-size:14px;
                                                padding:2px 3px; border-radius:8px; transition:transform 0.12s"
                                         @mouseenter="$event.target.style.transform='scale(1.35)'"
@@ -284,7 +285,7 @@ function initial(name) { return (name ?? '?')[0].toUpperCase(); }
                                 </div>
 
                                 <button
-                                    @click="reactComment(r.id, r.user_reaction ?? 'like')"
+                                    @click="reactComment(r.id, r.user_reaction ?? 'like', r.user_reaction)"
                                     @mouseenter="startPickerTimer(r.id)"
                                     @mouseleave="cancelPickerTimer(r.id)"
                                     style="background:none; border:none; cursor:pointer; padding:0;

@@ -942,7 +942,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
                             <!-- Definições -->
                             <Link
                                 :href="route('profile.edit')"
-                                @click="menuOpen = false; playClick()"
+                                @click="menuOpen = false; playSfx('settings')"
                                 role="menuitem"
                                 style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: var(--text); font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer;"
                                 @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"
@@ -957,7 +957,7 @@ function onMobileResize() { isMobile.value = window.innerWidth < 640; }
 
                             <!-- Tema -->
                             <button
-                                @click.stop="toggleTheme(); menuOpen = false; playClick()"
+                                @click.stop="playSfx('changeTheme'); toggleTheme(); menuOpen = false"
                                 role="menuitem"
                                 style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--text); font-size: 13px; font-weight: 600; transition: background .12s; cursor: pointer; border: none; background: transparent; width: 100%; font-family: inherit; text-align: left;"
                                 @mouseenter="$event.currentTarget.style.background = 'var(--item-hover)'"

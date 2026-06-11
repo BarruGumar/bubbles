@@ -238,9 +238,9 @@ onUnmounted(() => {
                                 </div>
                                 <div style="padding:6px">
                                     <Link v-if="user.username" :href="route('profile.show', user.username)" @click="open = false" class="dropdown-link">O meu perfil</Link>
-                                    <Link :href="route('profile.edit')" @click="open = false" class="dropdown-link">Definições</Link>
+                                    <Link :href="route('profile.edit')" @click="playSfx('settings'); open = false" class="dropdown-link">Definições</Link>
                                     <!-- Theme toggle -->
-                                    <button @click="toggleTheme(); open = false" class="dropdown-link dropdown-theme-btn">
+                                    <button @click="playSfx('changeTheme'); toggleTheme(); open = false" class="dropdown-link dropdown-theme-btn">
                                         <span>{{ isDark ? '☀️ Tema claro' : '🌙 Tema escuro' }}</span>
                                     </button>
                                     <Link
