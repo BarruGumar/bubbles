@@ -232,51 +232,33 @@ function leaveCommunity() {
                     </div>
                     <Link
                         :href="route('community.members', community.id)"
+                        class="comm-pill-btn"
                         style="
                             padding: 9px 16px;
                             border-radius: 99px;
                             border: none;
-                            background: var(--item-hover, #f0f8ff);
-                            color: var(--text-2, #5a7a8a);
                             font-size: 12px;
                             font-weight: 700;
                             cursor: pointer;
                             white-space: nowrap;
                             text-decoration: none;
-                            transition: all 0.2s;
-                        "
-                        @mouseenter="
-                            $event.currentTarget.style.background = '#e0f0fc';
-                            $event.currentTarget.style.color = '#009ac7';
-                        "
-                        @mouseleave="
-                            $event.currentTarget.style.background = '';
-                            $event.currentTarget.style.color = '';
+                            transition: background 0.2s, color 0.2s;
                         "
                     >
                         👥 Membros
                     </Link>
                     <button
                         @click="emit('open-edit')"
+                        class="comm-pill-btn"
                         style="
                             padding: 9px 16px;
                             border-radius: 99px;
                             border: none;
-                            background: var(--item-hover, #f0f8ff);
-                            color: var(--text-2, #5a7a8a);
                             font-size: 12px;
                             font-weight: 700;
                             cursor: pointer;
                             white-space: nowrap;
-                            transition: all 0.2s;
-                        "
-                        @mouseenter="
-                            $event.currentTarget.style.background = '#e0f0fc';
-                            $event.currentTarget.style.color = '#009ac7';
-                        "
-                        @mouseleave="
-                            $event.currentTarget.style.background = '';
-                            $event.currentTarget.style.color = '';
+                            transition: background 0.2s, color 0.2s;
                         "
                     >
                         ⚙ Editar
@@ -289,12 +271,11 @@ function leaveCommunity() {
                     <Link
                         v-if="canManage && !isOwn"
                         :href="route('community.members', community.id)"
+                        class="comm-pill-btn"
                         style="
                             padding: 9px 16px;
                             border-radius: 99px;
                             border: none;
-                            background: var(--item-hover, #f0f8ff);
-                            color: var(--text-2, #5a7a8a);
                             font-size: 12px;
                             font-weight: 700;
                             cursor: pointer;
@@ -302,15 +283,7 @@ function leaveCommunity() {
                             text-decoration: none;
                             align-self: flex-start;
                             margin-top: 4px;
-                            transition: all 0.2s;
-                        "
-                        @mouseenter="
-                            $event.currentTarget.style.background = '#e0f0fc';
-                            $event.currentTarget.style.color = '#009ac7';
-                        "
-                        @mouseleave="
-                            $event.currentTarget.style.background = '';
-                            $event.currentTarget.style.color = '';
+                            transition: background 0.2s, color 0.2s;
                         "
                     >
                         👥 Membros
@@ -458,3 +431,24 @@ function leaveCommunity() {
         </div>
     </div>
 </template>
+
+<style scoped>
+.comm-pill-btn {
+    background: #e8f4fb;
+    color: #5a7a8a;
+    display: inline-flex;
+    align-items: center;
+}
+.comm-pill-btn:hover {
+    background: #d0eaf8;
+    color: #009ac7;
+}
+html.dark .comm-pill-btn {
+    background: rgba(0, 154, 199, 0.18);
+    color: #8ab0c8;
+}
+html.dark .comm-pill-btn:hover {
+    background: rgba(0, 154, 199, 0.32);
+    color: #4ebcff;
+}
+</style>
