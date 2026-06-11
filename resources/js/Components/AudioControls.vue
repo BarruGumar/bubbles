@@ -2,7 +2,10 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useAudio } from '@/Composables/useAudio';
 
-const props = defineProps({ sphere: { type: Boolean, default: false } });
+const props = defineProps({
+    sphere: { type: Boolean, default: false },
+    size:   { type: String,  default: '40' },
+});
 
 const {
     bgmVolume, sfxVolume, bgmEnabled, sfxEnabled, muted,
@@ -35,7 +38,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
             @click.stop="toggle"
             :title="muted ? 'Áudio silenciado' : 'Controlo de áudio'"
             :style="{
-                width: '36px', height: '36px', borderRadius: '50%',
+                width: props.size + 'px', height: props.size + 'px', borderRadius: '50%',
                 border: 'none', background: 'transparent',
                 color: 'white', cursor: 'pointer', display: 'flex',
                 alignItems: 'center', justifyContent: 'center',
@@ -43,7 +46,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
                 padding: 0,
             }"
         >
-            <svg width="36" height="36" viewBox="0 0 52 52" style="display:block">
+            <svg :width="props.size" :height="props.size" viewBox="0 0 52 52" style="display:block">
                 <defs>
                     <radialGradient id="grad-audio" cx="40%" cy="30%" r="65%">
                         <stop offset="0%" stop-color="#7de8ff"/>

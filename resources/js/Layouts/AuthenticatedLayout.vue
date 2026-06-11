@@ -157,11 +157,11 @@ onUnmounted(() => {
                 <div style="display:flex;align-items:center;gap:8px">
 
                     <!-- Audio controls -->
-                    <AudioControls v-if="user" sphere />
+                    <AudioControls v-if="user" sphere :size="isMobile ? '34' : '40'" />
 
                     <!-- Search button -->
                     <button @click.stop="openSearch(); playSfx('search')" class="icon-btn-nav" title="Pesquisar (Ctrl+K)">
-                        <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <svg :width="isMobile ? '28' : '40'" :height="isMobile ? '28' : '40'" viewBox="0 0 52 52" style="display:block">
                             <defs>
                                 <radialGradient id="al-grad-search" cx="40%" cy="30%" r="65%">
                                     <stop offset="0%" stop-color="#7de8ff"/>
@@ -178,7 +178,7 @@ onUnmounted(() => {
 
                     <!-- Notifications bell -->
                     <Link v-if="user" :href="route('notifications.index')" class="icon-btn-nav" style="position:relative;text-decoration:none" title="Notificações" @click="playSfx('notificationPage')">
-                        <svg :width="isMobile ? '24' : '36'" :height="isMobile ? '24' : '36'" viewBox="0 0 52 52" style="display:block">
+                        <svg :width="isMobile ? '28' : '40'" :height="isMobile ? '28' : '40'" viewBox="0 0 52 52" style="display:block">
                             <defs>
                                 <radialGradient id="al-grad-bell" cx="40%" cy="30%" r="65%">
                                     <stop offset="0%" stop-color="#5ee0a0"/>
@@ -405,7 +405,7 @@ onUnmounted(() => {
 
 /* ── Icon buttons (search, bell) ───────────────────────────────── */
 .icon-btn-nav {
-    width: 36px; height: 36px; border-radius: 10px;
+    width: 40px; height: 40px; border-radius: 10px;
     border: none;
     background: transparent; color: var(--text-3);
     cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -415,7 +415,7 @@ onUnmounted(() => {
 }
 .icon-btn-nav:hover { background: rgba(0, 154, 199, 0.08); }
 @media (max-width: 639px) {
-    .icon-btn-nav { width: 30px; height: 30px; }
+    .icon-btn-nav { width: 34px; height: 34px; }
 }
 
 /* ── Notification dot ──────────────────────────────────────────── */
