@@ -6,16 +6,17 @@ import { clImg } from '@/Composables/useCloudinary';
 import { useAudio } from '@/Composables/useAudio';
 
 const props = defineProps({
-    notifications: { type: Object, default: () => ({ data: [], current_page: 1, last_page: 1 }) },
+    notifications: { type: Object, default: () => ({ data: [], next_cursor: null }) },
 });
 
 const page = usePage();
 const { notifSoundEnabled, setNotifSoundEnabled, playClick } = useAudio();
 const localNotifications = ref([...props.notifications.data]);
 const isLoadingMore = ref(false);
+const appendMode = ref(false);
 
 watch(() => props.notifications, (paginator) => {
-    if (paginator.current_page > 1) {
+    if (appendMode.value) {
         localNotifications.value.push(...paginator.data);
     } else {
         localNotifications.value = [...paginator.data];
@@ -71,17 +72,18 @@ function deleteAll() {
 }
 
 const hasUnread = computed(() => localNotifications.value.some((n) => !n.read));
-const hasMore = computed(() => props.notifications.current_page < props.notifications.last_page);
+const hasMore = computed(() => !!props.notifications.next_cursor);
 
 function loadMore() {
     isLoadingMore.value = true;
+    appendMode.value = true;
     router.get(
         route('notifications.index'),
-        { page: props.notifications.current_page + 1 },
+        { cursor: props.notifications.next_cursor },
         {
             preserveScroll: true,
             preserveState: true,
-            onFinish: () => { isLoadingMore.value = false; },
+            onFinish: () => { isLoadingMore.value = false; appendMode.value = false; },
         }
     );
 }

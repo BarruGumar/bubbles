@@ -15,7 +15,7 @@ class NotificationController extends Controller
             ->notifications()
             ->where('type', '!=', \App\Notifications\MessageReceived::class)
             ->latest()
-            ->paginate(30)
+            ->cursorPaginate(30)
             ->through(fn ($n) => [
                 'id'         => $n->id,
                 'type'       => $n->data['type'] ?? 'generic',
