@@ -14,6 +14,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.0",
         "laravel/tinker": "^2.10.1",
+        "predis/predis": "^3.5",
         "symfony/brevo-mailer": "^7.4",
         "symfony/http-client": "^7.4",
         "tightenco/ziggy": "^2.0"
