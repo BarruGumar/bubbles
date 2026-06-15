@@ -235,19 +235,24 @@ function highlight(text, q) {
                             @mouseenter="$event.currentTarget.style.background = 'rgba(0,154,199,0.04)'"
                             @mouseleave="$event.currentTarget.style.background = 'transparent'"
                         >
-                            <img
+                            <span
                                 v-if="u.avatar"
-                                :src="clImg(u.avatar, 96, 96, 'fill', 'face')"
-                                :style="{
-                                    width: '46px',
-                                    height: '46px',
-                                    borderRadius: '50%',
-                                    objectFit: 'cover',
-                                    border: `2px solid ${u.avatar_color}`,
-                                    boxShadow: `0 2px 8px ${u.avatar_color}33`,
-                                    flexShrink: '0',
-                                }"
-                            />
+                                style="position:relative;display:inline-block;border-radius:50%;line-height:0;flex-shrink:0;"
+                            >
+                                <img
+                                    :src="clImg(u.avatar, 96, 96, 'fill', 'face')"
+                                    :style="{
+                                        width: '46px',
+                                        height: '46px',
+                                        borderRadius: '50%',
+                                        objectFit: 'cover',
+                                        display: 'block',
+                                        border: `2px solid ${u.avatar_color}`,
+                                        boxShadow: `0 2px 8px ${u.avatar_color}33`,
+                                    }"
+                                />
+                                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                            </span>
                             <div
                                 v-else
                                 :style="{
@@ -255,7 +260,8 @@ function highlight(text, q) {
                                     height: '46px',
                                     borderRadius: '50%',
                                     flexShrink: '0',
-                                    background: u.avatar_color,
+                                    position: 'relative',
+                                    background: `radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${u.avatar_color}`,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -264,6 +270,7 @@ function highlight(text, q) {
                                     color: 'white',
                                 }"
                             >
+                                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                                 {{ formatInitial(u.name) }}
                             </div>
                             <div style="flex: 1; min-width: 0">
@@ -358,6 +365,7 @@ function highlight(text, q) {
                                     height: '46px',
                                     borderRadius: '50%',
                                     flexShrink: '0',
+                                    position: 'relative',
                                     backgroundImage: c.image
                                         ? `radial-gradient(circle at 38% 32%, ${c.color}55 0%, ${c.color}99 100%), url('${c.image}')`
                                         : `radial-gradient(circle at 38% 32%, ${c.color}ee 0%, ${c.color} 60%)`,
@@ -378,9 +386,12 @@ function highlight(text, q) {
                                         text-align: center;
                                         padding: 0 4px;
                                         line-height: 1.2;
+                                        position: relative;
+                                        z-index: 1;
                                     "
                                     >{{ c.label?.slice(0, 3) }}</span
                                 >
+                                <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.28) 0%,transparent 55%);pointer-events:none;"></span>
                             </div>
                             <div style="flex: 1; min-width: 0">
                                 <p
@@ -462,18 +473,23 @@ function highlight(text, q) {
                             @mouseleave="$event.currentTarget.style.background = 'rgba(255,255,255,0.88)'"
                         >
                             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
-                                <img
+                                <span
                                     v-if="p.author.avatar"
-                                    :src="clImg(p.author.avatar, 64, 64, 'fill', 'face')"
-                                    :style="{
-                                        width: '32px',
-                                        height: '32px',
-                                        borderRadius: '50%',
-                                        objectFit: 'cover',
-                                        border: `2px solid ${p.author.avatar_color}`,
-                                        flexShrink: '0',
-                                    }"
-                                />
+                                    style="position:relative;display:inline-block;border-radius:50%;line-height:0;flex-shrink:0;"
+                                >
+                                    <img
+                                        :src="clImg(p.author.avatar, 64, 64, 'fill', 'face')"
+                                        :style="{
+                                            width: '32px',
+                                            height: '32px',
+                                            borderRadius: '50%',
+                                            objectFit: 'cover',
+                                            display: 'block',
+                                            border: `2px solid ${p.author.avatar_color}`,
+                                        }"
+                                    />
+                                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                                </span>
                                 <div
                                     v-else
                                     :style="{
@@ -481,7 +497,8 @@ function highlight(text, q) {
                                         height: '32px',
                                         borderRadius: '50%',
                                         flexShrink: '0',
-                                        background: p.author.avatar_color,
+                                        position: 'relative',
+                                        background: `radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${p.author.avatar_color}`,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -490,6 +507,7 @@ function highlight(text, q) {
                                         color: 'white',
                                     }"
                                 >
+                                    <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
                                     {{ formatInitial(p.author.name) }}
                                 </div>
                                 <div>

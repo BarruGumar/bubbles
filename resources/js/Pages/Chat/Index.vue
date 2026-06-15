@@ -914,7 +914,7 @@ function switchConversation(convId) {
     router.visit(route('conversations.show', convId), {
         preserveState: true,
         preserveScroll: true,
-        only: ['messages', 'hasMoreMessages', 'activeConversation'],
+        only: ['messages', 'hasMoreMessages', 'activeConversation', 'myBg'],
     });
 }
 
@@ -1044,7 +1044,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                         <p class="sidebar-label">Os teus amigos</p>
                         <button v-for="f in friends" :key="f.id" @click="startWith(f.id); playClick()" class="sidebar-item">
                             <img v-if="f.avatar" :src="clImg(f.avatar, 80, 80, 'fill', 'face')" class="s-avatar" :style="{ border: `2px solid ${f.avatar_color}` }" loading="lazy" />
-                            <div v-else class="s-avatar-init" :style="{ background: f.avatar_color }">{{ avatarInitial(f.name) }}</div>
+                            <div v-else class="s-avatar-init" :style="{ background: `radial-gradient(circle at 38% 30%, rgba(255,255,255,.28), transparent 55%), ${f.avatar_color}` }">{{ avatarInitial(f.name) }}</div>
                             <div class="conv-info">
                                 <p class="conv-name">{{ f.name }}</p>
                                 <p class="conv-sub" style="color:#009ac7">Iniciar conversa</p>
@@ -1081,7 +1081,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                             <!-- Direct avatar -->
                             <template v-else>
                                 <img v-if="conv.other_user?.avatar" :src="clImg(conv.other_user.avatar, 88, 88, 'fill', 'face')" class="s-avatar" :style="{ border: `2px solid ${conv.other_user.avatar_color}`, boxShadow: `0 2px 8px ${conv.other_user.avatar_color}33` }" loading="lazy" />
-                                <div v-else class="s-avatar-init" :style="{ background: conv.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(conv.other_user?.name) }}</div>
+                                <div v-else class="s-avatar-init" :style="{ background: `radial-gradient(circle at 38% 30%, rgba(255,255,255,.28), transparent 55%), ${conv.other_user?.avatar_color ?? '#009ac7'}` }">{{ avatarInitial(conv.other_user?.name) }}</div>
                                 <span v-if="isOnline(conv.other_user?.id)" class="online-dot"></span>
                             </template>
                         </div>
@@ -1156,7 +1156,7 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
                         <template v-else>
                             <div style="position:relative;flex-shrink:0">
                                 <img v-if="activeConversation.other_user?.avatar" :src="clImg(activeConversation.other_user.avatar, 80, 80, 'fill', 'face')" class="h-avatar" :style="{ border: `2px solid ${activeConversation.other_user.avatar_color}`, boxShadow: `0 2px 8px ${activeConversation.other_user.avatar_color}44` }" />
-                                <div v-else class="h-avatar-init" :style="{ background: activeConversation.other_user?.avatar_color ?? '#009ac7' }">{{ avatarInitial(activeConversation.other_user?.name) }}</div>
+                                <div v-else class="h-avatar-init" :style="{ background: `radial-gradient(circle at 38% 30%, rgba(255,255,255,.28), transparent 55%), ${activeConversation.other_user?.avatar_color ?? '#009ac7'}` }">{{ avatarInitial(activeConversation.other_user?.name) }}</div>
                                 <span v-if="isOnline(activeConversation.other_user?.id)" class="online-dot online-dot-lg"></span>
                             </div>
                             <div class="header-info">
@@ -1734,7 +1734,12 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 .s-avatar-init {
     width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 800; color: white;
+    font-size: 16px; font-weight: 800; color: white; position: relative;
+}
+.s-avatar-init::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: linear-gradient(160deg, rgba(255,255,255,.28) 0%, transparent 50%);
+    pointer-events: none;
 }
 .sidebar-item:not(.conv-item) .s-avatar,
 .sidebar-item:not(.conv-item) .s-avatar-init { width: 38px; height: 38px; font-size: 14px; }
@@ -1775,7 +1780,12 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
 .h-avatar-init {
     width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 800; color: white;
+    font-size: 14px; font-weight: 800; color: white; position: relative;
+}
+.h-avatar-init::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: linear-gradient(160deg, rgba(255,255,255,.28) 0%, transparent 50%);
+    pointer-events: none;
 }
 .back-btn {
     flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
@@ -1899,34 +1909,47 @@ watch(() => props.conversations, (newConvs) => { localConversations.value = [...
     font-size: 13.5px; line-height: 1.5; word-break: break-word;
 }
 .bubble-own {
-    background: #d4f1fa; color: #3a6478;
+    background: linear-gradient(170deg, #ddf5fc 0%, #c8eef8 100%);
+    color: #3a6478;
     border-radius: 18px 18px 5px 18px;
     padding: 8px 12px 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    box-shadow: 0 1px 4px rgba(0,154,199,0.10), inset 0 1px 0 rgba(255,255,255,0.65);
+    border: 1px solid rgba(78,188,255,0.22);
 }
 .bubble-recv {
-    background: #ffffff; color: #3a6478;
+    background: linear-gradient(170deg, #ffffff 0%, #f3f9fd 100%);
+    color: #3a6478;
     border-radius: 18px 18px 18px 5px;
     padding: 8px 12px 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.95);
+    border: 1px solid rgba(78,188,255,0.14);
 }
 
 /* Tails */
 .bubble-own.is-last::after {
     content: ''; position: absolute; bottom: 0; right: -7px;
     border-width: 0 0 10px 8px; border-style: solid;
-    border-color: transparent transparent #d4f1fa transparent;
+    border-color: transparent transparent #c8eef8 transparent;
 }
 .bubble-recv.is-last::after {
     content: ''; position: absolute; bottom: 0; left: -7px;
     border-width: 0 8px 10px 0; border-style: solid;
-    border-color: transparent #ffffff transparent transparent;
+    border-color: transparent #f3f9fd transparent transparent;
 }
 
 /* Dark mode */
-.chat-dark .bubble-own { background: #056778; color: #e4f6fb; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
-.chat-dark .bubble-recv { background: #1e3347; color: #d0e0ec; border-color: rgba(255,255,255,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+.chat-dark .bubble-own {
+    background: linear-gradient(170deg, #0a7a8e 0%, #056778 100%);
+    color: #e4f6fb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.12);
+    border: 1px solid rgba(78,188,255,0.15);
+}
+.chat-dark .bubble-recv {
+    background: linear-gradient(170deg, #243f56 0%, #1e3347 100%);
+    color: #d0e0ec;
+    border-color: rgba(255,255,255,0.07);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
+}
 .chat-dark .bubble-own.is-last::after { border-color: transparent transparent #056778 transparent; }
 .chat-dark .bubble-recv.is-last::after { border-color: transparent #1e3347 transparent transparent; }
 

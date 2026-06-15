@@ -229,8 +229,10 @@ onUnmounted(() => {
                     text-align: center;
                     padding: 60px 20px;
                     background: rgba(255, 255, 255, 0.88);
+                    backdrop-filter: blur(20px);
                     border-radius: 18px;
-                    border: 1px solid #4ebcff1a;
+                    border: 1px solid #4ebcff22;
+                    box-shadow: 0 4px 16px #009ac708;
                 "
             >
                 <p style="font-size: 32px; margin: 0 0 12px">🔔</p>
@@ -244,8 +246,8 @@ onUnmounted(() => {
                     background: rgba(255, 255, 255, 0.88);
                     backdrop-filter: blur(20px);
                     border-radius: 18px;
-                    border: 1px solid #4ebcff1a;
-                    box-shadow: 0 4px 16px #009ac708;
+                    border: 1px solid #4ebcff22;
+                    box-shadow: 0 4px 20px #009ac70c;
                     overflow: hidden;
                 "
             >
@@ -293,36 +295,39 @@ onUnmounted(() => {
 
                     <!-- Avatar with icon overlay -->
                     <div style="position: relative; flex-shrink: 0">
-                        <div :style="{ width: '44px', height: '44px' }">
+                        <span v-if="senderOf(n).avatar" style="position:relative;display:inline-block;border-radius:50%;line-height:0;">
                             <img
-                                v-if="senderOf(n).avatar"
                                 :src="clImg(senderOf(n).avatar, 88, 88, 'fill', 'face')"
                                 :style="{
                                     width: '44px',
                                     height: '44px',
                                     borderRadius: '50%',
                                     objectFit: 'cover',
-                                    border: `2px solid ${senderOf(n).color}`,
                                     display: 'block',
+                                    border: `2px solid ${senderOf(n).color}`,
+                                    boxShadow: `0 2px 10px ${senderOf(n).color}44`,
                                 }"
                             />
-                            <div
-                                v-else
-                                :style="{
-                                    width: '44px',
-                                    height: '44px',
-                                    borderRadius: '50%',
-                                    background: senderOf(n).color,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '16px',
-                                    fontWeight: '800',
-                                    color: 'white',
-                                }"
-                            >
-                                {{ formatInitial(senderOf(n).name) }}
-                            </div>
+                            <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.35) 0%,transparent 55%);pointer-events:none;"></span>
+                        </span>
+                        <div
+                            v-else
+                            :style="{
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '50%',
+                                position: 'relative',
+                                background: `radial-gradient(circle at 38% 30%, rgba(255,255,255,.3), transparent 55%), ${senderOf(n).color}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '16px',
+                                fontWeight: '800',
+                                color: 'white',
+                            }"
+                        >
+                            <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.25) 0%,transparent 50%);pointer-events:none;"></span>
+                            {{ formatInitial(senderOf(n).name) }}
                         </div>
                         <span style="position: absolute; bottom: -2px; right: -4px; font-size: 14px; line-height: 1">{{
                             typeIcon(n.type)

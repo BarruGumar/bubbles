@@ -225,6 +225,8 @@ async function submitUserReport() {
                             : `linear-gradient(135deg, ${profileUser.avatar_color}cc 0%, ${profileUser.avatar_color} 100%)`,
                     }"
                 >
+                    <!-- Glass shimmer overlay -->
+                    <div style="position:absolute;inset:0;border-radius:22px 22px 0 0;background:linear-gradient(180deg,rgba(255,255,255,0.14) 0%,transparent 52%);pointer-events:none;z-index:1;"></div>
                     <!-- Avatar overlapping -->
                     <div style="position: absolute; bottom: -45px; left: 32px; z-index: 5">
                         <div style="position: relative; display: inline-block">
