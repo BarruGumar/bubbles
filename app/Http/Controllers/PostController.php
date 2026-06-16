@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePostRequest;
 use App\Models\Post;
 use App\Services\AuditLogger;
-use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,12 +23,12 @@ class PostController extends Controller
         $videoUrl = null;
         $videoPid = null;
 
-        if ($request->hasFile('image')) {
-            ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
-                $request->file('image'),
-                'bubbles/profile-posts',
-                ImageUploadPresets::post()
-            );
+        if ($request->filled('image_url')) {
+            $this->validateCloudinaryUrl($request->input('image_url'));
+            $imageUrl = $request->input('image_url');
+            $imagePid = $request->input('image_public_id');
+        } elseif ($request->hasFile('image')) {
+            $imageUrl = '/storage/' . $request->file('image')->store('bubbles/profile-posts', 'public');
         }
 
         if ($request->hasFile('video')) {

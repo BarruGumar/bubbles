@@ -6,7 +6,6 @@ use App\Http\Requests\StoreCommunityPostRequest;
 use App\Models\Bubble;
 use App\Models\CommunityPost;
 use App\Services\AuditLogger;
-use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -34,12 +33,12 @@ class CommunityPostController extends Controller
         $videoUrl = null;
         $videoPid = null;
 
-        if ($request->hasFile('image')) {
-            ['url' => $imageUrl, 'public_id' => $imagePid] = $this->storeImageWithMeta(
-                $request->file('image'),
-                'bubbles/posts',
-                ImageUploadPresets::post()
-            );
+        if ($request->filled('image_url')) {
+            $this->validateCloudinaryUrl($request->input('image_url'));
+            $imageUrl = $request->input('image_url');
+            $imagePid = $request->input('image_public_id');
+        } elseif ($request->hasFile('image')) {
+            $imageUrl = '/storage/' . $request->file('image')->store('bubbles/posts', 'public');
         }
 
         if ($request->hasFile('video')) {

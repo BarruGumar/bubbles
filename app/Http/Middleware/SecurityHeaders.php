@@ -23,7 +23,7 @@ class SecurityHeaders
             "img-src 'self' data: blob: https://res.cloudinary.com https://lh3.googleusercontent.com; " .
             "media-src 'self' https://res.cloudinary.com blob:; " .
             "font-src 'self' data: https://fonts.bunny.net; " .
-            "connect-src 'self' wss://ws-eu.pusher.com https://sockjs-eu.pusher.com; " .
+            "connect-src 'self' wss://ws-eu.pusher.com https://sockjs-eu.pusher.com https://api.cloudinary.com; " .
             "object-src 'none'; " .
             "base-uri 'self'; " .
             "form-action 'self';"

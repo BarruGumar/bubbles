@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import ImageCropper from '@/Components/ImageCropper.vue';
 import { useAudio } from '@/Composables/useAudio';
+import { useDirectUpload } from '@/Composables/useDirectUpload';
 
 defineProps({
     mustVerifyEmail: Boolean,
@@ -10,13 +11,16 @@ defineProps({
 });
 
 const { playSfx } = useAudio();
+const { upload } = useDirectUpload();
 
 const user = usePage().props.auth.user;
 const COLORS = ['#009ac7', '#4ebcff', '#2ea87e', '#e07b4a', '#9b6bdf', '#c74a6b', '#e0a040', '#6b9bdf'];
 
-// Separate upload forms — each sends only one file via POST
-const avatarForm = useForm({ avatar: null });
-const bannerForm = useForm({ banner: null });
+const avatarFile = ref(null);
+const bannerFile = ref(null);
+const avatarUploading = ref(false);
+const bannerUploading = ref(false);
+const uploadError = ref(null);
 const avatarInput = ref(null);
 const bannerInput = ref(null);
 
@@ -54,7 +58,7 @@ function onBannerChange(e) {
     // GIFs bypass the cropper — the cropper always outputs JPEG, which strips animation
     if (file.type === 'image/gif') {
         if (bannerPreview.value?.startsWith('blob:')) URL.revokeObjectURL(bannerPreview.value);
-        bannerForm.banner = file;
+        bannerFile.value = file;
         bannerPreview.value = URL.createObjectURL(file);
         e.target.value = '';
         return;
@@ -73,10 +77,10 @@ function onCropConfirm(blob) {
     const blobUrl = URL.createObjectURL(blob);
 
     if (isAvatar) {
-        avatarForm.avatar = file;
+        avatarFile.value = file;
         avatarPreview.value = blobUrl;
     } else {
-        bannerForm.banner = file;
+        bannerFile.value = file;
         bannerPreview.value = blobUrl;
     }
 
@@ -89,23 +93,38 @@ function onCropCancel() {
     cropperMode.value = null;
 }
 
-function submitAvatar() {
+async function submitAvatar() {
+    if (!avatarFile.value || avatarUploading.value) return;
     playSfx('send');
-    avatarForm.post(route('profile.avatar'), {
-        forceFormData: true,
-        onSuccess: () => {
-            avatarForm.reset();
-            // Inertia refreshes page props, so usePage().props.auth.user.avatar is now updated
-        },
-    });
+    uploadError.value = null;
+    avatarUploading.value = true;
+    try {
+        const { url, public_id } = await upload(avatarFile.value, 'avatar');
+        router.post(route('profile.avatar'), { url, public_id }, {
+            onSuccess: () => { avatarFile.value = null; },
+            onFinish: () => { avatarUploading.value = false; },
+        });
+    } catch {
+        avatarUploading.value = false;
+        uploadError.value = 'Erro ao carregar o avatar. Tenta novamente.';
+    }
 }
 
-function submitBanner() {
+async function submitBanner() {
+    if (!bannerFile.value || bannerUploading.value) return;
     playSfx('send');
-    bannerForm.post(route('profile.banner'), {
-        forceFormData: true,
-        onSuccess: () => bannerForm.reset(),
-    });
+    uploadError.value = null;
+    bannerUploading.value = true;
+    try {
+        const { url, public_id } = await upload(bannerFile.value, 'banner');
+        router.post(route('profile.banner'), { url, public_id }, {
+            onSuccess: () => { bannerFile.value = null; },
+            onFinish: () => { bannerUploading.value = false; },
+        });
+    } catch {
+        bannerUploading.value = false;
+        uploadError.value = 'Erro ao carregar o banner. Tenta novamente.';
+    }
 }
 
 function submitProfile() {
@@ -122,7 +141,7 @@ function removeAvatar() {
         preserveScroll: true,
         onSuccess: () => {
             avatarPreview.value = null;
-            avatarForm.reset();
+            avatarFile.value = null;
         },
         onFinish: () => { removingAvatar.value = false; },
     });
@@ -134,7 +153,7 @@ function removeBanner() {
         preserveScroll: true,
         onSuccess: () => {
             bannerPreview.value = null;
-            bannerForm.reset();
+            bannerFile.value = null;
         },
         onFinish: () => { removingBanner.value = false; },
     });
@@ -227,9 +246,9 @@ function removeBanner() {
 
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap">
                 <button
-                    v-if="bannerForm.banner"
+                    v-if="bannerFile"
                     type="button"
-                    :disabled="bannerForm.processing"
+                    :disabled="bannerUploading"
                     @click="submitBanner"
                     :style="{
                         padding: '8px 20px',
@@ -244,14 +263,14 @@ function removeBanner() {
                         fontSize: '12px',
                         fontWeight: '700',
                         cursor: 'pointer',
-                        opacity: bannerForm.processing ? 0.6 : 1,
+                        opacity: bannerUploading ? 0.6 : 1,
                         transition: 'opacity .2s',
                     }"
                 >
-                    {{ bannerForm.processing ? 'A enviar...' : 'Guardar banner' }}
+                    {{ bannerUploading ? 'A carregar...' : 'Guardar banner' }}
                 </button>
                 <button
-                    v-if="bannerPreview && !bannerForm.banner"
+                    v-if="bannerPreview && !bannerFile"
                     type="button"
                     :disabled="removingBanner"
                     @click="removeBanner"
@@ -276,8 +295,8 @@ function removeBanner() {
                     >
                 </Transition>
             </div>
-            <p v-if="bannerForm.errors.banner" style="font-size: 11px; color: #e05555; margin: 6px 0 0">
-                {{ bannerForm.errors.banner }}
+            <p v-if="uploadError" style="font-size: 11px; color: #e05555; margin: 6px 0 0">
+                {{ uploadError }}
             </p>
         </div>
 
@@ -368,9 +387,9 @@ function removeBanner() {
                 <!-- Upload / remove buttons -->
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap">
                     <button
-                        v-if="avatarForm.avatar"
+                        v-if="avatarFile"
                         type="button"
-                        :disabled="avatarForm.processing"
+                        :disabled="avatarUploading"
                         @click="submitAvatar"
                         :style="{
                             padding: '7px 18px',
@@ -385,13 +404,13 @@ function removeBanner() {
                             fontSize: '12px',
                             fontWeight: '700',
                             cursor: 'pointer',
-                            opacity: avatarForm.processing ? 0.6 : 1,
+                            opacity: avatarUploading ? 0.6 : 1,
                         }"
                     >
-                        {{ avatarForm.processing ? 'A enviar...' : 'Guardar foto' }}
+                        {{ avatarUploading ? 'A carregar...' : 'Guardar foto' }}
                     </button>
                     <button
-                        v-if="avatarPreview && !avatarForm.avatar"
+                        v-if="avatarPreview && !avatarFile"
                         type="button"
                         :disabled="removingAvatar"
                         @click="removeAvatar"
@@ -417,9 +436,6 @@ function removeBanner() {
                         >
                     </Transition>
                 </div>
-                <p v-if="avatarForm.errors.avatar" style="font-size: 11px; color: #e05555; margin: 4px 0 0">
-                    {{ avatarForm.errors.avatar }}
-                </p>
 
                 <!-- Color swatches + custom picker -->
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">

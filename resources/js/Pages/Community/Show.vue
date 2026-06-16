@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { useForm } from '@inertiajs/vue3';
+import { useDirectUpload } from '@/Composables/useDirectUpload';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ImageCropper from '@/Components/ImageCropper.vue';
 import PostCard from '@/Components/PostCard.vue';
@@ -24,6 +24,7 @@ const props = defineProps({
 });
 
 const authUser = computed(() => usePage().props.auth?.user);
+const { upload } = useDirectUpload();
 
 // ── Pagination ────────────────────────────────────────────────────
 const localPosts = ref([...props.posts]);
@@ -63,8 +64,8 @@ function loadMore() {
 // ── Community image / banner (shared state for hero + modal) ──────
 const communityImagePreview = ref(props.community.image ?? null);
 const communityBannerPreview = ref(props.community.banner ?? null);
-const communityImageForm = useForm({ image: null });
-const communityBannerForm = useForm({ banner: null });
+const communityImageUploading = ref(false);
+const communityBannerUploading = ref(false);
 
 const cropperSrc = ref(null);
 const cropperMode = ref(null); // 'image' | 'banner'
@@ -75,36 +76,44 @@ function openCropperWithFile(file, mode) {
     cropperMode.value = mode;
 }
 
-function onCropConfirm(blob) {
+async function onCropConfirm(blob) {
     const isImage = cropperMode.value === 'image';
     const ext = blob.type === 'image/png' ? 'png' : 'jpg';
     const filename = isImage ? `community_image.${ext}` : `community_banner.${ext}`;
     const file = new File([blob], filename, { type: blob.type });
     const blobUrl = URL.createObjectURL(blob);
 
-    if (isImage) {
-        if (communityImagePreview.value?.startsWith('blob:')) URL.revokeObjectURL(communityImagePreview.value);
-        communityImagePreview.value = blobUrl;
-        communityImageForm.image = file;
-        communityImageForm.post(route('community.image', props.community.id), {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => communityImageForm.reset(),
-        });
-    } else {
-        if (communityBannerPreview.value?.startsWith('blob:')) URL.revokeObjectURL(communityBannerPreview.value);
-        communityBannerPreview.value = blobUrl;
-        communityBannerForm.banner = file;
-        communityBannerForm.post(route('community.banner', props.community.id), {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => communityBannerForm.reset(),
-        });
-    }
-
     if (cropperSrc.value) URL.revokeObjectURL(cropperSrc.value);
     cropperSrc.value = null;
     cropperMode.value = null;
+
+    if (isImage) {
+        if (communityImagePreview.value?.startsWith('blob:')) URL.revokeObjectURL(communityImagePreview.value);
+        communityImagePreview.value = blobUrl;
+        communityImageUploading.value = true;
+        try {
+            const { url, public_id } = await upload(file, 'community_image', props.community.id);
+            router.post(route('community.image', props.community.id), { url, public_id }, {
+                preserveScroll: true,
+                onFinish: () => { communityImageUploading.value = false; },
+            });
+        } catch {
+            communityImageUploading.value = false;
+        }
+    } else {
+        if (communityBannerPreview.value?.startsWith('blob:')) URL.revokeObjectURL(communityBannerPreview.value);
+        communityBannerPreview.value = blobUrl;
+        communityBannerUploading.value = true;
+        try {
+            const { url, public_id } = await upload(file, 'community_banner', props.community.id);
+            router.post(route('community.banner', props.community.id), { url, public_id }, {
+                preserveScroll: true,
+                onFinish: () => { communityBannerUploading.value = false; },
+            });
+        } catch {
+            communityBannerUploading.value = false;
+        }
+    }
 }
 
 function onCropCancel() {

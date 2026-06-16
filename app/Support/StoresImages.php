@@ -3,64 +3,10 @@
 namespace App\Support;
 
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
 trait StoresImages
 {
-    /**
-     * Upload an image and return only the URL (backward-compatible).
-     */
-    private function storeImage(UploadedFile $file, string $folder, array $cloudinaryOptions = []): string
-    {
-        return $this->storeImageWithMeta($file, $folder, $cloudinaryOptions)['url'];
-    }
-
-    /**
-     * Upload an image and return ['url' => ..., 'public_id' => ...].
-     * public_id is null when using local storage.
-     */
-    protected function storeImageWithMeta(UploadedFile $file, string $folder, array $cloudinaryOptions = []): array
-    {
-        if ($this->cloudinaryIsConfigured()) {
-            $isGif = $file->getMimeType() === 'image/gif'
-                  || strtolower($file->getClientOriginalExtension()) === 'gif';
-
-            // GIFs: never apply incoming transformations — Cloudinary processes
-            // only the first frame when quality/crop transforms run before storage,
-            // stripping animation. Store the original and let clImg resize at delivery.
-            if ($isGif) {
-                $uploadOptions = ['folder' => $folder];
-            } else {
-                $uploadOptions = array_merge(
-                    ['folder' => $folder, 'quality' => 'auto:good'],
-                    $cloudinaryOptions
-                );
-            }
-
-            Log::info('Cloudinary upload', [
-                'mime'    => $file->getMimeType(),
-                'ext'     => $file->getClientOriginalExtension(),
-                'isGif'   => $isGif,
-                'options' => $uploadOptions,
-            ]);
-
-            $response = Cloudinary::uploadApi()->upload($file->getRealPath(), $uploadOptions);
-
-            return [
-                'url' => $response['secure_url'],
-                'public_id' => $response['public_id'],
-            ];
-        }
-
-        $path = $file->store($folder, 'public');
-
-        return [
-            'url' => '/storage/'.$path,
-            'public_id' => null,
-        ];
-    }
-
     /**
      * Upload a video and return ['url' => ..., 'public_id' => ...].
      */
@@ -124,6 +70,15 @@ trait StoresImages
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    protected function validateCloudinaryUrl(string $url): void
+    {
+        abort_unless(
+            str_starts_with($url, 'https://res.cloudinary.com/'),
+            422,
+            'URL de imagem inválido.'
+        );
     }
 
     private function cloudinaryIsConfigured(): bool

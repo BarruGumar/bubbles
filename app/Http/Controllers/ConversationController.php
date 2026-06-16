@@ -14,7 +14,6 @@ use App\Models\Conversation;
 use App\Models\Friend;
 use App\Models\Message;
 use App\Notifications\MessageReceived;
-use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -139,12 +138,9 @@ class ConversationController extends Controller
 
         $imageUrl = null;
         if ($request->hasFile('image')) {
-            $file   = $request->file('image');
-            $preset = $file->getMimeType() === 'image/gif'
-                ? ImageUploadPresets::gif()
-                : ImageUploadPresets::message();
-            ['url' => $imageUrl] = $this->storeImageWithMeta($file, 'messages', $preset);
+            $imageUrl = '/storage/' . $request->file('image')->store('messages', 'public');
         } elseif ($request->filled('image_url')) {
+            $this->validateCloudinaryUrl($request->input('image_url'));
             $imageUrl = $request->input('image_url');
         }
 
@@ -411,11 +407,7 @@ class ConversationController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         $request->validate(['image' => ['required', 'image', 'max:5120']]);
-        $file   = $request->file('image');
-        $preset = $file->getMimeType() === 'image/gif'
-            ? ImageUploadPresets::gif()
-            : ImageUploadPresets::message();
-        ['url' => $url] = $this->storeImageWithMeta($file, 'messages', $preset);
+        $url = '/storage/' . $request->file('image')->store('messages', 'public');
         return response()->json(['url' => $url]);
     }
 
@@ -426,13 +418,19 @@ class ConversationController extends Controller
             403
         );
 
+        if ($request->filled('url')) {
+            $this->validateCloudinaryUrl($request->input('url'));
+            $bgImageUrl = $request->input('url');
+            $conversation->participants()->updateExistingPivot(auth()->id(), [
+                'bg_preset'    => null,
+                'bg_image_url' => $bgImageUrl,
+            ]);
+            return response()->json(['bg_preset' => null, 'bg_image_url' => $bgImageUrl]);
+        }
+
         if ($request->hasFile('image')) {
             $request->validate(['image' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096']]);
-            ['url' => $bgImageUrl] = $this->storeImageWithMeta(
-                $request->file('image'),
-                'chat_backgrounds',
-                ImageUploadPresets::conversationBackground()
-            );
+            $bgImageUrl = '/storage/' . $request->file('image')->store('chat_backgrounds', 'public');
             $conversation->participants()->updateExistingPivot(auth()->id(), [
                 'bg_preset'    => null,
                 'bg_image_url' => $bgImageUrl,

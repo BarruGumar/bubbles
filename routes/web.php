@@ -25,6 +25,7 @@ use App\Http\Controllers\BlockController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -69,6 +70,9 @@ Route::middleware(['auth', 'verified', 'punishments'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/theme', [ProfileController::class, 'updateTheme'])->name('profile.theme');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/upload/signature', [UploadController::class, 'signature'])->name('upload.signature');
+    Route::post('/upload/confirm', [UploadController::class, 'confirm'])->name('upload.confirm');
+
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->middleware('throttle:uploads')->name('profile.avatar');
     Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.remove');
     Route::post('/profile/banner', [ProfileController::class, 'uploadBanner'])->middleware('throttle:uploads')->name('profile.banner');

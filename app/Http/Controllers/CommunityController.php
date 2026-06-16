@@ -99,7 +99,7 @@ class CommunityController extends Controller
 
         $canManage   = $authUser && ($authUser->hasAdminAccess() || in_array($communityRole, ['owner', 'admin']));
         $canModerate = $authUser && ($authUser->hasModerationAccess() || in_array($communityRole, ['owner', 'admin', 'moderator']));
-        $isMember    = $isOwn || $canManage || $canModerate || $communityRole === 'member';
+        $isMember    = in_array($communityRole, ['owner', 'admin', 'moderator', 'member']);
 
         return Inertia::render('Community/Show', [
             'isOwn'       => $isOwn,

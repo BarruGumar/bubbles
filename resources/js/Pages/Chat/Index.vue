@@ -8,6 +8,7 @@ import { useClipboardImage } from '@/Composables/useClipboardImage';
 import { compressImage } from '@/Composables/useImageCompressor';
 import { useAudio } from '@/Composables/useAudio';
 import { useOnlineUsers } from '@/Composables/useOnlineUsers';
+import { useDirectUpload } from '@/Composables/useDirectUpload';
 import axios from 'axios';
 
 const props = defineProps({
@@ -22,6 +23,7 @@ const props = defineProps({
 const page = usePage();
 const authUser = computed(() => page.props.auth?.user);
 const { playSfx, playClick } = useAudio();
+const { upload } = useDirectUpload();
 
 const { onlineUsers } = useOnlineUsers();
 const isOnline = (userId) => userId != null && onlineUsers.value.has(userId);
@@ -389,10 +391,9 @@ async function onBgImageChange(e) {
     bgImageUrl.value = localUrl;
     bgPickerOpen.value = false;
     if (!props.activeConversation) return;
-    const fd = new FormData();
-    fd.append('image', file);
     try {
-        const res = await axios.post(route('conversations.background', props.activeConversation.id), fd);
+        const { url } = await upload(file, 'conversation_bg', props.activeConversation.id);
+        const res = await axios.post(route('conversations.background', props.activeConversation.id), { url });
         URL.revokeObjectURL(localUrl);
         bgImageUrl.value = res.data.bg_image_url;
     } catch (_) {
@@ -691,19 +692,15 @@ async function setImageFile(file) {
         setTimeout(() => { pasteError.value = null; }, 5000);
         return;
     }
-    if (pendingUpload) { pendingUpload.controller.abort(); pendingUpload = null; }
+    if (pendingUpload) { pendingUpload.controller?.abort(); pendingUpload = null; }
     if (imagePreview.value) URL.revokeObjectURL(imagePreview.value);
     imagePreview.value = URL.createObjectURL(file);
     msgImage.value = file;
     const uploadFile = file.type === 'image/gif' ? file : await compressImage(file);
     msgImage.value = uploadFile;
-    // Start Cloudinary upload in background — result used in send() to skip re-upload
+    // Start direct Cloudinary upload in background — result used in send() to skip re-upload
     const controller = new AbortController();
-    const fd = new FormData();
-    fd.append('image', uploadFile);
-    const promise = axios.post(route('conversations.upload-image'), fd, { signal: controller.signal })
-        .then(r => r.data)
-        .catch(() => null);
+    const promise = upload(uploadFile, 'message', null, controller.signal).catch(() => null);
     pendingUpload = { promise, controller };
 }
 function removeImage() {

@@ -5,6 +5,7 @@ import { useToast } from '@/Composables/useToast';
 import { useClipboardImage } from '@/Composables/useClipboardImage';
 import { compressImage } from '@/Composables/useImageCompressor';
 import { useAudio } from '@/Composables/useAudio';
+import { useDirectUpload } from '@/Composables/useDirectUpload';
 
 const props = defineProps({
     authUser: { type: Object, required: true },
@@ -13,8 +14,11 @@ const props = defineProps({
 
 const { show: toast } = useToast();
 const { playSfx } = useAudio();
+const { upload } = useDirectUpload();
 
-const postForm = useForm({ content: '', image: null, video: null });
+const postForm = useForm({ content: '', image_url: null, image_public_id: null, video: null });
+const pendingImageFile = ref(null);
+const postUploading = ref(false);
 const uploadProgress = ref(0);
 const uploadingServer = ref(false);
 const charCount = computed(() => postForm.content.length);
@@ -28,7 +32,7 @@ async function onMediaChange(e) {
     if (!file) return;
     if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
     if (file.type.startsWith('video/')) {
-        postForm.image = null;
+        pendingImageFile.value = null;
         postForm.video = file;
         isVideoMedia.value = true;
         mediaPreview.value = URL.createObjectURL(file);
@@ -36,14 +40,13 @@ async function onMediaChange(e) {
         postForm.video = null;
         isVideoMedia.value = false;
         mediaPreview.value = URL.createObjectURL(file);
-        postForm.image = file;
-        postForm.image = await compressImage(file);
+        pendingImageFile.value = await compressImage(file);
     }
 }
 
 function removeMedia() {
     if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value);
-    postForm.image = null;
+    pendingImageFile.value = null;
     postForm.video = null;
     mediaPreview.value = null;
     isVideoMedia.value = false;
@@ -55,8 +58,7 @@ async function setMediaFile(file) {
     postForm.video = null;
     isVideoMedia.value = false;
     mediaPreview.value = URL.createObjectURL(file);
-    postForm.image = file;
-    postForm.image = await compressImage(file);
+    pendingImageFile.value = await compressImage(file);
 }
 
 const { handlePaste: handlePostPaste } = useClipboardImage({
@@ -65,11 +67,26 @@ const { handlePaste: handlePostPaste } = useClipboardImage({
     onError: (msg) => toast(msg, 'error'),
 });
 
-function submitPost() {
+async function submitPost() {
     if (!postForm.content.trim()) return;
     playSfx('send');
     uploadProgress.value = 0;
     uploadingServer.value = false;
+
+    if (pendingImageFile.value) {
+        postUploading.value = true;
+        try {
+            const { url, public_id } = await upload(pendingImageFile.value, 'community_post');
+            postForm.image_url = url;
+            postForm.image_public_id = public_id;
+        } catch {
+            postUploading.value = false;
+            toast('Erro ao carregar imagem. Tenta novamente.', 'error');
+            return;
+        }
+        postUploading.value = false;
+    }
+
     postForm.post(route('community.posts.store', props.community.id), {
         forceFormData: true,
         preserveScroll: true,
@@ -79,7 +96,8 @@ function submitPost() {
         },
         onSuccess: () => {
             if (usePage().props.flash?.error) return;
-            postForm.reset('content', 'image', 'video');
+            postForm.reset('content', 'image_url', 'image_public_id', 'video');
+            pendingImageFile.value = null;
             removeMedia();
             uploadProgress.value = 0;
             uploadingServer.value = false;
@@ -236,7 +254,7 @@ onUnmounted(() => {
                                 background: 'none',
                                 border: 'none',
                                 cursor: 'pointer',
-                                color: postForm.image || postForm.video ? community.color : 'var(--text-3, #b0c0cc)',
+                                color: pendingImageFile || postForm.video ? community.color : 'var(--text-3, #b0c0cc)',
                                 padding: '3px',
                                 borderRadius: '6px',
                                 transition: 'color .2s',
@@ -275,7 +293,7 @@ onUnmounted(() => {
                     </div>
                     <button
                         @click="submitPost"
-                        :disabled="postForm.processing || !postForm.content.trim()"
+                        :disabled="postForm.processing || postUploading || !postForm.content.trim()"
                         :style="{
                             padding: '8px 20px',
                             borderRadius: '99px',
@@ -285,16 +303,18 @@ onUnmounted(() => {
                             fontSize: '12px',
                             fontWeight: '700',
                             cursor: postForm.content.trim() ? 'pointer' : 'not-allowed',
-                            opacity: postForm.processing || !postForm.content.trim() ? 0.5 : 1,
+                            opacity: postForm.processing || postUploading || !postForm.content.trim() ? 0.5 : 1,
                             transition: 'opacity .2s',
                         }"
                     >
                         {{
-                            postForm.processing
-                                ? uploadingServer
-                                    ? 'A processar...'
-                                    : `A carregar... ${uploadProgress}%`
-                                : 'Publicar'
+                            postUploading
+                                ? 'A carregar imagem...'
+                                : postForm.processing
+                                    ? uploadingServer
+                                        ? 'A processar...'
+                                        : `A carregar... ${uploadProgress}%`
+                                    : 'Publicar'
                         }}
                     </button>
                 </div>

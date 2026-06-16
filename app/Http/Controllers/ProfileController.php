@@ -7,7 +7,6 @@ use App\Models\Friend;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Support\FormatsCommentData;
-use App\Support\ImageUploadPresets;
 use App\Support\StoresImages;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -180,20 +179,20 @@ class ProfileController extends Controller
 
     public function uploadAvatar(Request $request): RedirectResponse
     {
-        $request->validate([
-            'avatar' => ['required', 'image', 'max:2048'],
+        $data = $request->validate([
+            'url'       => ['required', 'string'],
+            'public_id' => ['required', 'string'],
         ]);
 
+        $this->validateCloudinaryUrl($data['url']);
+
         $user = $request->user();
-        $this->deleteCloudinaryImage($user->avatar_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
-            $request->file('avatar'),
-            'bubbles/avatars',
-            ImageUploadPresets::avatar($user->id)
-        );
+        if ($user->avatar_public_id && $user->avatar_public_id !== $data['public_id']) {
+            $this->deleteCloudinaryImage($user->avatar_public_id);
+        }
 
-        $user->update(['avatar' => $url, 'avatar_public_id' => $pid]);
+        $user->update(['avatar' => $data['url'], 'avatar_public_id' => $data['public_id']]);
 
         AuditLogger::log('profile.avatar_upload', 'profile', $user);
 
@@ -202,20 +201,20 @@ class ProfileController extends Controller
 
     public function uploadBanner(Request $request): RedirectResponse
     {
-        $request->validate([
-            'banner' => ['required', 'image', 'max:4096'],
+        $data = $request->validate([
+            'url'       => ['required', 'string'],
+            'public_id' => ['required', 'string'],
         ]);
 
+        $this->validateCloudinaryUrl($data['url']);
+
         $user = $request->user();
-        $this->deleteCloudinaryImage($user->banner_public_id);
 
-        ['url' => $url, 'public_id' => $pid] = $this->storeImageWithMeta(
-            $request->file('banner'),
-            'bubbles/banners',
-            ImageUploadPresets::profileBanner($user->id)
-        );
+        if ($user->banner_public_id && $user->banner_public_id !== $data['public_id']) {
+            $this->deleteCloudinaryImage($user->banner_public_id);
+        }
 
-        $user->update(['banner' => $url, 'banner_public_id' => $pid]);
+        $user->update(['banner' => $data['url'], 'banner_public_id' => $data['public_id']]);
 
         AuditLogger::log('profile.banner_upload', 'profile', $user);
 

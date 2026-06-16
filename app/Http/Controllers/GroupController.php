@@ -8,8 +8,6 @@ use App\Http\Requests\UpdateGroupRequest;
 use App\Models\Conversation;
 use App\Models\Friend;
 use App\Models\User;
-use App\Support\ImageUploadPresets;
-use App\Support\StoresImages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,8 +15,6 @@ use Illuminate\Support\Facades\DB;
 
 class GroupController extends Controller
 {
-    use StoresImages;
-
     public function store(CreateGroupRequest $request): RedirectResponse
     {
         $user = $request->user();
@@ -34,11 +30,7 @@ class GroupController extends Controller
 
         $avatarUrl = null;
         if ($request->hasFile('image')) {
-            ['url' => $avatarUrl] = $this->storeImageWithMeta(
-                $request->file('image'),
-                'bubbles/groups',
-                ImageUploadPresets::post()
-            );
+            $avatarUrl = '/storage/' . $request->file('image')->store('bubbles/groups', 'public');
         }
 
         $conversation = DB::transaction(function () use ($user, $request, $avatarUrl, $validIds) {
@@ -84,12 +76,7 @@ class GroupController extends Controller
         }
 
         if ($request->hasFile('image')) {
-            ['url' => $avatarUrl] = $this->storeImageWithMeta(
-                $request->file('image'),
-                'bubbles/groups',
-                ImageUploadPresets::post()
-            );
-            $data['avatar'] = $avatarUrl;
+            $data['avatar'] = '/storage/' . $request->file('image')->store('bubbles/groups', 'public');
         }
 
         $conversation->update($data);
