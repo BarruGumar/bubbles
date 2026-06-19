@@ -700,6 +700,43 @@ Route::get('/mobile/conversations', function () {
         return response()->json(['id' => $conv->id]);
     });
 
+    // Notifications
+    Route::get('/mobile/notifications', function () {
+        $user = auth()->user();
+        $notifs = $user->notifications()
+            ->latest()
+            ->limit(50)
+            ->get()
+            ->map(fn($n) => [
+                'id'         => $n->id,
+                'data'       => $n->data,
+                'read'       => !is_null($n->read_at),
+                'created_at' => $n->created_at->diffForHumans(),
+            ]);
+        return response()->json($notifs);
+    });
+
+    Route::patch('/mobile/notifications/read-all', function () {
+        auth()->user()->unreadNotifications->markAsRead();
+        return response()->json(['ok' => true]);
+    });
+
+    Route::patch('/mobile/notifications/{id}/read', function ($id) {
+        $n = auth()->user()->notifications()->where('id', $id)->first();
+        if ($n) $n->markAsRead();
+        return response()->json(['ok' => true]);
+    });
+
+    Route::delete('/mobile/notifications/all', function () {
+        auth()->user()->notifications()->delete();
+        return response()->json(['ok' => true]);
+    });
+
+    Route::delete('/mobile/notifications/{id}', function ($id) {
+        auth()->user()->notifications()->where('id', $id)->delete();
+        return response()->json(['ok' => true]);
+    });
+
     Route::get('/mobile/search', function (Illuminate\Http\Request $request) {
         $q = trim($request->input('q', ''));
         if (strlen($q) < 2) {
