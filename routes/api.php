@@ -141,11 +141,18 @@ Route::middleware('auth:sanctum')->group(function () {
         $user = auth()->user();
         $conversation = $user->conversations()->findOrFail($id);
 
-        $request->validate(['content' => 'required|string|max:5000']);
+        $request->validate([
+            'content'   => 'nullable|string|max:5000',
+            'image_url' => 'nullable|url',
+        ]);
+        if (!$request->content && !$request->image_url) {
+            return response()->json(['message' => 'Mensagem vazia.'], 422);
+        }
 
         $message = $conversation->messages()->create([
-            'user_id' => $user->id,
-            'content' => $request->content,
+            'user_id'   => $user->id,
+            'content'   => $request->content ?? '',
+            'image_url' => $request->image_url,
         ]);
 
         $conversation->touch();
@@ -405,15 +412,37 @@ Route::get('/mobile/conversations', function () {
         $post = \App\Models\CommunityPost::findOrFail($id);
 
         $comments = $post->comments()
-            ->with('user')
+            ->whereNull('parent_comment_id')
+            ->with([
+                'user',
+                'likes' => fn($q) => $q->where('user_id', $userId),
+                'replies' => fn($q) => $q
+                    ->with(['user', 'likes' => fn($lq) => $lq->where('user_id', $userId)])
+                    ->withCount('likes'),
+            ])
             ->withCount('likes')
+            ->latest()
             ->get()
             ->map(fn($c) => [
                 'id'          => $c->id,
                 'content'     => $c->content,
                 'created_at'  => $c->created_at->diffForHumans(),
                 'likes'       => $c->likes_count,
-                'liked_by_me' => $c->likes()->where('user_id', $userId)->exists(),
+                'liked_by_me' => $c->likes->isNotEmpty(),
+                'replies'     => $c->replies->map(fn($r) => [
+                    'id'          => $r->id,
+                    'content'     => $r->content,
+                    'created_at'  => $r->created_at->diffForHumans(),
+                    'likes'       => $r->likes_count,
+                    'liked_by_me' => $r->likes->isNotEmpty(),
+                    'author'      => [
+                        'id'           => $r->user->id,
+                        'name'         => $r->user->name,
+                        'username'     => $r->user->username,
+                        'avatar'       => $r->user->avatar,
+                        'avatar_color' => $r->user->avatar_color,
+                    ],
+                ]),
                 'author'      => [
                     'id'           => $c->user->id,
                     'name'         => $c->user->name,
@@ -429,11 +458,15 @@ Route::get('/mobile/conversations', function () {
     Route::post('/mobile/community-posts/{id}/comments', function (Illuminate\Http\Request $request, $id) {
         $user = auth()->user();
         $post = \App\Models\CommunityPost::findOrFail($id);
-        $request->validate(['content' => 'required|string|max:2000']);
+        $request->validate([
+            'content'           => 'required|string|max:2000',
+            'parent_comment_id' => 'nullable|integer|exists:comments,id',
+        ]);
 
         $comment = $post->comments()->create([
-            'user_id' => $user->id,
-            'content' => $request->content,
+            'user_id'           => $user->id,
+            'content'           => $request->content,
+            'parent_comment_id' => $request->parent_comment_id,
         ]);
 
         return response()->json([
@@ -442,6 +475,7 @@ Route::get('/mobile/conversations', function () {
             'created_at'  => $comment->created_at->diffForHumans(),
             'likes'       => 0,
             'liked_by_me' => false,
+            'replies'     => [],
             'author'      => [
                 'id'           => $user->id,
                 'name'         => $user->name,
@@ -454,9 +488,12 @@ Route::get('/mobile/conversations', function () {
 
     Route::post('/mobile/posts', function (Illuminate\Http\Request $request) {
         $request->validate([
-            'content' => 'required|string|max:5000',
+            'content' => 'nullable|string|max:5000',
             'image'   => 'nullable|url',
         ]);
+        if (!$request->content && !$request->image) {
+            return response()->json(['message' => 'Post vazio.'], 422);
+        }
 
         $user = auth()->user();
         $post = $user->posts()->create([
@@ -554,17 +591,37 @@ Route::get('/mobile/conversations', function () {
 
         $comments = $post->comments()
             ->whereNull('parent_comment_id')
-            ->with('user')
+            ->with([
+                'user',
+                'likes' => fn($q) => $q->where('user_id', $userId),
+                'replies' => fn($q) => $q
+                    ->with(['user', 'likes' => fn($lq) => $lq->where('user_id', $userId)])
+                    ->withCount('likes'),
+            ])
             ->withCount('likes')
             ->latest()
             ->get()
             ->map(fn($c) => [
-                'id'         => $c->id,
-                'content'    => $c->content,
-                'created_at' => $c->created_at->diffForHumans(),
-                'likes'      => $c->likes_count,
-                'liked_by_me'=> $c->likes()->where('user_id', $userId)->exists(),
-                'author'     => [
+                'id'          => $c->id,
+                'content'     => $c->content,
+                'created_at'  => $c->created_at->diffForHumans(),
+                'likes'       => $c->likes_count,
+                'liked_by_me' => $c->likes->isNotEmpty(),
+                'replies'     => $c->replies->map(fn($r) => [
+                    'id'          => $r->id,
+                    'content'     => $r->content,
+                    'created_at'  => $r->created_at->diffForHumans(),
+                    'likes'       => $r->likes_count,
+                    'liked_by_me' => $r->likes->isNotEmpty(),
+                    'author'      => [
+                        'id'           => $r->user->id,
+                        'name'         => $r->user->name,
+                        'username'     => $r->user->username,
+                        'avatar'       => $r->user->avatar,
+                        'avatar_color' => $r->user->avatar_color,
+                    ],
+                ]),
+                'author'      => [
                     'id'           => $c->user->id,
                     'name'         => $c->user->name,
                     'username'     => $c->user->username,
@@ -579,11 +636,15 @@ Route::get('/mobile/conversations', function () {
     Route::post('/mobile/posts/{id}/comments', function (Illuminate\Http\Request $request, $id) {
         $user = auth()->user();
         $post = \App\Models\Post::findOrFail($id);
-        $request->validate(['content' => 'required|string|max:2000']);
+        $request->validate([
+            'content'           => 'required|string|max:2000',
+            'parent_comment_id' => 'nullable|integer|exists:comments,id',
+        ]);
 
         $comment = $post->comments()->create([
-            'user_id' => $user->id,
-            'content' => $request->content,
+            'user_id'           => $user->id,
+            'content'           => $request->content,
+            'parent_comment_id' => $request->parent_comment_id,
         ]);
 
         return response()->json([
@@ -592,6 +653,7 @@ Route::get('/mobile/conversations', function () {
             'created_at'  => $comment->created_at->diffForHumans(),
             'likes'       => 0,
             'liked_by_me' => false,
+            'replies'     => [],
             'author'      => [
                 'id'           => $user->id,
                 'name'         => $user->name,
@@ -600,6 +662,103 @@ Route::get('/mobile/conversations', function () {
                 'avatar_color' => $user->avatar_color,
             ],
         ], 201);
+    });
+
+    Route::post('/mobile/comments/{id}/like', function ($id) {
+        $user = auth()->user();
+        $comment = \App\Models\Comment::findOrFail($id);
+
+        $existing = $comment->likes()->where('user_id', $user->id)->first();
+        if ($existing) {
+            $existing->delete();
+            $liked = false;
+        } else {
+            $comment->likes()->create(['user_id' => $user->id, 'type' => 'like']);
+            $liked = true;
+        }
+
+        return response()->json([
+            'liked' => $liked,
+            'likes' => $comment->likes()->count(),
+        ]);
+    });
+
+    Route::post('/mobile/conversations/with/{userId}', function ($userId) {
+        $me = auth()->user();
+        $other = \App\Models\User::findOrFail($userId);
+
+        $conv = $me->conversations()
+            ->where('type', 'direct')
+            ->whereHas('participants', fn($q) => $q->where('users.id', $other->id))
+            ->first();
+
+        if (!$conv) {
+            $conv = \App\Models\Conversation::create(['type' => 'direct']);
+            $conv->participants()->attach([$me->id, $other->id]);
+        }
+
+        return response()->json(['id' => $conv->id]);
+    });
+
+    Route::get('/mobile/search', function (Illuminate\Http\Request $request) {
+        $q = trim($request->input('q', ''));
+        if (strlen($q) < 2) {
+            return response()->json(['users' => [], 'communities' => [], 'posts' => []]);
+        }
+        $like = '%' . $q . '%';
+
+        $users = \App\Models\User::where('name', 'like', $like)
+            ->orWhere('username', 'like', $like)
+            ->limit(4)
+            ->get()
+            ->map(fn($u) => [
+                'id'           => $u->id,
+                'name'         => $u->name,
+                'username'     => $u->username,
+                'avatar'       => $u->avatar,
+                'avatar_color' => $u->avatar_color,
+            ]);
+
+        $communities = \App\Models\Bubble::where('label', 'like', $like)
+            ->orWhere('community_title', 'like', $like)
+            ->limit(4)
+            ->get()
+            ->map(fn($b) => [
+                'id'              => $b->id,
+                'label'           => $b->label,
+                'community_title' => $b->community_title,
+                'color'           => $b->color,
+                'community_image' => $b->community_image,
+                'members'         => $b->memberships()->wherePivot('status', 'active')->count(),
+            ]);
+
+        $posts = \App\Models\Post::where('content', 'like', $like)
+            ->with('user')
+            ->latest()
+            ->limit(3)
+            ->get()
+            ->map(fn($p) => [
+                'id'             => $p->id,
+                'content'        => $p->content,
+                'image'          => $p->image,
+                'likes'          => 0,
+                'liked_by_me'    => false,
+                'comments_count' => 0,
+                'created_at'     => $p->created_at->diffForHumans(),
+                'author'         => [
+                    'id'           => $p->user->id,
+                    'name'         => $p->user->name,
+                    'username'     => $p->user->username,
+                    'avatar'       => $p->user->avatar,
+                    'avatar_color' => $p->user->avatar_color,
+                ],
+            ]);
+
+        return response()->json([
+            'users'       => $users,
+            'communities' => $communities,
+            'posts'       => $posts,
+        ]);
     });
 
 });
